@@ -1,0 +1,29 @@
+---
+name: Feature request
+about: Suggest an idea for this project
+title: "[FEAT] "
+labels: ''
+assignees: ''
+
+---
+
+<!--
+## Issue 제목 컨벤션
+[FEAT] 설명
+
+예시:
+- [FEAT] 회원가입 API 구현
+-->
+
+## 🤷 구현할 기능
+<!-- 구현할 기능에 대해 간단히 설명해주세요 -->
+
+
+## 🔨 상세 작업 내용
+
+- [ ] To-do 1
+- [ ] To-do 2
+- [ ] To-do 3
+
+## 📝 추가 참고 사항 (선택)
+<!-- 추가 정보, 참고 자료, 스크린샷 등이 있다면 첨부해주세요 -->
