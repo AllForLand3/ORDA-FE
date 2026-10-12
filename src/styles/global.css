@@ -2,7 +2,12 @@
 @import './tokens.css';
 
 :root {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    'Pretendard',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   color: var(--color-text-primary);
   background: var(--color-background-default);
   font-synthesis: none;
@@ -42,4 +47,3 @@ a {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
 }
-
