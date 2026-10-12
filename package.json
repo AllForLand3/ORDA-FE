@@ -10,6 +10,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@fontsource/pretendard": "^5.3.0",
     "@tanstack/react-query": "^5.66.8",
     "axios": "^1.8.1",
     "react": "^19.0.0",
@@ -25,4 +26,3 @@
     "vite": "^6.1.0"
   }
 }
-

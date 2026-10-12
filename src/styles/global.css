@@ -1,7 +1,10 @@
+@import './fonts.css';
+@import './tokens.css';
+
 :root {
-  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #171717;
-  background: #ffffff;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-background-default);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -20,6 +23,8 @@ body,
 
 body {
   min-height: 100vh;
+  background: var(--color-background-default);
+  color: var(--color-text-primary);
 }
 
 button,
@@ -31,5 +36,10 @@ select {
 
 a {
   color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 

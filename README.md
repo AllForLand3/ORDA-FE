@@ -24,3 +24,14 @@ cp .env.example .env
 - `lib`: Axios, React Query 등 기술 설정
 - `shared`: 도메인 간 공유하는 상수, 훅, 타입
 - `styles`: 전역 스타일 및 디자인 토큰
+
+## 색상 시스템
+
+`src/styles/tokens.css`에서 색상을 관리합니다. 컴포넌트에서는 원시 팔레트보다
+`--color-text-primary`, `--color-background-subtle`, `--color-primary-default`와 같은
+시맨틱 토큰 사용을 우선합니다.
+
+## 폰트
+
+Pretendard(400, 500, 600, 700)를 `@fontsource/pretendard`로 포함하며,
+`src/styles/fonts.css`에서 전역으로 불러옵니다.
