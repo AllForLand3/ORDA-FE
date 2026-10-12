@@ -25,6 +25,8 @@ npm run build
 
 자동 수정은 `npm run lint:fix`, `npm run format:write`를 사용합니다.
 
+커밋 시에는 Husky와 lint-staged가 스테이징된 파일만 자동 검사·포맷합니다.
+
 ## 디렉터리 구조
 
 - `app`: 라우터, 전역 Provider, 최상위 App
