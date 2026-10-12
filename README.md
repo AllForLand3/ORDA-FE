@@ -5,8 +5,8 @@ React, TypeScript, Vite 기반의 산길 프론트엔드입니다.
 ## 시작하기
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 환경 변수는 `.env.example`을 복사해 `.env`로 만든 뒤 설정합니다.
@@ -18,12 +18,12 @@ cp .env.example .env
 ## 검사 및 포맷
 
 ```bash
-npm run lint
-npm run format
-npm run build
+pnpm lint
+pnpm format
+pnpm build
 ```
 
-자동 수정은 `npm run lint:fix`, `npm run format:write`를 사용합니다.
+자동 수정은 `pnpm lint:fix`, `pnpm format:write`를 사용합니다.
 
 커밋 시에는 Husky와 lint-staged가 스테이징된 파일만 자동 검사·포맷합니다.
 
