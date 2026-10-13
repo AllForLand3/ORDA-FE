@@ -8,9 +8,9 @@ ORDA GIS 등산 코스 서비스의 Frontend는 지도에서 산과 등산 코�
 
 - React 19, TypeScript, Vite (Next.js를 쓰지 않는다)
 - OpenLayers, ECharts
-- 목표 스택: pnpm, React Router, TanStack Query, Axios, Tailwind CSS
+- pnpm, React Router, TanStack Query, Axios, Tailwind CSS
 
-초기 뼈대는 npm, fetch, 일반 CSS로 되어 있다. 목표 스택으로의 전환 시점은 미확정이며, 전환 전까지는 실제 `package.json`의 구성을 따른다. 확정된 스택을 동일 목적의 다른 도구로 임의 교체하지 않는다.
+확정된 스택을 동일 목적의 다른 도구로 임의 교체하지 않는다. 버전과 세부 플러그인은 Repository 설정을 기준으로 한다.
 
 ## 시스템 경계
 
@@ -58,8 +58,8 @@ src/
 
 1. React Router가 URL에 맞는 페이지를 선택한다.
 2. 페이지가 필요한 기능 모듈을 조합한다.
-3. 기능 모듈이 TanStack Query(도입 전에는 기존 방식)로 서버 상태를 요청한다.
-4. Axios(도입 전에는 fetch) 기반 API 계층이 Backend와 통신한다.
+3. 기능 모듈이 TanStack Query로 서버 상태를 요청한다.
+4. Axios 기반 API 계층이 Backend와 통신한다.
 5. 응답은 화면 모델로 필요한 만큼 변환되어 React 컴포넌트에 전달된다.
 6. 공간 데이터는 `features/map`이 제공하는 레이어를 통해 gis-convention에 따라 OpenLayers에 표시된다.
 7. 고도 프로파일 등은 의미와 단위를 유지한 채 ECharts로 시각화한다.

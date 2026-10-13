@@ -1,6 +1,6 @@
 # 산길 FE
 
-React, TypeScript, Vite 기반의 산길 프론트엔드입니다.
+React, TypeScript, Vite, Tailwind CSS 기반의 ORDA 프론트엔드입니다.
 
 ## 시작하기
 
@@ -36,6 +36,13 @@ pnpm build
 - `lib`: Axios, React Query 등 기술 설정
 - `shared`: 도메인 간 공유하는 상수, 훅, 타입
 - `styles`: 전역 스타일 및 디자인 토큰
+
+## 기술 스택
+
+- React, TypeScript, Vite, pnpm
+- React Router, TanStack Query, Axios
+- Tailwind CSS
+- OpenLayers, ECharts
 
 ## 색상 시스템
 

@@ -13,10 +13,9 @@ AI CLI가 이 저장소에서 작업할 때 따르는 규칙이다. 세부 규�
 | --------- | ------------------------------------------------------- |
 | 기본      | React 19, TypeScript, Vite (Next.js 아님)               |
 | 지도·차트 | OpenLayers, ECharts                                     |
-| 목표 스택 | pnpm, React Router, TanStack Query, Axios, Tailwind CSS |
+| 표준 스택 | pnpm, React Router, TanStack Query, Axios, Tailwind CSS |
 
-- 현재 코드는 목표 스택 일부(npm, fetch, 일반 CSS)로 되어 있을 수 있다. 실제 `package.json`과 코드를 먼저 확인한다.
-- 목표 스택으로의 전환, shadcn/ui 등 새 라이브러리 도입은 개발자 승인 후에만 한다.
+- 실제 `package.json`과 코드를 먼저 확인한다. shadcn/ui 등 새 라이브러리 도입은 개발자 승인 후에만 한다.
 
 ## 3. 구조
 
@@ -47,10 +46,10 @@ src/
 ## 4. 실행과 검증
 
 ```bash
-npm install          # pnpm 전환 후에는 pnpm install
-npm run dev          # http://localhost:5173, /api → localhost:8080 프록시
-npm run build        # 타입 검사 + 빌드
-npm run test:e2e     # Playwright (API 모킹)
+pnpm install
+pnpm dev             # http://localhost:5173, /api → localhost:8080 프록시
+pnpm build           # 타입 검사 + 빌드
+pnpm test:e2e        # Playwright (API 모킹)
 ```
 
 - 변경 범위에 맞게 빌드와 테스트를 실행한다. 타입 오류를 `any`나 단언으로 숨기지 않는다.
@@ -69,7 +68,7 @@ npm run test:e2e     # Playwright (API 모킹)
 
 아래 항목은 임의로 정하지 말고 개발자에게 묻는다. 결정되면 이 목록에서 지우고 5장 또는 `docs/`에 옮긴다.
 
-- 목표 스택(pnpm, React Router, TanStack Query, Axios, Tailwind) 전환 시점, shadcn/ui 사용 여부
+- shadcn/ui 사용 여부
 - 인증 방식과 로그인 화면 흐름
 - 경로 API의 요청·응답 필드 (현재 뼈대는 노드 ID 입력, 목표는 지도 좌표 선택)
 - 배경지도 전환 (현재 OSM, 목표 VWorld)
@@ -80,7 +79,7 @@ npm run test:e2e     # Playwright (API 모킹)
 1. 작업 전 관련 코드와 문서를 읽고 현재 구현을 기준으로 판단한다.
 2. 요청 범위에 필요한 최소 변경만 한다. 사용자의 기존 변경을 되돌리거나 덮어쓰지 않는다.
 3. 확인되지 않은 API, 환경 변수, 화면 정책, 파일 경로를 만들어 확정하지 않는다.
-4. 서버 상태는 TanStack Query(도입 전에는 기존 방식)로, 화면 상태는 가장 가까운 컴포넌트에 둔다. 파생 가능한 값을 상태로 중복 저장하지 않는다.
+4. 서버 상태는 TanStack Query로, 화면 상태는 가장 가까운 컴포넌트에 둔다. 파생 가능한 값을 상태로 중복 저장하지 않는다.
 5. 지도 이벤트 리스너, 오버레이, ECharts 인스턴스는 컴포넌트 해제 시 정리한다.
 6. 로딩, 빈 결과, 오류, 비활성 상태를 화면에 표시한다.
 
