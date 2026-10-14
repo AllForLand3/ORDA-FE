@@ -17,7 +17,8 @@ ORDA GIS 등산 코스 서비스의 Frontend는 지도에서 산과 등산 코�
 ```
 브라우저 (이 저장소) ── /api (REST, GeoJSON EPSG:4326) ──▶ Backend (Spring)
         │
-        ├── VWorld WMTS ── 배경지도
+        ├── OSM ── 현재 배경지도
+        ├── VWorld WMTS ── 전환 목표 배경지도
         └── GeoServer WMS (선택) ── 등산로·지형 고정 레이어
 ```
 
