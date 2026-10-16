@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+@import './fonts.css';
+@import './tokens.css';
+
+@theme inline {
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --color-orda-primary: var(--color-primary-default);
+  --color-orda-primary-hover: var(--color-primary-hover);
+  --color-orda-surface: var(--color-background-subtle);
+  --color-orda-text: var(--color-text-primary);
+  --color-orda-text-muted: var(--color-text-secondary);
+  --color-orda-border: var(--color-border-default);
+}
+
+:root {
+  font-family:
+    'Pretendard',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-background-default);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-background-default);
+  color: var(--color-text-primary);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

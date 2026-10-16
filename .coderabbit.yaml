@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# ORDA-FE 저장소 최상위에 배치합니다.
+language: ko-KR
+early_access: false
+tone_instructions: '한국어로 근거와 영향, 실행 가능한 수정안을 간결하게 설명하세요. 실제 결함을 우선하고 취향에 따른 리팩터링은 피하세요.'
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - '^dev$'
+      - '^main$'
+  path_instructions:
+    - path: '**/*'
+      instructions: |
+        ORDA는 GIS 기반 개인 맞춤형 등산 코스 탐색·분석 서비스다. React·TypeScript·Vite·pnpm, React Router, TanStack Query, Axios, Tailwind CSS, OpenLayers, ECharts를 기준으로 실제 저장소 설정을 확인한다.
+        Next.js 전환이나 동일 목적 라이브러리 교체를 근거 없이 권하지 않는다. API 필드·인증 방식·SRID·환경 변수는 추측하지 않는다.
+        문서 간 충돌은 근거와 함께 질문으로 제시한다. 폴더 예시를 강제하거나 불필요한 구조 변경을 요구하지 않는다.
+        변경된 코드의 정확성, 보안과 사용자 흐름을 우선 검토한다. 비밀정보 노출, 타입 검사 우회와 테스트 삭제·비활성화를 확인한다.
+        경험 수준은 프리셋이며 검증된 체력 예측이 아니다. 거리·추정시간·고도·원천 난이도와 출처·기준일·결측 의미를 보존한다.
+        전체 MVP가 한 PR에 없다는 이유로 지적하지 않는다. 리뷰 봇의 결과는 팀원의 최소 1명 리뷰를 대체하지 않는다.
+        API 초안과 테이블 정의서는 일부 충돌한다. 아래 계약 확인 지침을 적용하며 미합의 모델을 구현에 강제하지 않는다.
+    - path: '**/*'
+      instructions: |
+        자료 정합성: 테이블 정의서는 course 형상 덮어쓰기·rev_no 증가 모델, API 초안은 불변 course_revision 모델이다. 실제 승인된 API와 docs/contract-decisions.md가 있으면 이를 확인한다.
+        미확정 courseRevId·네트워크 버전·비교 스냅샷·saved_course 모델을 FE에서 만들어 확정하지 않는다. 관련 변경에 영향이 있을 때 근거를 들어 질문한다.
+        생성 코드 IMPORT/DRAW/CANDIDATE_COPY와 FROM_CANDIDATE/FROM_ROUTE_CANDIDATE, NORMAL/MODERATE·EXPERT, DONE/COMPLETED, 시설 유형 범위가 다르다. DB 코드와 응답 코드를 무조건 동일하게 만들지 말고 승인된 DTO와 명시적 변환을 확인한다.
+        사용자 GPX 입력은 기존 MVP에서 제외되지만 API D-01에는 포함된다. 합의 전까지 업로드 형식 추가·제거를 강제하지 않는다.
+        비로그인 후보 저장 권한, 로그인·Refresh Token 정책과 코스 공개 범위는 미확정이다. UI 추측으로 인증 계약을 바꾸지 않는다.
+    - path: 'src/**/*.{ts,tsx}'
+      instructions: |
+        API 기준 경로는 /api다. Axios baseURL과 요청 경로 조합으로 /api가 중복되거나 누락되지 않는지 확인한다.
+        성공 응답은 직접 자원·작업 상태이며 목록은 items/page/size/totalElements/totalPages다. 존재하지 않는 data 래퍼를 가정하지 않는다.
+        page는 0부터, size는 기본 20·최대 100이며 정렬은 API별 허용 필드만 사용한다. bigint ID는 문자열 권장 계약으로 불필요한 Number/parseInt 변환에 따른 정밀도 손실을 확인한다.
+        날짜·시간은 ISO-8601 UTC를 보존한다. error.code/message/details/traceId와 HTTP 상태를 사용해 400 입력, 401 인증, 403 권한, 404 없음, 409 충돌, 422 공간·도메인 오류, 429 제한을 구분한다.
+        Idempotency-Key를 사용하는 탐색·가져오기 POST의 재전송은 같은 작업 키를 유지하고 새 의도에는 새 키를 사용한다. 지원이 선택적이므로 무조건 필수로 만들지 않는다.
+        요청자별 query cache가 로그아웃·사용자 변경 후 섞이지 않게 한다. query key에 승인된 courseRevId 또는 courseId+revNo와 산·필터·반경·분석 ID를 필요한 범위로 반영한다.
+    - path: 'src/**/*.{ts,tsx}'
+      instructions: |
+        공간 계약: API GeoJSON은 EPSG:4326, [longitude, latitude], crs 객체 없음이다. OpenLayers View는 EPSG:3857이며 서버 저장 EPSG:5179와 구분한다.
+        read/write 변환 경계에서 dataProjection/featureProjection을 명시한다. 지도 편집의 3857 좌표를 그대로 API에 보내거나 이미 4326인 결과를 중복 변환하지 않는다.
+        LineString 코스와 Point 지점·시설, MultiPolygon 서비스 영역을 올바르게 처리한다. 표시 거리·고도 단위는 m, 예상시간은 min이며 경사 단위는 별도 계약을 확인한다.
+        숫자 0과 null을 구분한다. elevationM:null은 결측으로 표시하며 차트가 정상 고도처럼 0으로 대체하거나 결측 구간을 무조건 이어 그리지 않게 한다.
+    - path: 'src/features/{course,route}/**'
+      instructions: |
+        PATCH /api/courses/{courseId}는 courseName/memo 수정이다. 형상 변경은 revision 모델이 승인되면 POST /api/courses/{courseId}/revisions의 geometry/expectedRevNo를 사용한다.
+        409 버전 충돌은 최신 상태 확인·재편집 안내로 처리하고 사용자 편집을 조용히 덮어쓰거나 자동 재시도하지 않는다. metadata 변경에 분석을 불필요하게 폐기하지 않는다.
+        POST /api/routing-runs의 mountainId/startPlaceId/endPlaceId는 주요지점 ID다. nodeId나 화면 클릭 좌표를 같은 필드에 넣지 않는다.
+        배열 조건 모델이 승인되면 산의 route-conditions에서 활성 정의·타입·단위를 읽고 condCd/numVal/textVal/viaPlaceId를 전송한다. 문서 예시 조건을 모든 산의 고정 옵션으로 가정하지 않는다.
+        maxCandidates는 1~3이며 동일 후보 중복 표시를 피한다. conditionMet=false를 조건 충족처럼 설명하지 않고 stairSpotCount를 계단 개수로 표시하지 않는다.
+        경로 없음·네트워크 없음·지점 연결 실패를 구분해 보여준다. 취소된 요청이나 이전 산·조건의 늦은 결과로 최신 지도를 덮어쓰지 않는다.
+        POST /api/route-candidates/{candidateId}/course는 새 코스 복사, POST /api/me/saved-courses는 기존 코스 참조 보관이다. 보관 해제가 원본 코스 삭제를 호출하지 않게 한다.
+        비교 API 모델이 승인되면 candidateIds+courseRevIds는 1~3개이고 추천 대상은 항목 중 하나다. 저장한 비교 지표와 dataVersions를 최신 지표로 조용히 대체하지 않는다.
+        내보내기는 승인된 버전을 대상으로 GeoJSON/GPX를 요청한다. 편집중 임시 형상·이전 분석과 저장된 버전의 출력 결과가 섞이지 않게 한다.
+    - path: 'src/features/analysis/**'
+      instructions: |
+        revision 모델의 /api/course-revisions/{courseRevId}/facilities, /terrain, /elevation-profile, /lineage 계약은 승인 여부를 확인한 뒤 적용한다.
+        radiusM는 기본 300·1~2000m다. type·반경 변경 시 캐시와 지도·countsByType을 함께 갱신한다. 시설 거리는 코스 선형의 최소거리이며 시작점 거리처럼 설명하지 않는다.
+        REQUESTED/RUNNING의 빈 샘플을 완료된 빈 분석으로 처리하지 않는다. COMPLETED와 FAILED를 구분하며 폴링은 완료·실패·해제 시 종료하고 요청 오류 때 무한 반복하지 않는다.
+        DB DONE과 API COMPLETED 변환은 API 계층 계약에 따른다. fallbackAnalysisId가 있으면 이전 결과임을 표시하고 다른 코스 버전의 성공 결과를 현재 분석으로 붙이지 않는다.
+        elevation-profile의 maxSamples 기본값은 2000이며 상한은 미확정이다. seq/distanceM/elevationM 표본의 순서·누락·다운샘플링과 차트-지도 위치 대응을 확인한다.
+        lineage의 데이터셋·기준일·규칙·DEM 근거를 제공하되 내부 file_path와 민감한 사용자·검수자 정보를 노출하지 않는다.
+    - path: 'src/**/*.{ts,tsx}'
+      instructions: |
+        함수 컴포넌트와 훅의 호출 규칙, 의존성, stale closure와 비동기 응답 경쟁을 확인한다. 렌더링 중 부작용을 만들지 않는다.
+        파생값 중복 상태, 불필요한 any·타입 단언·non-null 단언을 확인한다. 성능 최적화는 근거가 있을 때 제안한다.
+        app/pages는 조합하고 기능 로직은 features에 둔다. 기능 간 직접 import를 피하고 공통 자원은 공용 모듈로 분리한다. 실제 코드 구조를 우선한다.
+        서버 상태는 TanStack Query로 관리하고 query key에 범위·파라미터를 반영한다. mutation 뒤 필요한 캐시를 갱신·무효화한다.
+        Axios 공통 설정을 일관되게 사용하고 비멱등 요청의 자동 재시도를 피한다. API 타입과 null·빈 배열·선택 필드 의미는 실제 계약을 따른다.
+        로딩·빈 결과·오류·요청 취소·권한 부족을 구분한다. UI에서 버튼을 숨기는 것만으로 서버 인가를 보장하지 않는다.
+        Vite 환경 변수는 번들에 공개될 수 있으므로 서버 비밀정보를 넣지 않는다. 토큰·개인정보를 로그에 남기지 않는다.
+    - path: 'src/**/*.tsx'
+      instructions: |
+        의미 있는 HTML, label, 키보드 조작, focus, 대체 텍스트와 로딩·오류·비활성 상태를 확인한다.
+        검색·필터 등 공유할 화면 상태는 필요할 때 URL로 복원 가능하게 한다. 컴포넌트 분리는 책임을 기준으로 하고 취향에 따른 분할을 요구하지 않는다.
+    - path: 'src/features/map/**'
+      instructions: |
+        OpenLayers 지도·레이어·interaction·overlay·이벤트의 생성과 해제를 React 생명주기에 맞춘다. 중복 등록과 오래된 listener를 확인한다.
+        GeoJSON 읽기·쓰기의 dataProjection과 featureProjection, View 투영, 축 순서와 단위를 명시한다. 원본 Geometry를 표시 목적으로 조용히 변경하지 않는다.
+        원본·선택·강조·임시 편집 상태를 구분하고 대량 Feature의 요청 범위와 렌더링 비용을 검토한다.
+    - path: 'src/features/{course,route,analysis}/**'
+      instructions: |
+        관련 변경에 한해 WGS84 GeoJSON 단일 LineString 입력 계약, 형상·좌표 검증, 파일 크기·좌표 수 제한과 오류 표시를 확인한다.
+        사용자 GPX 입력은 MVP와 API 초안 간 범위 충돌이므로 합의를 확인한다. 원천 SHP와 임의 래스터 업로드를 사용자 입력 기능으로 추측하지 않는다.
+        출발·도착·스냅점, 경로 방향과 표본 순서를 보존한다. 경로 없음·단절·결측을 가짜 Geometry나 0으로 보완하지 않는다.
+        최대 3개 후보 비교, 형상 수정 후 이전 분석 무효화, 네트워크 밖 자유 편집 코스 표시를 확인한다.
+        지도·비교표·저장 코스·GeoJSON/GPX 출력의 코스 버전 일치를 확인한다. ECharts의 resize·dispose와 지도 연결 이벤트를 정리한다.
+        고도·거리·시간·경사 단위와 산정 근거를 표시하고 시설 중복 집계·불확실성·조회 반경의 의미를 보존한다.
+    - path: '**/*.{test,spec}.{ts,tsx}'
+      instructions: |
+        구현 세부나 스냅샷만이 아니라 사용자 동작과 계약을 검증한다. 로딩·빈 결과·오류·재시도, API 매핑, 좌표 변환과 핵심 흐름의 회귀를 확인한다.
+        통신은 테스트 경계에서 통제하고 시간·난수·화면 크기 등 변동 요소를 제어한다. 실제 설정되지 않은 테스트 도구를 강제하지 않는다.
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - 'AGENTS.md'
+      - 'docs/*convention.md'
+      - 'docs/architecture.md'
+      - 'docs/api-spec*.md'
+      - 'docs/table-definition*.md'
+      - 'docs/contract-decisions.md'
+chat:
+  auto_reply: true
