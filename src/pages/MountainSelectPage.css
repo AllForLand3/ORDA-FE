@@ -1,0 +1,27 @@
+.orda-map-layout:has(.mountain-explorer-header) .orda-responsive-panel__content {
+  padding-block-start: 0;
+}
+
+@media (max-width: 47.999rem) {
+  .orda-map-layout:has(.mountain-explorer-header) {
+    --orda-bottom-navigation-height: 5.25rem;
+  }
+
+  .orda-map-layout:has(.mountain-explorer-header) .orda-map-layout__header {
+    padding-inline: 1.125rem;
+  }
+
+  .orda-map-layout:has(.mountain-explorer-header) .orda-map-layout__controls {
+    inset-block-start: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.5rem);
+  }
+
+  .orda-map-layout:has(.mountain-explorer-header) .orda-responsive-panel__surface {
+    max-height: min(22.375rem, calc(100% - 10.25rem - var(--orda-bottom-navigation-height)));
+  }
+}
+
+@media (min-width: 48rem) {
+  .orda-map-layout:has(.mountain-explorer-header) .orda-map-layout__header {
+    padding-inline: clamp(1.5rem, 4vw, 3.5rem);
+  }
+}
