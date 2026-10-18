@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
 
@@ -16,40 +16,20 @@ import contourMiddle from '../assets/login-contour-middle.svg';
 import contourTop from '../assets/login-contour-top.svg';
 import '../auth.css';
 
-function getEmailError(value: string) {
-  if (!value.trim()) {
-    return '이메일을 입력해주세요.';
-  }
-
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
-    ? ''
-    : '올바른 이메일 주소를 입력해주세요.';
-}
-
 export function LoginScreen() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [notice, setNotice] = useState('');
-  const emailError = submitted ? getEmailError(email) : '';
-  const passwordError = submitted && !password ? '비밀번호를 입력해주세요.' : '';
   const backgroundStyle: CSSProperties = {
     backgroundImage: `url("${loginBackground}")`,
   };
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
-    setNotice('');
-
-    if (getEmailError(email) || !password) {
-      document.getElementById(getEmailError(email) ? 'login-email' : 'login-password')?.focus();
-      return;
-    }
-
-    setNotice('인증 서버가 연결되지 않아 로그인되지 않았습니다.');
+    navigate('/mountains');
   }
 
   function showUnavailableAction(action: string) {
@@ -90,7 +70,6 @@ export function LoginScreen() {
           <form className="auth-login__form" noValidate onSubmit={submit}>
             <TextField
               autoComplete="email"
-              error={emailError || undefined}
               hideLabel
               id="login-email"
               label="이메일"
@@ -118,7 +97,6 @@ export function LoginScreen() {
                   {passwordVisible ? '숨기기' : '표시'}
                 </button>
               }
-              error={passwordError || undefined}
               hideLabel
               id="login-password"
               label="비밀번호"
