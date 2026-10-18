@@ -169,7 +169,7 @@ export function LoginScreen() {
             계정이 없으신가요? <Link to="/signup">회원가입하기</Link>
           </p>
           <p aria-live="polite" className="auth-notice" role="status">
-            {notice}
+            {notice || '시연용 로그인입니다. 입력값 검증·인증 없이 산 선택 화면으로 이동합니다.'}
           </p>
         </div>
       </section>

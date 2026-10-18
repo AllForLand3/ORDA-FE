@@ -14,6 +14,14 @@ test('모바일 홈은 Figma 카피와 내부 로그인·가입 링크를 제공
   expect(await loginLink.boundingBox()).toMatchObject({ x: 21, y: 742, width: 398, height: 63 });
   await expect(page.getByRole('link', { name: '회원가입하기' })).toHaveAttribute('href', '/signup');
   await expect(page.getByText('9:41')).toHaveCount(0);
+  await loginLink.click();
+  await expect(page).toHaveURL('/login');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '로그인', exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL('/');
+  await page.getByRole('link', { name: '회원가입하기' }).click();
+  await expect(page).toHaveURL('/signup');
 });
 
 test('모바일 홈은 360·390·440px에서 가로 넘침 없이 CTA를 맞춘다', async ({ page }) => {

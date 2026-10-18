@@ -1,5 +1,8 @@
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
+import beginnerIcon from '@/assets/route/level-beginner.svg';
+import intermediateIcon from '@/assets/route/level-intermediate.svg';
+import experiencedIcon from '@/assets/route/level-experienced.svg';
 
 import { useRouteSetupState } from '../hooks/useRouteSetupState';
 import {
@@ -17,6 +20,11 @@ export interface RouteSetupPanelProps {
 }
 
 const STEP_NUMBER = { locations: 1, difficulty: 2, conditions: 3 } as const;
+const LEVEL_ICONS = {
+  beginner: beginnerIcon,
+  intermediate: intermediateIcon,
+  experienced: experiencedIcon,
+};
 
 function getRoleLabel(role: RoutePointRole) {
   return role === 'origin' ? '출발지' : '도착지';
@@ -253,9 +261,12 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                   type="radio"
                   value={item.id}
                 />
-                <span aria-hidden="true" className="route-setup-difficulty__mark">
-                  {item.id === 'beginner' ? '◕' : item.id === 'intermediate' ? '⌁' : '♛'}
-                </span>
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className="route-setup-difficulty__mark"
+                  src={LEVEL_ICONS[item.id]}
+                />
                 <span className="route-setup-difficulty__copy">
                   <strong>{item.label}</strong>
                   <small>{item.description}</small>

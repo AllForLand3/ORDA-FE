@@ -55,8 +55,8 @@ export function RouteResultsPage() {
               <Link className="route-results-header__my-courses" to="/my-courses">
                 내 코스
               </Link>
-              <Link className="route-results-header__login" to="/login">
-                로그인
+              <Link className="route-results-header__login" to="/my-page">
+                마이페이지
               </Link>
             </div>
             <div className="route-results-header__context">

@@ -16,14 +16,10 @@ export function MountainBottomNavigation() {
         <img alt="" aria-hidden="true" src={mountainIcon} />
         <span>산 탐색</span>
       </Link>
-      <span
-        aria-disabled="true"
-        aria-label="맞춤 경로, 준비 중"
-        className="mountain-bottom-navigation__item is-unavailable"
-      >
+      <Link className="mountain-bottom-navigation__item" to="/routes/setup">
         <img alt="" aria-hidden="true" src={routeIcon} />
         <span>맞춤 경로</span>
-      </span>
+      </Link>
       <Link className="mountain-bottom-navigation__item" to="/my-courses">
         <img alt="" aria-hidden="true" src={bookmarkIcon} />
         <span>내 코스</span>

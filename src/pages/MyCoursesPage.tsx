@@ -17,8 +17,8 @@ export function MyCoursesPage() {
             <img alt="" src={logoMark} />
           </Link>
           <MyCoursesNavigation />
-          <Link className="my-courses-site-header__login" to="/login">
-            로그인
+          <Link className="my-courses-site-header__login" to="/my-page">
+            마이페이지
           </Link>
         </div>
       </header>

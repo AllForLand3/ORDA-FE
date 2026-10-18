@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 
 import bookmarkIcon from '@/assets/course/bookmark-active.svg';
+import inactiveBookmark from '@/assets/course/bookmark-nav.svg';
 import mountainIcon from '@/assets/route/mountain-navigation.svg';
 import routeIcon from '@/assets/course/route-nav.svg';
 
-export function MyCoursesNavigation() {
+export function MyCoursesNavigation({ current = true }: { current?: boolean }) {
   return (
     <nav aria-label="내 코스 내비게이션" className="my-courses-navigation">
       <Link to="/mountains">
@@ -15,8 +16,8 @@ export function MyCoursesNavigation() {
         <img alt="" aria-hidden="true" src={routeIcon} />
         <span>맞춤 경로</span>
       </Link>
-      <Link aria-current="page" to="/my-courses">
-        <img alt="" aria-hidden="true" src={bookmarkIcon} />
+      <Link aria-current={current ? 'page' : undefined} to="/my-courses">
+        <img alt="" aria-hidden="true" src={current ? bookmarkIcon : inactiveBookmark} />
         <span>내 코스</span>
       </Link>
     </nav>

@@ -331,20 +331,9 @@
 }
 
 .route-setup-difficulty__mark {
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.8125rem;
+  height: 2.8125rem;
   flex: 0 0 auto;
-  place-items: center;
-  border-radius: 0.625rem;
-  background: var(--color-neutral-50);
-  color: var(--color-neutral-700);
-  font-size: 1.25rem;
-}
-
-.route-setup-difficulty--selected .route-setup-difficulty__mark {
-  background: var(--color-primary-100);
-  color: var(--color-primary-700);
 }
 
 .route-setup-difficulty__copy {
