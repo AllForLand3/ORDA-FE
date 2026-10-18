@@ -206,3 +206,12 @@
 .route-results-page {
   --route-results-map-height: clamp(14rem, 36.2dvh, 21.625rem);
 }
+
+/* 분석·시설의 긴 콘텐츠는 패널 안에서 스크롤한다. 확장 viewport에서는 높이를 활용한다. */
+@media (max-width: 47.999rem) {
+  .route-results-page--insights
+    .orda-responsive-panel[data-panel-size='expanded']
+    .orda-responsive-panel__surface {
+    height: calc(100% - var(--route-results-map-height) - var(--orda-bottom-navigation-height));
+  }
+}

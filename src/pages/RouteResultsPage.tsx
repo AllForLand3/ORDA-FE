@@ -6,10 +6,12 @@ import bookmarkIcon from '@/assets/route/bookmark-navigation.svg';
 import mountainIcon from '@/assets/route/mountain-navigation.svg';
 import routeIcon from '@/assets/route/route-navigation.svg';
 import { MapPageLayout } from '@/components/layout';
+import { NearbyFacilitiesPanel, TerrainAnalysisPanel } from '@/features/analysis';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import { RESULT_PREVIEW_STATES, RouteResultsPanel, useRouteResultsState } from '@/features/route';
 import '@/features/route/route-results.css';
+import '@/features/analysis/analysis.css';
 
 import './route-results.css';
 
@@ -17,9 +19,12 @@ export function RouteResultsPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [controller, setController] = useState<MapController | null>(null);
   const state = useRouteResultsState();
+  const candidateName = state.previewState === 'ready' ? state.selectedCandidate.name : null;
 
   return (
-    <div className="route-results-page">
+    <div
+      className={`route-results-page${state.tab !== 'compare' ? ' route-results-page--insights' : ''}`}
+    >
       <MapPageLayout
         bottomNavigation={
           <div className="route-results-navigation">
@@ -78,7 +83,27 @@ export function RouteResultsPage() {
         }
         mapControls={<MapControls controller={controller} />}
         mapLabel="관악산 배경 지도, 예시 코스의 경로 선형은 제공되지 않음"
-        panel={<RouteResultsPanel state={state} />}
+        panel={
+          <RouteResultsPanel
+            state={state}
+            terrainContent={
+              state.tab === 'terrain' ? (
+                <TerrainAnalysisPanel
+                  candidateName={candidateName}
+                  key={state.selectedCandidate.id}
+                />
+              ) : null
+            }
+            facilitiesContent={
+              state.tab === 'facilities' ? (
+                <NearbyFacilitiesPanel
+                  candidateName={candidateName}
+                  key={state.selectedCandidate.id}
+                />
+              ) : null
+            }
+          />
+        }
         panelLabel="예시 코스 비교 결과"
         panelSize="expanded"
       />

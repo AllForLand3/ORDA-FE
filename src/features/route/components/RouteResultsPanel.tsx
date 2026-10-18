@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { Button, Dialog, Tabs } from '@/components/ui';
 
@@ -10,9 +11,15 @@ import { RouteEditDialog } from './RouteEditDialog';
 
 interface RouteResultsPanelProps {
   state: ReturnType<typeof useRouteResultsState>;
+  terrainContent: ReactNode;
+  facilitiesContent: ReactNode;
 }
 
-export function RouteResultsPanel({ state }: RouteResultsPanelProps) {
+export function RouteResultsPanel({
+  state,
+  terrainContent,
+  facilitiesContent,
+}: RouteResultsPanelProps) {
   const [editingCandidate, setEditingCandidate] = useState<MockRouteCandidate | null>(null);
   const [exportingCandidate, setExportingCandidate] = useState<MockRouteCandidate | null>(null);
   const comparison = (
@@ -75,28 +82,12 @@ export function RouteResultsPanel({ state }: RouteResultsPanelProps) {
           {
             value: 'terrain',
             label: '지형 분석',
-            content: (
-              <div className="route-results-state" role="status">
-                <strong>분석 미제공</strong>
-                <p>
-                  실제 고도·경사 자료가 없어 분석 결과를 표시할 수 없어요. 코스 카드의 숫자는 UI
-                  예시입니다.
-                </p>
-              </div>
-            ),
+            content: terrainContent,
           },
           {
             value: 'facilities',
             label: '주변 시설',
-            content: (
-              <div className="route-results-state" role="status">
-                <strong>시설 정보 미제공</strong>
-                <p>
-                  실제 시설 위치와 목록은 연결되지 않았어요. 예시 시설 수로 실제 시설의 유무를
-                  판단할 수 없습니다.
-                </p>
-              </div>
-            ),
+            content: facilitiesContent,
           },
         ]}
         onValueChange={state.setTab}
