@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -54,9 +55,12 @@ export function useRouteSetupState() {
   const stepParam = params.get('step');
   const step: RouteSetupStep =
     stepParam === 'difficulty' || stepParam === 'conditions' ? stepParam : 'locations';
-  const origin = getPlace(params.get('origin'));
-  const destination = getPlace(params.get('destination'));
-  const pendingPlace = getPlace(params.get('pending'));
+  const originId = params.get('origin');
+  const destinationId = params.get('destination');
+  const pendingId = params.get('pending');
+  const origin = useMemo(() => getPlace(originId), [originId]);
+  const destination = useMemo(() => getPlace(destinationId), [destinationId]);
+  const pendingPlace = useMemo(() => getPlace(pendingId), [pendingId]);
   const searchFor = params.get('searchFor');
   const searchRole: RoutePointRole | null =
     searchFor === 'origin' || searchFor === 'destination' ? searchFor : null;
