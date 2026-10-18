@@ -52,9 +52,8 @@ export function RouteCandidateCard({
         <span className="route-candidate__heading">
           <strong>{candidate.name}</strong>
           <span className="route-candidate__tags">
-            <Badge variant="info">추천</Badge>
-            <Badge variant="primary">초중급</Badge>
-            <Badge variant="primary">조망 좋음</Badge>
+            <Badge variant="info">예시</Badge>
+            <Badge variant="primary">{candidate.difficultyLabel}</Badge>
           </span>
         </span>
         <img alt="" aria-hidden="true" src={selected ? selectedIcon : unselectedIcon} />
