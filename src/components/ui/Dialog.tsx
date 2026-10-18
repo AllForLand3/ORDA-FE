@@ -2,6 +2,7 @@ import {
   useEffect,
   useId,
   useRef,
+  type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
   type SyntheticEvent,
@@ -34,10 +35,41 @@ export function Dialog({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
+    const previouslyFocused = document.activeElement;
 
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+
+    return () => {
+      if (dialog.open) dialog.close();
+      if (open && previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      }
+    };
   }, [open]);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
+    if (event.key !== 'Tab') return;
+    const dialog = event.currentTarget;
+    const focusable = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), a[href], input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"]):not(:disabled)',
+      ),
+    ).filter((element) => element.getClientRects().length > 0 && element.tabIndex >= 0);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (!first || !last) {
+      event.preventDefault();
+      dialog.focus();
+    } else if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault();
@@ -55,7 +87,9 @@ export function Dialog({
       className="orda-dialog"
       onCancel={handleCancel}
       onClick={handleBackdropClick}
+      onKeyDown={handleKeyDown}
       ref={dialogRef}
+      tabIndex={-1}
     >
       <div className="orda-dialog__surface">
         <header className="orda-dialog__header">

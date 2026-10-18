@@ -9,6 +9,19 @@
   display: none;
 }
 
+.route-setup-demo-entry {
+  margin-top: 0.5rem;
+  color: var(--color-text-link);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.route-setup-demo-entry a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+}
+
 @media (min-width: 48rem) {
   .route-setup-page .route-setup-desktop-header {
     display: flex;

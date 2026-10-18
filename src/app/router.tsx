@@ -6,6 +6,7 @@ import { MountainSelectPage } from '@/pages/MountainSelectPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { RouteSetupPage } from '@/pages/RouteSetupPage';
+import { RouteResultsPage } from '@/pages/RouteResultsPage';
 
 export const router = createBrowserRouter([
   {
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
   {
     path: '/routes/setup',
     element: <RouteSetupPage />,
+  },
+  {
+    path: '/routes/results',
+    element: <RouteResultsPage />,
   },
   {
     path: '*',

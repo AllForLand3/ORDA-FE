@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import { MapControls, OpenLayersMap } from '@/features/map';
@@ -15,6 +15,7 @@ import '@/features/route/route-setup.css';
 import './route-setup.css';
 
 export function RouteSetupPage() {
+  const location = useLocation();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const state = useRouteSetupState();
@@ -59,7 +60,18 @@ export function RouteSetupPage() {
         mapControls={<MapControls controller={mapController} />}
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
         panel={<RouteSetupPanel state={state} />}
-        panelFooter={<RouteSetupFooter state={state} />}
+        panelFooter={
+          <>
+            <RouteSetupFooter state={state} />
+            {state.step === 'conditions' ? (
+              <div className="route-setup-demo-entry">
+                <Link to={{ pathname: '/routes/results', search: location.search }}>
+                  예시 코스 비교 보기
+                </Link>
+              </div>
+            ) : null}
+          </>
+        }
         panelLabel="코스 탐색 설정"
         panelSize="content"
       />
