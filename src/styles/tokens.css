@@ -23,27 +23,43 @@
   --color-info-500: #3d7fbf;
 
   /* Semantic color */
-  --color-text-primary: var(--color-neutral-900);
-  --color-text-secondary: var(--color-neutral-700);
+  --color-text-primary: var(--color-primary-900);
+  --color-text-secondary: var(--color-neutral-500);
   --color-text-tertiary: var(--color-neutral-500);
+  --color-text-disabled: var(--color-neutral-400);
   --color-text-inverse: var(--color-neutral-0);
   --color-text-link: var(--color-primary-700);
 
-  --color-background-default: var(--color-neutral-0);
+  --color-background-default: var(--color-neutral-25);
+  --color-background-surface: var(--color-neutral-0);
   --color-background-subtle: var(--color-neutral-25);
   --color-background-muted: var(--color-neutral-50);
   --color-background-brand: var(--color-primary-500);
 
   --color-border-default: var(--color-neutral-200);
   --color-border-strong: var(--color-neutral-400);
-  --color-border-focus: var(--color-primary-500);
+  --color-border-active: var(--color-primary-500);
+  --color-border-focus: var(--color-border-active);
+
+  --color-action-primary: var(--color-primary-500);
+  --color-status-warning: var(--color-warning-500);
+  --color-status-warning-subtle: var(--color-warning-50);
+  --color-status-error: var(--color-error-500);
+  --color-status-error-subtle: var(--color-error-50);
+  --color-status-info: var(--color-info-500);
+  --color-status-info-subtle: var(--color-info-50);
 
   --color-icon-default: var(--color-neutral-700);
   --color-icon-muted: var(--color-neutral-500);
   --color-icon-brand: var(--color-primary-500);
 
-  --color-primary-default: var(--color-primary-500);
+  --color-primary-default: var(--color-action-primary);
   --color-primary-hover: var(--color-primary-700);
   --color-primary-pressed: var(--color-primary-900);
   --color-primary-disabled: var(--color-primary-100);
+
+  /* Reusable values shown in the Figma component and color system */
+  --radius-input: 12px;
+  --radius-search: 18px;
+  --shadow-center: 0 0 15px 0 rgb(51 53 61 / 50%);
 }
