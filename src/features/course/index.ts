@@ -9,3 +9,8 @@ export type {
 export { useMountainMarkerLayer } from './hooks/useMountainMarkerLayer';
 export { DEFAULT_MOUNTAIN_ID, MOUNTAIN_MOCKS } from './mocks/mountains';
 export type { MountainDifficulty, MountainRegion, MountainSummary } from './mocks/mountains';
+export { MyCoursesNavigation } from './components/MyCoursesNavigation';
+export { MyCoursesPanel } from './components/MyCoursesPanel';
+export { CourseDetailPanel } from './components/CourseDetailPanel';
+export { useMyCoursesState } from './hooks/useMyCoursesState';
+export { useCourseDetailState } from './hooks/useCourseDetailState';

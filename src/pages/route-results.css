@@ -70,6 +70,10 @@
   margin-left: auto;
 }
 
+.route-results-header__my-courses {
+  display: none;
+}
+
 .route-results-header__location {
   display: inline-flex;
   min-height: 2.375rem;
@@ -179,6 +183,18 @@
 
   .route-results-header__login {
     margin-left: 0;
+  }
+
+  .route-results-header__my-courses {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding-inline: 0.5rem;
+    color: var(--color-text-link);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
   }
 
   .route-results-header__note {

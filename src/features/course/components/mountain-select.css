@@ -7,6 +7,10 @@
   margin-inline: auto;
 }
 
+.mountain-explorer-header__my-courses {
+  display: none;
+}
+
 .mountain-explorer-header__brand,
 .mountain-explorer-header__account {
   display: flex;
@@ -480,9 +484,21 @@
 
 @media (min-width: 48rem) {
   .mountain-explorer-header {
-    grid-template-columns: auto minmax(16rem, 30rem) auto;
+    grid-template-columns: auto minmax(10rem, 1fr) auto auto;
     justify-content: space-between;
     gap: 1rem;
+  }
+
+  .mountain-explorer-header__my-courses {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding-inline: 0.5rem;
+    color: var(--color-text-link);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
   }
 
   .mountain-explorer-header__brand {

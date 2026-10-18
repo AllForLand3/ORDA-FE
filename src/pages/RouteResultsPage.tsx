@@ -36,10 +36,10 @@ export function RouteResultsPage() {
               <img alt="" aria-hidden="true" src={routeIcon} />
               <span>맞춤 경로</span>
             </Link>
-            <span aria-disabled="true" aria-label="내 코스, 준비 중">
+            <Link to="/my-courses">
               <img alt="" aria-hidden="true" src={bookmarkIcon} />
               <span>내 코스</span>
-            </span>
+            </Link>
           </div>
         }
         bottomNavigationLabel="코스 결과 내비게이션"
@@ -51,6 +51,9 @@ export function RouteResultsPage() {
               </Link>
               <Link className="route-results-header__back" to={state.setupHref}>
                 ← 조건 변경
+              </Link>
+              <Link className="route-results-header__my-courses" to="/my-courses">
+                내 코스
               </Link>
               <Link className="route-results-header__login" to="/login">
                 로그인

@@ -24,14 +24,10 @@ export function MountainBottomNavigation() {
         <img alt="" aria-hidden="true" src={routeIcon} />
         <span>맞춤 경로</span>
       </span>
-      <span
-        aria-disabled="true"
-        aria-label="내 코스, 준비 중"
-        className="mountain-bottom-navigation__item is-unavailable"
-      >
+      <Link className="mountain-bottom-navigation__item" to="/my-courses">
         <img alt="" aria-hidden="true" src={bookmarkIcon} />
         <span>내 코스</span>
-      </span>
+      </Link>
     </div>
   );
 }

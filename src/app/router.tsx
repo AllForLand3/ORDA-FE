@@ -7,6 +7,8 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { RouteSetupPage } from '@/pages/RouteSetupPage';
 import { RouteResultsPage } from '@/pages/RouteResultsPage';
+import { MyCoursesPage } from '@/pages/MyCoursesPage';
+import { CourseDetailPage } from '@/pages/CourseDetailPage';
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +34,14 @@ export const router = createBrowserRouter([
   {
     path: '/routes/results',
     element: <RouteResultsPage />,
+  },
+  {
+    path: '/my-courses',
+    element: <MyCoursesPage />,
+  },
+  {
+    path: '/my-courses/:courseId',
+    element: <CourseDetailPage />,
   },
   {
     path: '*',
