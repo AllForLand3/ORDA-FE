@@ -13,6 +13,7 @@ export interface MapPageLayoutProps {
   mapControls?: ReactNode;
   mapLabel?: string;
   onPanelOpenChange?: (isOpen: boolean) => void;
+  mobilePanelResizable?: boolean;
   panel: ReactNode;
   panelFooter?: ReactNode;
   panelLabel?: string;
@@ -30,6 +31,7 @@ export function MapPageLayout({
   mapControls,
   mapLabel = '지도 영역',
   onPanelOpenChange,
+  mobilePanelResizable = false,
   panel,
   panelFooter,
   panelLabel = '지도 작업 패널',
@@ -61,6 +63,7 @@ export function MapPageLayout({
           isOpen={isPanelOpen}
           label={panelLabel}
           onOpenChange={handlePanelOpenChange}
+          mobileResizable={mobilePanelResizable}
           size={panelSize}
         >
           {panel}

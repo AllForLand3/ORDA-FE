@@ -9,6 +9,54 @@
   display: none;
 }
 
+.route-setup-mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.route-setup-mobile-header strong {
+  border-radius: 9999px;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-background-surface);
+  font-size: 0.8125rem;
+}
+
+.route-setup-mobile-back {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: 9999px;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-background-surface);
+  color: var(--color-text-link);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 47.999rem) {
+  .route-setup-page .orda-map-layout__controls {
+    inset-block-start: max(0.75rem, env(safe-area-inset-top, 0px));
+  }
+
+  .route-setup-page .ol-attribution {
+    inset-block-start: 7.25rem;
+    inset-block-end: auto;
+    inset-inline-start: auto;
+    inset-inline-end: 0.5rem;
+    max-width: calc(100% - 9rem);
+  }
+
+  .route-setup-page .ol-zoom {
+    inset-block-start: 7.25rem;
+    inset-block-end: auto;
+    flex-direction: row;
+  }
+}
+
 .route-setup-demo-entry {
   margin-top: 0.5rem;
   color: var(--color-text-link);
@@ -23,6 +71,9 @@
 }
 
 @media (min-width: 48rem) {
+  .route-setup-mobile-header {
+    display: none;
+  }
   .route-setup-page .route-setup-desktop-header {
     display: flex;
   }

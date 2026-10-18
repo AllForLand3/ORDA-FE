@@ -200,6 +200,68 @@
   scrollbar-gutter: stable;
 }
 
+.orda-responsive-panel__resize-bar {
+  position: relative;
+  display: flex;
+  flex: 0 0 2.75rem;
+  justify-content: flex-end;
+  pointer-events: auto;
+}
+
+.orda-responsive-panel__resize-handle {
+  position: absolute;
+  inset: 0 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.orda-responsive-panel__resize-close {
+  min-width: 3.5rem;
+  min-height: 2.75rem;
+  border: 0;
+  padding-inline: 1rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+@media (max-width: 47.999rem) {
+  .orda-responsive-panel[data-mobile-resizable='true'] .orda-responsive-panel__surface {
+    --orda-panel-compact-height: min(
+      22.375rem,
+      calc(100% - 10.25rem - var(--orda-bottom-navigation-height))
+    );
+    --orda-panel-expanded-height: calc(100% - 10.25rem - var(--orda-bottom-navigation-height));
+    --orda-panel-target-height: var(--orda-panel-compact-height);
+
+    height: clamp(
+      var(--orda-panel-compact-height),
+      var(--orda-panel-drag-height, var(--orda-panel-target-height)),
+      var(--orda-panel-expanded-height)
+    );
+    max-height: var(--orda-panel-expanded-height);
+  }
+
+  .orda-responsive-panel[data-mobile-resizable='true'][data-panel-height='expanded']
+    .orda-responsive-panel__surface {
+    --orda-panel-target-height: var(--orda-panel-expanded-height);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .orda-responsive-panel[data-mobile-resizable='true']
+      .orda-responsive-panel__surface:not([data-dragging='true']) {
+      transition: height 160ms ease;
+    }
+  }
+}
+
 .orda-responsive-panel__footer {
   flex: 0 0 auto;
   padding: 1rem 1.125rem max(1rem, env(safe-area-inset-bottom, 0px));
@@ -222,6 +284,12 @@
 }
 
 @media (min-width: 48rem) {
+  .orda-responsive-panel__resize-handle {
+    display: none;
+  }
+  .orda-responsive-panel__resize-bar {
+    flex-basis: 3rem;
+  }
   .orda-map-layout__header {
     position: relative;
     z-index: 3;

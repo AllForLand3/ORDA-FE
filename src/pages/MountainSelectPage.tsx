@@ -99,6 +99,7 @@ export function MountainSelectPage() {
         </Button>
       }
       panelLabel="산 선택 패널"
+      mobilePanelResizable
       panelSize="content"
     />
   );

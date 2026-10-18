@@ -49,9 +49,13 @@ export function MountainSearchBar({
         value={searchQuery}
         variant="search"
       />
-      <Link className="mountain-explorer-header__my-courses" to="/my-courses">
-        내 코스
-      </Link>
+      <nav aria-label="주요 메뉴" className="mountain-explorer-header__navigation">
+        <Link aria-current="page" to="/mountains">
+          산 탐색
+        </Link>
+        <Link to="/routes/setup">맞춤 경로</Link>
+        <Link to="/my-courses">내 코스</Link>
+      </nav>
       <Link
         aria-label="마이페이지로 이동"
         className="mountain-explorer-header__account"

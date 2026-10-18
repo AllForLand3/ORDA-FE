@@ -7,7 +7,7 @@
   margin-inline: auto;
 }
 
-.mountain-explorer-header__my-courses {
+.mountain-explorer-header__navigation {
   display: none;
 }
 
@@ -484,21 +484,38 @@
 
 @media (min-width: 48rem) {
   .mountain-explorer-header {
-    grid-template-columns: auto minmax(10rem, 1fr) auto auto;
+    grid-template-columns: auto minmax(12rem, 1fr) auto;
     justify-content: space-between;
     gap: 1rem;
   }
 
-  .mountain-explorer-header__my-courses {
+  .mountain-explorer-header__navigation {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .mountain-explorer-header__navigation a {
+    display: inline-flex;
     min-height: 2.75rem;
     align-items: center;
-    padding-inline: 0.5rem;
+    padding-inline: 0.75rem;
+    border: 1px solid var(--color-border-default);
+    border-radius: 9999px;
+    background: var(--color-background-surface);
     color: var(--color-text-link);
     font-size: 0.875rem;
     font-weight: 700;
     text-decoration: none;
     white-space: nowrap;
+  }
+
+  .mountain-explorer-header__navigation [aria-current='page'] {
+    border-color: var(--color-border-active);
+    background: var(--color-primary-50);
   }
 
   .mountain-explorer-header__brand {
@@ -519,6 +536,8 @@
   }
 
   .mountain-explorer-header__account {
+    grid-column: 3;
+    grid-row: 1;
     width: auto;
     padding-inline: 0.875rem;
     border-radius: 9999px;
@@ -563,5 +582,20 @@
 
   .mountain-card__location {
     font-size: 0.6875rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .mountain-explorer-header {
+    grid-template-columns: auto minmax(10rem, 1fr) auto auto;
+  }
+
+  .mountain-explorer-header__navigation {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .mountain-explorer-header__account {
+    grid-column: 4;
   }
 }
