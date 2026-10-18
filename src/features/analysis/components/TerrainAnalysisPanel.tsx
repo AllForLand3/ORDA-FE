@@ -73,8 +73,8 @@ export function TerrainAnalysisPanel({ candidateName }: TerrainAnalysisPanelProp
             <div key={metric.label}>
               <dt>{metric.label}</dt>
               <dd>
-                <span aria-label="미제공">{metric.label === '최고 / 최저' ? '— / —' : '—'}</span>{' '}
-                <small>{metric.unit}</small>
+                <span aria-hidden="true">{metric.label === '최고 / 최저' ? '— / —' : '—'}</span>{' '}
+                <span className="sr-only">미제공</span> <small>{metric.unit}</small>
               </dd>
             </div>
           ))}
@@ -96,7 +96,8 @@ export function TerrainAnalysisPanel({ candidateName }: TerrainAnalysisPanelProp
           ].map((item) => (
             <li key={item.label}>
               <img alt="" aria-hidden="true" src={item.icon} />
-              {item.label} <span aria-label="미제공">—%</span>
+              {item.label} <span aria-hidden="true">—%</span>{' '}
+              <span className="sr-only">미제공</span>
             </li>
           ))}
         </ul>

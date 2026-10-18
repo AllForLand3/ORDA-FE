@@ -147,14 +147,18 @@
   align-items: center;
   justify-content: space-between;
 }
-.profile-edit-header a {
+.profile-edit-header__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.profile-edit-header__title a {
   display: inline-flex;
   min-height: 2.75rem;
   align-items: center;
-  gap: 0.375rem;
   text-decoration: none;
 }
-.profile-edit-header h1 {
+.profile-edit-header__title h1 {
   margin: 0;
   font-size: 0.8125rem;
   font-weight: 700;

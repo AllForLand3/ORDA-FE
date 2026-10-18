@@ -36,7 +36,7 @@ test('마이페이지는 예시 프로필과 미연결 메뉴를 표시하고 �
   await expect(page.getByRole('button', { name: '저장', exact: true })).toBeDisabled();
   await expect(page.getByText(/추가 입력 항목은 아직 확정되지 않았습니다/)).toBeVisible();
   await page.getByLabel('이름', { exact: true }).fill('저장 안 되는 예시');
-  await page.getByRole('link', { name: '내 정보 수정', exact: true }).click();
+  await page.getByRole('link', { name: '마이페이지로 돌아가기', exact: true }).click();
   const leave = page.getByRole('dialog', { name: '내 정보 수정을 나갈까요?' });
   await expect(leave).toBeVisible();
   await leave.getByRole('button', { name: '계속 보기' }).click();

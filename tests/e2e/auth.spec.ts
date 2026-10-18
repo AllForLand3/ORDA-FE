@@ -84,8 +84,11 @@ test('회원가입은 입력·약관 동의 전 비활성이고 실제 계정을
   await expect(submit).toBeEnabled();
 
   const password = page.getByLabel('비밀번호', { exact: true });
-  await page.getByRole('button', { name: '비밀번호 표시' }).first().click();
+  const passwordConfirm = page.getByLabel('비밀번호 확인', { exact: true });
+  await page.getByRole('button', { name: '비밀번호 표시', exact: true }).click();
   await expect(password).toHaveAttribute('type', 'text');
+  await page.getByRole('button', { name: '비밀번호 확인 표시', exact: true }).click();
+  await expect(passwordConfirm).toHaveAttribute('type', 'text');
   await submit.click();
   await expect(
     page.getByRole('status').getByText('인증 서버가 연결되지 않아 계정이 생성되지 않았습니다.'),

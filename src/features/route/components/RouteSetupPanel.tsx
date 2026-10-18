@@ -280,7 +280,9 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
 
       {state.step === 'conditions' ? (
         <section aria-labelledby="route-setup-title">
-          <h1 className="route-setup-panel__title">어떤 코스를 원하시나요?</h1>
+          <h1 className="route-setup-panel__title" id="route-setup-title">
+            어떤 코스를 원하시나요?
+          </h1>
           <p className="route-setup-panel__description">
             코스 탐색 기준과 비교 정보를 선택해주세요.
           </p>

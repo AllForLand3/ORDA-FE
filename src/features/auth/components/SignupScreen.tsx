@@ -210,7 +210,9 @@ export function SignupScreen() {
                   autoComplete="new-password"
                   endAdornment={
                     <button
-                      aria-label={passwordConfirmVisible ? '비밀번호 숨기기' : '비밀번호 표시'}
+                      aria-label={
+                        passwordConfirmVisible ? '비밀번호 확인 숨기기' : '비밀번호 확인 표시'
+                      }
                       aria-pressed={passwordConfirmVisible}
                       className="auth-password-toggle"
                       onClick={() => setPasswordConfirmVisible((visible) => !visible)}

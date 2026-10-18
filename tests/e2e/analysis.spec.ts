@@ -10,7 +10,13 @@ test('분석 결측과 독립적인 샘플을 구분하고 축·툴팁·표에 �
   await expect(page.getByText('분석 미제공', { exact: true })).toBeVisible();
   await expect(page.locator('.elevation-profile__chart')).toHaveCount(0);
   const metrics = page.getByRole('region', { name: '코스 지표 미제공' });
-  await expect(metrics.locator('dd')).toHaveText(['— km', '— m', '— m', '— / — m']);
+  await expect(metrics.locator('dd')).toHaveText([
+    '— 미제공 km',
+    '— 미제공 m',
+    '— 미제공 m',
+    '— / — 미제공 m',
+  ]);
+  await expect(metrics.locator('.sr-only')).toHaveText(['미제공', '미제공', '미제공', '미제공']);
   await page.getByRole('button', { name: '샘플 프로파일 보기' }).click();
   const chart = page.locator('.elevation-profile__chart');
   await expect(chart).toHaveAttribute('data-chart-ready', 'true');
@@ -22,7 +28,12 @@ test('분석 결측과 독립적인 샘플을 구분하고 축·툴팁·표에 �
   if (!box) throw new Error('샘플 차트가 표시되지 않았습니다.');
   await page.mouse.move(box.x + 42 + ((box.width - 58) * 4100) / 5800, box.y + 100);
   await expect(chart).toContainText('샘플 고도 528m');
-  await expect(metrics.locator('dd')).toHaveText(['— km', '— m', '— m', '— / — m']);
+  await expect(metrics.locator('dd')).toHaveText([
+    '— 미제공 km',
+    '— 미제공 m',
+    '— 미제공 m',
+    '— / — 미제공 m',
+  ]);
   await page.getByText('샘플 데이터 표 보기', { exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('columnheader', { name: '거리 (m)' })).toBeVisible();

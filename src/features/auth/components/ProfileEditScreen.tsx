@@ -27,10 +27,12 @@ export function ProfileEditScreen() {
     <div className="profile-edit-route">
       <main className="profile-edit-page">
         <header className="profile-edit-header">
-          <Link to="/my-page">
-            <img alt="" aria-hidden="true" src={backIcon} />
+          <div className="profile-edit-header__title">
+            <Link aria-label="마이페이지로 돌아가기" to="/my-page">
+              <img alt="" aria-hidden="true" src={backIcon} />
+            </Link>
             <h1>내 정보 수정</h1>
-          </Link>
+          </div>
           <Button aria-describedby="profile-edit-unavailable" disabled size="sm">
             저장
           </Button>
