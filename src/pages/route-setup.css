@@ -1,0 +1,16 @@
+.route-setup-page {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 30rem;
+}
+
+.route-setup-page .route-setup-desktop-header {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .route-setup-page .route-setup-desktop-header {
+    display: flex;
+  }
+}

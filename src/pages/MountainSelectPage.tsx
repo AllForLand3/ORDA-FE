@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
+import { Button } from '@/components/ui/Button';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
@@ -16,6 +18,7 @@ import type { MountainDifficulty, MountainRegion, MountainSort } from '@/feature
 import './MountainSelectPage.css';
 
 export function MountainSelectPage() {
+  const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const [selectedMountainId, setSelectedMountainId] = useState<string | null>(DEFAULT_MOUNTAIN_ID);
@@ -84,6 +87,16 @@ export function MountainSelectPage() {
           selectedMountainId={selectedMountainId}
           sort={sort}
         />
+      }
+      panelFooter={
+        <Button
+          disabled={!selectedMountainId}
+          fullWidth
+          onClick={() => navigate('/routes/setup')}
+          size="lg"
+        >
+          코스 탐색 설정
+        </Button>
       }
       panelLabel="산 선택 패널"
       panelSize="content"

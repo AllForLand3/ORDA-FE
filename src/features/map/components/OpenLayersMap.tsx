@@ -9,7 +9,7 @@ import { defaults as defaultInteractions } from 'ol/interaction/defaults.js';
 import OSM from 'ol/source/OSM.js';
 import TileLayer from 'ol/layer/Tile.js';
 import View from 'ol/View.js';
-import { fromLonLat } from 'ol/proj.js';
+import { fromLonLat, toLonLat } from 'ol/proj.js';
 import { unByKey } from 'ol/Observable.js';
 import type { EventsKey } from 'ol/events.js';
 
@@ -29,6 +29,7 @@ export interface OpenLayersMapProps {
   additionalLayers?: BaseLayer[];
   initialCenter?: LongitudeLatitude | null;
   initialZoom?: number;
+  onMapClick?: (coordinate: LongitudeLatitude) => void;
   onControllerChange?: (controller: MapController | null) => void;
   targetRef: RefObject<HTMLDivElement | null>;
 }
@@ -55,14 +56,20 @@ export function OpenLayersMap({
   additionalLayers = EMPTY_LAYERS,
   initialCenter = GWANAKSAN_SUMMIT,
   initialZoom = INITIAL_ZOOM,
+  onMapClick,
   onControllerChange,
   targetRef,
 }: OpenLayersMapProps) {
   const onControllerChangeRef = useRef(onControllerChange);
+  const onMapClickRef = useRef(onMapClick);
 
   useEffect(() => {
     onControllerChangeRef.current = onControllerChange;
   }, [onControllerChange]);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   useEffect(() => {
     const target = targetRef.current;
@@ -123,6 +130,10 @@ export function OpenLayersMap({
       refreshMapState();
     };
     const moveEndKey: EventsKey = map.on('moveend', recordViewChange);
+    const mapClickKey: EventsKey = map.on('singleclick', (event) => {
+      const [longitude, latitude] = toLonLat(event.coordinate, 'EPSG:3857');
+      onMapClickRef.current?.([longitude, latitude]);
+    });
     const resizeObserver =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateSize);
 
@@ -156,6 +167,7 @@ export function OpenLayersMap({
       resizeObserver?.disconnect();
       window.removeEventListener('resize', updateSize);
       unByKey(moveEndKey);
+      unByKey(mapClickKey);
       onControllerChangeRef.current?.(null);
       delete target.dataset.mapReady;
       delete target.dataset.mapProjection;
