@@ -19,7 +19,9 @@ test('모바일과 데스크톱에서 지도·패널·하단 내비게이션을 
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await expect(page.getByRole('region', { name: '지도 영역' })).toBeVisible();
-    await expect(page.getByText('OpenLayers 연결 전')).toBeVisible();
+    await expect(page.locator('.ol-viewport')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'OpenStreetMap' })).toBeVisible();
+    await expect(page.locator('.ol-attribution')).toContainText('contributors');
     await expect(page.getByRole('complementary', { name: '지도 작업 패널' })).toBeVisible();
 
     const layout = await page.evaluate(() => {
@@ -129,4 +131,114 @@ test('모바일과 데스크톱 패널 콘텐츠는 내부에서 스크롤된다
     expect(scrollPosition.scrollTop).toBeGreaterThan(0);
     expect(scrollPosition.scrollHeight).toBeGreaterThan(scrollPosition.clientHeight);
   }
+});
+
+test('OSM 지도는 EPSG:3857에서 확대·이동되고 컨테이너 크기 변경을 반영한다', async ({ page }) => {
+  const mapSurface = page.locator('.orda-map-layout__map-surface');
+
+  await expect(mapSurface).toHaveAttribute('data-map-ready', 'true');
+  await expect(mapSurface).toHaveAttribute('data-map-projection', 'EPSG:3857');
+  await expect(mapSurface).toHaveAttribute('data-map-zoom', '14');
+  await page.locator('.ol-zoom-in').click();
+  await expect(mapSurface).toHaveAttribute('data-map-zoom', '15');
+
+  const initialRevision = Number(await mapSurface.getAttribute('data-map-view-revision'));
+  const mapBox = await mapSurface.boundingBox();
+  expect(mapBox).not.toBeNull();
+  const startX = mapBox!.x + mapBox!.width / 2;
+  const startY = mapBox!.y + Math.min(180, mapBox!.height / 3);
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 80, startY + 40, { steps: 5 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => Number(await mapSurface.getAttribute('data-map-view-revision')))
+    .toBeGreaterThan(initialRevision);
+
+  for (const viewport of [
+    { width: 390, height: 956 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect
+      .poll(async () => {
+        const size = await mapSurface.getAttribute('data-map-size');
+        const box = await mapSurface.evaluate((element) => ({
+          height: element.clientHeight,
+          width: element.clientWidth,
+        }));
+
+        return size === `${box.width}x${box.height}`;
+      })
+      .toBe(true);
+  }
+});
+
+test('현재 위치는 클릭할 때만 요청하고 성공·좌표 누락·권한 거부를 처리한다', async ({ page }) => {
+  const locationButton = page.getByRole('button', { name: '현재 위치로 이동' });
+  const status = page.locator('.orda-map-controls__status');
+  const mapSurface = page.locator('.orda-map-layout__map-surface');
+
+  await expect(locationButton).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: '지도 레이어 선택 (준비되지 않음)' }),
+  ).toBeDisabled();
+  await expect(status).toHaveText('');
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation({ latitude: 37.5, longitude: 127.0 });
+  await locationButton.click();
+  await expect(status).toHaveText('현재 위치로 지도를 이동했습니다.');
+  await expect(mapSurface).toHaveAttribute('data-map-zoom', '15');
+
+  await page.addInitScript(() => {
+    const malformedGeolocation = {
+      getCurrentPosition: (success: PositionCallback) =>
+        success({
+          coords: { latitude: Number.NaN, longitude: Number.NaN } as GeolocationCoordinates,
+        } as GeolocationPosition),
+    } as unknown as Geolocation;
+
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: malformedGeolocation,
+    });
+  });
+  await page.reload();
+  await page.getByRole('button', { name: '현재 위치로 이동' }).click();
+  await expect(page.getByRole('status')).toHaveText('현재 위치 좌표를 확인하지 못했습니다.');
+
+  await page.addInitScript(() => {
+    const deniedGeolocation = {
+      getCurrentPosition: (_success: PositionCallback, error: PositionErrorCallback) =>
+        error({ code: 1, message: 'denied' } as GeolocationPositionError),
+    } as unknown as Geolocation;
+
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: deniedGeolocation,
+    });
+  });
+  await page.reload();
+  await page.getByRole('button', { name: '현재 위치로 이동' }).click();
+  await expect(status).toContainText('위치 권한이 거부되었습니다.');
+});
+
+test('지도 재진입 시 중복 인스턴스를 만들지 않고 언마운트에서 대상 상태를 정리한다', async ({
+  page,
+}) => {
+  const mapSurface = page.locator('.orda-map-layout__map-surface');
+  const toggleMap = page.getByRole('button', { name: 'Toggle map mount' });
+
+  await expect(mapSurface.locator('.ol-viewport')).toHaveCount(1);
+  await toggleMap.click();
+  await expect(page.getByTestId('map-unmounted')).toBeVisible();
+  await expect(mapSurface.locator('.ol-viewport')).toHaveCount(0);
+  await expect(mapSurface).not.toHaveAttribute('data-map-ready', 'true');
+
+  await toggleMap.click();
+  await expect(mapSurface.locator('.ol-viewport')).toHaveCount(1);
+  await expect(mapSurface).toHaveAttribute('data-map-ready', 'true');
+  await expect(page.getByRole('link', { name: 'OpenStreetMap' })).toBeVisible();
 });

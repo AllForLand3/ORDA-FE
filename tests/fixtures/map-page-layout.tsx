@@ -1,11 +1,18 @@
+import { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { Button } from '@/components/ui/Button';
 import { MapPageLayout } from '@/components/layout';
+import { MapControls, OpenLayersMap } from '@/features/map';
+import type { MapController } from '@/features/map';
 import '@/styles/global.css';
 import './map-page-layout.css';
 
 export function MapPageLayoutFixture() {
+  const mapTargetRef = useRef<HTMLDivElement>(null);
+  const [controller, setController] = useState<MapController | null>(null);
+  const [isMapMounted, setIsMapMounted] = useState(true);
+
   return (
     <MapPageLayout
       bottomNavigation={
@@ -22,17 +29,24 @@ export function MapPageLayoutFixture() {
           <button type="button">산 검색</button>
         </div>
       }
-      mapControls={
-        <Button aria-label="지도 레이어" size="sm" variant="secondary">
-          층
-        </Button>
+      mapContainerRef={mapTargetRef}
+      mapContent={
+        isMapMounted ? (
+          <OpenLayersMap onControllerChange={setController} targetRef={mapTargetRef} />
+        ) : (
+          <div data-testid="map-unmounted">Map unmounted</div>
+        )
       }
+      mapControls={<MapControls controller={controller} />}
       panel={
         <section aria-labelledby="map-panel-title">
           <p className="map-layout-fixture__eyebrow">LAYOUT PREVIEW</p>
           <h1 className="map-layout-fixture__title" id="map-panel-title">
             지도 작업 패널
           </h1>
+          <Button onClick={() => setIsMapMounted((isMounted) => !isMounted)} size="sm">
+            Toggle map mount
+          </Button>
           <p className="map-layout-fixture__description">
             이 목록은 패널 스크롤과 반응형 동작을 확인하기 위한 예시입니다.
           </p>
