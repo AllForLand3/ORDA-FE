@@ -408,17 +408,17 @@
 
 .orda-badge--info {
   background: var(--color-status-info-subtle);
-  color: var(--color-status-info);
+  color: var(--color-info-700);
 }
 
 .orda-badge--warning {
   background: var(--color-status-warning-subtle);
-  color: var(--color-status-warning);
+  color: var(--color-warning-700);
 }
 
 .orda-badge--error {
   background: var(--color-status-error-subtle);
-  color: var(--color-status-error);
+  color: var(--color-error-700);
 }
 
 .orda-tabs__list {

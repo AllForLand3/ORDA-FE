@@ -17,14 +17,17 @@
 
   --color-warning-50: #fff3d5;
   --color-warning-500: #f2b134;
+  --color-warning-700: #8a5a00;
   --color-error-50: #fdece8;
   --color-error-500: #e4573d;
+  --color-error-700: #9f2d1c;
   --color-info-50: #eaf3fb;
   --color-info-500: #3d7fbf;
+  --color-info-700: #285f8f;
 
   /* Semantic color */
   --color-text-primary: var(--color-primary-900);
-  --color-text-secondary: var(--color-neutral-500);
+  --color-text-secondary: var(--color-neutral-700);
   --color-text-tertiary: var(--color-neutral-500);
   --color-text-disabled: var(--color-neutral-400);
   --color-text-inverse: var(--color-neutral-0);
