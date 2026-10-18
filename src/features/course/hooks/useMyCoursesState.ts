@@ -72,5 +72,7 @@ export function useMyCoursesState() {
     resetSearch: () => update('q', ''),
     getDetailHref: (id: string, detailTab = 'overview') =>
       `/my-courses/${encodeURIComponent(id)}?${new URLSearchParams({ tab: detailTab, list: params.toString() })}`,
+    getEditHref: (id: string) =>
+      `/my-courses/${encodeURIComponent(id)}/edit?${new URLSearchParams({ list: params.toString() })}`,
   };
 }

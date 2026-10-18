@@ -1,0 +1,178 @@
+.course-export-overlay .orda-dialog {
+  position: fixed;
+  inset: auto 0 0;
+  width: 100%;
+  max-height: calc(100dvh - 2rem);
+  margin: 0;
+  border-radius: 1.5rem 1.5rem 0 0;
+}
+
+.course-export-overlay .orda-dialog__surface {
+  display: flex;
+  min-height: min(35rem, calc(100dvh - 2rem));
+  flex-direction: column;
+  border: 0;
+  box-shadow: none;
+}
+
+.course-export-overlay .orda-dialog__surface::before {
+  width: 4.25rem;
+  height: 0.3125rem;
+  flex: 0 0 0.3125rem;
+  align-self: center;
+  margin-top: 0.875rem;
+  border-radius: 9999px;
+  background: var(--color-neutral-200);
+  content: '';
+}
+
+.course-export-overlay .orda-dialog__header {
+  align-items: center;
+  gap: 0.25rem;
+  border: 0;
+  padding: 1rem 1.25rem 1.75rem;
+}
+.course-export-overlay .orda-dialog__title {
+  font-size: 1.6875rem;
+}
+.course-export-overlay .orda-dialog__description {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.course-export-overlay .orda-dialog__content {
+  flex: 1 0 auto;
+  padding: 0 1.1875rem 1rem;
+}
+.course-export-overlay .orda-dialog__footer {
+  flex-wrap: nowrap;
+  border: 0;
+  padding: 0.75rem 1.5rem max(1rem, env(safe-area-inset-bottom, 0px));
+}
+.course-export-overlay .orda-dialog__footer .orda-button {
+  min-height: 3.625rem;
+  flex: 1 1 0;
+  border-radius: 9999px;
+  font-size: 1.125rem;
+}
+.course-export-overlay .orda-button--primary:not(:disabled) {
+  background: var(--color-primary-700);
+}
+.course-export-formats {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.course-export-formats label {
+  position: relative;
+  display: flex;
+  min-height: 6.25rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-top: 1px solid var(--color-border-default);
+  padding: 1rem;
+  cursor: pointer;
+}
+.course-export-formats input {
+  position: absolute;
+  width: 1.625rem;
+  height: 1.625rem;
+  opacity: 0;
+}
+.course-export-formats img {
+  flex: 0 0 auto;
+}
+.course-export-formats input:focus-visible + img {
+  border-radius: 50%;
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 4px;
+}
+.course-export-formats span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.course-export-formats strong {
+  font-size: 1.375rem;
+  font-weight: 800;
+}
+.course-export-formats small {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+.course-export-info {
+  display: flex;
+  min-height: 5.375rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.375rem;
+  border-radius: 0.625rem;
+  padding: 1rem;
+  background: var(--color-primary-50);
+}
+.course-export-info img {
+  flex: 0 0 auto;
+}
+.course-export-info p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.course-export-preview-entry.orda-button {
+  display: flex;
+  margin: 0.5rem auto 0;
+  font-size: 0.8125rem;
+}
+.course-export-preview {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  text-align: center;
+}
+.course-export-preview > img {
+  flex: 0 0 auto;
+  margin: 0.5rem 0 1rem;
+}
+.course-export-preview h3 {
+  margin: 0;
+  font-size: 1.6875rem;
+  font-weight: 800;
+}
+.course-export-preview p {
+  max-width: 100%;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 1.125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.course-export-preview strong {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.course-export-overlay--preview .orda-dialog__header {
+  padding-bottom: 0.5rem;
+}
+.course-export-overlay--preview .orda-dialog__title {
+  font-size: 0.875rem;
+}
+.course-export-overlay--preview .orda-dialog__description {
+  color: var(--color-status-info);
+  font-size: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .course-export-overlay .orda-dialog {
+    inset: 50% auto auto 50%;
+    width: min(30rem, calc(100vw - 3rem));
+    max-height: calc(100dvh - 3rem);
+    transform: translate(-50%, -50%);
+    border-radius: 1.5rem;
+  }
+}

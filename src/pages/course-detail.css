@@ -13,10 +13,19 @@
   gap: 0.25rem;
 }
 
-.course-detail-actions .orda-button {
+.course-detail-actions .orda-button,
+.course-detail-actions > a {
   min-height: 2.75rem;
   padding-inline: 0.375rem;
   font-size: 0.625rem;
+}
+
+.course-detail-actions > a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-link);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .course-detail-workspace {

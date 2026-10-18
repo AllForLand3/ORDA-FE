@@ -298,6 +298,20 @@
   font-size: 0.625rem;
 }
 
+.my-course-card__actions > a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding-inline: 0.75rem;
+  border-radius: 9999px;
+  color: var(--color-text-link);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .course-detail-intro {
   display: flex;
   align-items: center;

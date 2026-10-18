@@ -7,6 +7,7 @@ import { NearbyFacilitiesPanel, TerrainAnalysisPanel } from '@/features/analysis
 import { CourseDetailPanel, MyCoursesNavigation, useCourseDetailState } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
+import { CourseExportDialog } from '@/features/route';
 import '@/features/analysis/analysis.css';
 import '@/features/course/components/my-courses.css';
 
@@ -33,11 +34,20 @@ export function CourseDetailPage() {
             <span>코스 상세 분석</span>
           </Link>
           <MyCoursesNavigation />
-          <div aria-label="코스 관리 기능 준비 중" className="course-detail-actions">
-            <Button disabled size="sm" variant="quiet">
-              편집
-            </Button>
-            <Button disabled size="sm" variant="quiet">
+          <div aria-label="코스 관리" className="course-detail-actions">
+            {state.course && !state.isError ? (
+              <Link to={state.editHref}>편집</Link>
+            ) : (
+              <Button disabled size="sm" variant="quiet">
+                편집
+              </Button>
+            )}
+            <Button
+              disabled={!state.course || state.isError}
+              onClick={() => state.setExportOpen(true)}
+              size="sm"
+              variant="quiet"
+            >
               내보내기
             </Button>
           </div>
@@ -107,6 +117,9 @@ export function CourseDetailPage() {
           </section>
         </main>
       )}
+      {state.course && !state.isError && state.isExportOpen ? (
+        <CourseExportDialog courseName={state.course.name} onOpenChange={state.setExportOpen} />
+      ) : null}
     </div>
   );
 }

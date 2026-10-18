@@ -19,9 +19,10 @@ interface MyCourseCardProps {
   course: MockMyCourse;
   detailHref: string;
   analysisHref: string;
+  editHref: string;
 }
 
-export function MyCourseCard({ course, detailHref, analysisHref }: MyCourseCardProps) {
+export function MyCourseCard({ course, detailHref, analysisHref, editHref }: MyCourseCardProps) {
   return (
     <Card aria-label={course.name} className="my-course-card" padding="none">
       <Link
@@ -77,15 +78,15 @@ export function MyCourseCard({ course, detailHref, analysisHref }: MyCourseCardP
           상세 분석
         </Link>
       </div>
-      <div aria-label="코스 관리 기능 준비 중" className="my-course-card__actions">
-        <Button disabled size="sm" variant="quiet">
+      <div aria-label="코스 관리" className="my-course-card__actions">
+        <Link to={editHref}>
           <img alt="" aria-hidden="true" src={editIcon} />
           편집
-        </Button>
-        <Button disabled size="sm" variant="quiet">
+        </Link>
+        <Link to={`${detailHref}&export=1`}>
           <img alt="" aria-hidden="true" src={downloadIcon} />
           내보내기
-        </Button>
+        </Link>
         <Button disabled size="sm" variant="quiet">
           <img alt="" aria-hidden="true" src={deleteIcon} />
           삭제

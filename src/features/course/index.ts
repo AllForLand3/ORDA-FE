@@ -14,3 +14,5 @@ export { MyCoursesPanel } from './components/MyCoursesPanel';
 export { CourseDetailPanel } from './components/CourseDetailPanel';
 export { useMyCoursesState } from './hooks/useMyCoursesState';
 export { useCourseDetailState } from './hooks/useCourseDetailState';
+export { CourseEditDialogs, CourseEditPanel } from './components/CourseEditPanel';
+export { useCourseEditState } from './hooks/useCourseEditState';

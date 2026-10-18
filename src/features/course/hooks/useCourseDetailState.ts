@@ -20,6 +20,19 @@ export function useCourseDetailState() {
     tab,
     backHref,
     isError: params.get('preview') === 'error',
+    editHref: `/my-courses/${encodeURIComponent(courseId ?? '')}/edit?${new URLSearchParams({ list: params.get('list') ?? '', tab })}`,
+    isExportOpen: params.get('export') === '1',
+    setExportOpen: (open: boolean) => {
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          if (open) next.set('export', '1');
+          else next.delete('export');
+          return next;
+        },
+        { replace: true },
+      );
+    },
     setTab: (value: string) => {
       if (value !== 'overview' && value !== 'terrain' && value !== 'facilities') return;
       setParams((current) => {

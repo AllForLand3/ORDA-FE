@@ -44,6 +44,7 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
               analysisHref={state.getDetailHref(course.id, 'terrain')}
               course={course}
               detailHref={state.getDetailHref(course.id)}
+              editHref={state.getEditHref(course.id)}
               key={course.id}
             />
           ))}
@@ -90,7 +91,8 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
         </div>
       </header>
       <p className="my-courses-demo-note">
-        모든 코스·지표는 예시입니다. 저장·가져오기·편집·내보내기·삭제 기능은 미연결입니다.
+        모든 코스·지표는 예시입니다. 편집은 화면 내 임시 입력만 지원하며 서버 저장·파일
+        가져오기·다운로드·삭제는 미연결입니다.
       </p>
       <div className="my-courses-search">
         <TextField
