@@ -1,0 +1,162 @@
+import { useRef, useState } from 'react';
+import type { PointerEvent, ReactNode } from 'react';
+
+import './map-layout.css';
+
+export interface ResponsivePanelProps {
+  children: ReactNode;
+  footer?: ReactNode;
+  id: string;
+  isOpen: boolean;
+  label: string;
+  onOpenChange: (isOpen: boolean) => void;
+  mobileResizable?: boolean;
+  size?: 'content' | 'expanded';
+}
+
+export function ResponsivePanel({
+  children,
+  footer,
+  id,
+  isOpen,
+  label,
+  onOpenChange,
+  mobileResizable = false,
+  size = 'content',
+}: ResponsivePanelProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const surfaceRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  function startDrag(event: PointerEvent<HTMLButtonElement>) {
+    if (
+      !mobileResizable ||
+      event.button !== 0 ||
+      !event.isPrimary ||
+      !window.matchMedia('(max-width: 47.999rem)').matches
+    )
+      return;
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    suppressClickRef.current = false;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight: surface.getBoundingClientRect().height,
+    };
+    surface.dataset.dragging = 'true';
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: PointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const delta = event.clientY - drag.startY;
+    if (Math.abs(delta) > 6) suppressClickRef.current = true;
+    surfaceRef.current?.style.setProperty(
+      '--orda-panel-drag-height',
+      `${drag.startHeight - delta}px`,
+    );
+  }
+
+  function finishDrag(event: PointerEvent<HTMLButtonElement>, cancelled = false) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    const delta = event.clientY - drag.startY;
+    if (Math.abs(delta) > 6) suppressClickRef.current = true;
+    if (!cancelled && Math.abs(delta) >= 48) setIsExpanded(delta < 0);
+    if (surfaceRef.current) {
+      surfaceRef.current.style.removeProperty('--orda-panel-drag-height');
+      delete surfaceRef.current.dataset.dragging;
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  return (
+    <div
+      className="orda-responsive-panel"
+      data-panel-open={isOpen}
+      data-panel-size={size}
+      data-mobile-resizable={mobileResizable}
+      data-panel-height={isExpanded ? 'expanded' : 'compact'}
+    >
+      <aside
+        aria-label={label}
+        className="orda-responsive-panel__surface"
+        hidden={!isOpen}
+        id={id}
+        ref={surfaceRef}
+      >
+        {mobileResizable ? (
+          <div className="orda-responsive-panel__resize-bar">
+            <button
+              aria-controls={id}
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? '패널 높이 줄이기' : '패널 높이 늘리기'}
+              className="orda-responsive-panel__resize-handle"
+              onClick={() => {
+                if (suppressClickRef.current) {
+                  suppressClickRef.current = false;
+                  return;
+                }
+                setIsExpanded((expanded) => !expanded);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') suppressClickRef.current = false;
+                if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  setIsExpanded(event.key === 'ArrowUp');
+                }
+              }}
+              onLostPointerCapture={(event) => finishDrag(event, true)}
+              onPointerCancel={(event) => finishDrag(event, true)}
+              onPointerDown={startDrag}
+              onPointerMove={moveDrag}
+              onPointerUp={(event) => finishDrag(event)}
+              type="button"
+            >
+              <span aria-hidden="true" className="orda-responsive-panel__handle" />
+            </button>
+            <button
+              aria-controls={id}
+              aria-expanded={isOpen}
+              aria-label="패널 접기"
+              className="orda-responsive-panel__resize-close"
+              onClick={() => onOpenChange(false)}
+              type="button"
+            >
+              접기
+            </button>
+          </div>
+        ) : (
+          <button
+            aria-controls={id}
+            aria-expanded={isOpen}
+            aria-label="패널 접기"
+            className="orda-responsive-panel__toggle orda-responsive-panel__toggle--close"
+            onClick={() => onOpenChange(false)}
+            type="button"
+          >
+            <span aria-hidden="true" className="orda-responsive-panel__handle" />
+            <span className="orda-responsive-panel__toggle-text">패널 접기</span>
+          </button>
+        )}
+        <div className="orda-responsive-panel__content">{children}</div>
+        {footer ? <footer className="orda-responsive-panel__footer">{footer}</footer> : null}
+      </aside>
+      <button
+        aria-controls={id}
+        aria-expanded={isOpen}
+        className="orda-responsive-panel__toggle orda-responsive-panel__toggle--open"
+        hidden={isOpen}
+        onClick={() => onOpenChange(true)}
+        type="button"
+      >
+        패널 펼치기
+      </button>
+    </div>
+  );
+}

@@ -1,15 +1,31 @@
 @import 'tailwindcss';
 @import './fonts.css';
 @import './tokens.css';
+@import '../components/ui/ui.css';
 
 @theme inline {
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --color-orda-primary: var(--color-primary-default);
   --color-orda-primary-hover: var(--color-primary-hover);
+  --color-orda-action-primary: var(--color-action-primary);
+  --color-orda-background: var(--color-background-default);
   --color-orda-surface: var(--color-background-subtle);
+  --color-orda-surface-default: var(--color-background-surface);
   --color-orda-text: var(--color-text-primary);
   --color-orda-text-muted: var(--color-text-secondary);
+  --color-orda-text-tertiary: var(--color-text-tertiary);
+  --color-orda-text-disabled: var(--color-text-disabled);
   --color-orda-border: var(--color-border-default);
+  --color-orda-border-active: var(--color-border-active);
+  --color-orda-info: var(--color-status-info);
+  --color-orda-info-subtle: var(--color-status-info-subtle);
+  --color-orda-warning: var(--color-status-warning);
+  --color-orda-warning-subtle: var(--color-status-warning-subtle);
+  --color-orda-error: var(--color-status-error);
+  --color-orda-error-subtle: var(--color-status-error-subtle);
+  --radius-orda-input: var(--radius-input);
+  --radius-orda-search: var(--radius-search);
+  --shadow-orda-center: var(--shadow-center);
 }
 
 :root {

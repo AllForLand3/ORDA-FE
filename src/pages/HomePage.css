@@ -1,0 +1,481 @@
+.home-page {
+  min-height: 100svh;
+}
+
+.home-page__stage {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--color-background-default);
+}
+
+.home-page__background {
+  position: absolute;
+  z-index: 0;
+  overflow: hidden;
+  inset: 0;
+}
+
+.home-page__background-picture {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  inset: 0;
+}
+
+.home-page__mountain {
+  position: absolute;
+  top: -2.406svh;
+  left: -40vw;
+  width: max(155.4545vw, 71.5481svh);
+  max-width: none;
+  height: auto;
+}
+
+.home-page__wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 75%) 0%,
+    rgb(255 255 255 / 30%) 20%,
+    rgb(255 255 255 / 0%) 45%,
+    rgb(255 255 255 / 0%) 70%,
+    rgb(255 255 255 / 15%) 88%,
+    rgb(255 255 255 / 80%) 100%
+  );
+}
+
+.home-page__logo-mobile {
+  position: absolute;
+  z-index: 2;
+  top: clamp(88px, 11.1925svh, 107px);
+  left: 7.5vw;
+  width: 65px;
+  height: 65px;
+}
+
+.home-page__logo-tile {
+  display: block;
+  width: 65px;
+  height: 65px;
+}
+
+.home-page__logo-mark {
+  position: absolute;
+  top: 14.857px;
+  left: 9.286px;
+  width: 44.571px;
+  height: 37.143px;
+}
+
+.home-page__header {
+  display: none;
+}
+
+.home-page__menu {
+  display: none;
+}
+
+.home-page__trail {
+  position: absolute;
+  z-index: 2;
+  top: 49.3724svh;
+  left: 3.9773vw;
+  display: block;
+  width: min(56.8182vw, 250px);
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.home-page__trail-desktop {
+  display: none;
+}
+
+.home-page__trail img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.home-page__copy {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+
+.home-page__title {
+  position: absolute;
+  top: clamp(170px, 21.0251svh, 201px);
+  left: 7.5vw;
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  color: var(--color-primary-900);
+  font-size: 37px;
+  font-weight: 700;
+  line-height: 44px;
+  letter-spacing: 0;
+}
+
+.home-page__title > span,
+.home-page__description > span {
+  display: block;
+  white-space: nowrap;
+}
+
+.home-page__title-highlight {
+  color: inherit;
+}
+
+.home-page__description {
+  position: absolute;
+  top: clamp(271px, 32.4268svh, 310px);
+  left: 7.5vw;
+  display: grid;
+  gap: 0;
+  margin: 0;
+  color: #526e64;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.home-page__actions {
+  position: absolute;
+  z-index: 3;
+  right: 21px;
+  bottom: max(71px, calc(env(safe-area-inset-bottom, 0px) + 24px));
+  left: 21px;
+  display: grid;
+  gap: 17px;
+  pointer-events: auto;
+}
+
+.home-page__action {
+  position: relative;
+  width: 100%;
+  min-height: 63px;
+  height: 63px;
+  border-radius: 18px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 20px;
+  text-decoration: none;
+}
+
+.home-page__action--login.orda-button--primary {
+  border-color: transparent;
+  background: var(--color-primary-700);
+  color: var(--color-text-inverse);
+}
+
+.home-page__action--signup.orda-button--secondary {
+  border-color: transparent;
+  background: var(--color-background-surface);
+  color: #15382b;
+}
+
+.home-page__arrow {
+  position: absolute;
+  top: 50%;
+  right: 26px;
+  display: block;
+  transform: translateY(-50%);
+}
+
+.home-page__arrow img {
+  display: block;
+}
+
+@media (min-width: 48rem) {
+  .home-page__stage {
+    min-height: 100svh;
+  }
+
+  .home-page__mountain {
+    top: 0;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translateX(-50%);
+    object-fit: cover;
+    object-position: 74% center;
+  }
+
+  .home-page__wash {
+    background: linear-gradient(
+      90deg,
+      rgb(255 255 255 / 96%) 0%,
+      rgb(255 255 255 / 92%) 20%,
+      rgb(255 255 255 / 70%) 40%,
+      rgb(255 255 255 / 25%) 55%,
+      rgb(255 255 255 / 0%) 80%,
+      rgb(255 255 255 / 0%) 100%
+    );
+  }
+
+  .home-page__logo-mobile {
+    display: none;
+  }
+
+  .home-page__header {
+    position: absolute;
+    z-index: 4;
+    top: clamp(32px, 4.48svh, 44px);
+    right: clamp(24px, 3.5vw, 53px);
+    left: clamp(24px, 3.57vw, 54px);
+    display: flex;
+    height: 56px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .home-page__desktop-logo {
+    display: block;
+    width: 173px;
+    height: 56px;
+    flex: 0 0 auto;
+    object-fit: contain;
+  }
+
+  .home-page__header-brand {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .home-page__header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 12px;
+  }
+
+  .home-page__header-action {
+    display: inline-flex;
+    width: 120px;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-primary-700);
+    border-radius: 10px;
+    color: var(--color-primary-900);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .home-page__header-action:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 3px;
+  }
+
+  .home-page__header-action--signup {
+    border-color: transparent;
+    background: var(--color-primary-700);
+    color: var(--color-text-inverse);
+  }
+
+  .home-page__menu {
+    display: none;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    color: var(--color-neutral-900);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    list-style: none;
+    white-space: nowrap;
+  }
+
+  .home-page__trail {
+    display: none;
+  }
+
+  .home-page__trail-desktop {
+    position: absolute;
+    z-index: 2;
+    top: 46.4%;
+    left: 46.9%;
+    display: block;
+    width: min(27vw, 408px);
+    aspect-ratio: 408 / 310;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .home-page__trail-path {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .home-page__trail-marker {
+    position: absolute;
+    display: block;
+    width: 2.9412%;
+    height: auto;
+  }
+
+  .home-page__trail-marker--top {
+    top: 0;
+    left: 96.936%;
+  }
+
+  .home-page__trail-marker--upper {
+    top: 34.194%;
+    left: 78.431%;
+  }
+
+  .home-page__trail-marker--middle {
+    top: 57.742%;
+    left: 33.088%;
+  }
+
+  .home-page__trail-marker--lower {
+    top: 94.839%;
+    left: 3.676%;
+  }
+
+  .home-page__copy {
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: clamp(32px, 4.63vw, 70px);
+    width: max-content;
+    transform: translateY(calc(-50% - 0.5px));
+  }
+
+  .home-page__title {
+    position: static;
+    gap: 0;
+    font-size: clamp(48px, 5vw, 75px);
+    line-height: 1.2;
+  }
+
+  .home-page__title-highlight {
+    color: var(--color-primary-500);
+  }
+
+  .home-page__description {
+    position: static;
+    gap: 3px;
+    margin-top: 25px;
+    font-size: clamp(18px, 1.98vw, 30px);
+    line-height: 36px;
+  }
+
+  .home-page__actions {
+    position: static;
+    display: flex;
+    width: max-content;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 25px;
+  }
+
+  .home-page__action {
+    width: auto;
+    min-height: 52px;
+    height: 52px;
+    border-radius: 10px;
+    font-size: clamp(18px, 1.65vw, 25px);
+    line-height: 30px;
+  }
+
+  .home-page__action.orda-button--lg {
+    font-size: clamp(18px, 1.65vw, 25px);
+  }
+
+  .home-page__action--login {
+    width: clamp(185px, 14.75vw, 223px);
+    justify-content: space-between;
+    padding: 0 20px 0 32px;
+  }
+
+  .home-page__action--signup {
+    width: clamp(175px, 13.62vw, 206px);
+    padding-inline: 20px;
+  }
+
+  .home-page__arrow {
+    position: static;
+    flex: 0 0 auto;
+    transform: none;
+  }
+
+  .home-page__arrow img {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (min-width: 64rem) {
+  .home-page__menu {
+    display: flex;
+    gap: 24px;
+  }
+}
+
+@media (min-width: 80rem) {
+  .home-page__header {
+    gap: 0;
+  }
+
+  .home-page__header-brand {
+    gap: 40px;
+  }
+
+  .home-page__menu {
+    gap: 55px;
+    font-size: 20px;
+  }
+
+  .home-page__header-actions {
+    gap: 15px;
+  }
+
+  .home-page__header-action {
+    width: 140px;
+    height: 56px;
+    font-size: 25px;
+  }
+
+  .home-page__title {
+    font-size: 75px;
+    line-height: 90px;
+  }
+
+  .home-page__description {
+    line-height: 36px;
+  }
+
+  .home-page__action {
+    min-height: 58px;
+    height: 58px;
+    font-size: 25px;
+  }
+
+  .home-page__action--login {
+    padding: 0 24px 0 40px;
+  }
+
+  .home-page__action--signup {
+    padding-inline: 36px;
+  }
+
+  .home-page__arrow img {
+    width: 30px;
+    height: 30px;
+  }
+}
