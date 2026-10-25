@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { ROUTE_MVP_MOUNTAIN_ID } from '../constants';
+
 import {
   ROUTE_DIFFICULTIES,
   ROUTE_FACILITIES,
@@ -15,6 +17,7 @@ import type {
   RoutePointRole,
   RoutePriority,
 } from '../mocks/route-setup';
+import { useRouteSnap } from './useRouteSnap';
 
 export type RouteSetupStep = 'locations' | 'difficulty' | 'conditions';
 
@@ -22,6 +25,13 @@ function readTokenList<T extends string>(value: string | null, allowed: readonly
   const valid = new Set(allowed.map((item) => item.id));
 
   return (value ?? '').split(',').filter((token): token is T => valid.has(token as T));
+}
+
+const NODE_PARAM = { origin: 'originNode', destination: 'destinationNode' } as const;
+
+function readNodeId(value: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }
 
 function getPlace(id: string | null): RoutePlace | null {
@@ -61,6 +71,23 @@ export function useRouteSetupState() {
   const origin = useMemo(() => getPlace(originId), [originId]);
   const destination = useMemo(() => getPlace(destinationId), [destinationId]);
   const pendingPlace = useMemo(() => getPlace(pendingId), [pendingId]);
+  // 확정한 장소에 연결된 등산로 노드 ID다. 장소 없이 남은 노드 ID는 쓰지 않는다.
+  const originNodeId = origin ? readNodeId(params.get(NODE_PARAM.origin)) : null;
+  const destinationNodeId = destination ? readNodeId(params.get(NODE_PARAM.destination)) : null;
+  const mountainId = ROUTE_MVP_MOUNTAIN_ID;
+  const pendingSnap = useRouteSnap(mountainId, pendingPlace?.coordinates ?? null);
+  // 확정한 지점의 스냅 위치 표시용이다. 노드에 연결된 지점만 조회하고, 확인 단계와 같은 캐시를 써서
+  // 새로고침했을 때만 다시 요청한다. 탐색에 쓰는 노드 ID는 URL 값이 기준이다.
+  const originSnap = useRouteSnap(mountainId, origin && originNodeId ? origin.coordinates : null);
+  const destinationSnap = useRouteSnap(
+    mountainId,
+    destination && destinationNodeId ? destination.coordinates : null,
+  );
+  const isSameNode = Boolean(
+    originNodeId && destinationNodeId && originNodeId === destinationNodeId,
+  );
+  const hasBothNodes = Boolean(origin && destination && originNodeId && destinationNodeId);
+  const canSearch = hasBothNodes && !isSameNode && origin?.id !== destination?.id;
   const searchFor = params.get('searchFor');
   const searchRole: RoutePointRole | null =
     searchFor === 'origin' || searchFor === 'destination' ? searchFor : null;
@@ -88,18 +115,48 @@ export function useRouteSetupState() {
     );
   };
 
+  const searchParams = new URLSearchParams(params);
+  for (const key of [
+    'step',
+    'searchFor',
+    'pending',
+    'q',
+    'mapSelect',
+    'preview',
+    'tab',
+    'candidate',
+  ]) {
+    searchParams.delete(key);
+  }
+  if (canSearch && originNodeId && destinationNodeId) {
+    searchParams.set('mountainId', mountainId);
+    searchParams.set('startNodeId', originNodeId);
+    searchParams.set('endNodeId', destinationNodeId);
+  }
+
   return {
     step,
+    mountainId,
     origin,
     destination,
+    originNodeId,
+    destinationNodeId,
     pendingPlace,
+    pendingSnap,
+    originSnap,
+    destinationSnap,
+    isSameNode,
     searchRole,
     isMapSelectionMode,
     query,
     difficulty,
     priorities,
     facilities,
-    canContinueFromLocations: Boolean(origin && destination && origin.id !== destination.id),
+    // 두 지점이 모두 등산로 노드에 연결되고 서로 다른 노드일 때만 진행한다 (Backend ROUTE_SAME_POINT와 같은 기준).
+    canContinueFromLocations: canSearch,
+    canSearch,
+    // 탐색 API에는 산·노드 ID만 보낸다. 수준·탐색 기준·비교 정보는 화면 상태로만 URL에 남는다.
+    searchHref: canSearch ? `/routes/results?${searchParams}` : null,
     setStep: (nextStep: RouteSetupStep) => update((next) => next.set('step', nextStep), false),
     openSearch: (role: RoutePointRole) =>
       update((next) => {
@@ -146,10 +203,13 @@ export function useRouteSetupState() {
         next.delete('mapSelect');
       }),
     confirmPlace: () => {
-      if (!pendingPlace || !searchRole) return;
+      // 등산로 노드에 연결된(스냅 성공) 장소만 확정한다.
+      if (!pendingPlace || !searchRole || !pendingSnap.isSuccess) return;
+      const { nodeId } = pendingSnap.data;
 
       update((next) => {
         next.set(searchRole, pendingPlace.id);
+        next.set(NODE_PARAM[searchRole], nodeId);
         next.delete('pending');
         next.delete('searchFor');
         next.delete('q');
@@ -167,6 +227,7 @@ export function useRouteSetupState() {
     clearPlace: (role: RoutePointRole) =>
       update((next) => {
         next.delete(role);
+        next.delete(NODE_PARAM[role]);
         next.delete('searchFor');
         next.delete('pending');
         next.delete('q');

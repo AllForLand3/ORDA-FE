@@ -6,7 +6,7 @@ test('시연용 로그인은 키보드·비밀번호 표시를 지원하고 인�
   await page.setViewportSize({ width: 440, height: 956 });
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (request.url().includes('/api/')) apiRequests.push(request.url());
+    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
   });
 
   await page.goto('/login');
@@ -65,7 +65,7 @@ test('회원가입은 입력·약관 동의 전 비활성이고 실제 계정을
   await page.setViewportSize({ width: 440, height: 956 });
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (request.url().includes('/api/')) apiRequests.push(request.url());
+    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
   });
 
   await page.goto('/signup');

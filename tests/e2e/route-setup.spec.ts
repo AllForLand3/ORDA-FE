@@ -1,6 +1,34 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+// 스냅 API를 모킹한다. 예시 장소는 경도별로 서로 다른 노드, 그 외 좌표는 별도 노드로 연결한다.
+async function mockSnap(page: Page) {
+  const nodeByLongitude: Record<string, string> = {
+    '126.9518': '101',
+    '126.96444': '102',
+    '126.9523': '103',
+  };
+  await page.route(
+    (url) => url.pathname === '/api/routes/snap',
+    async (route) => {
+      const url = new URL(route.request().url());
+      const longitude = Number(url.searchParams.get('longitude'));
+      const latitude = Number(url.searchParams.get('latitude'));
+      await route.fulfill({
+        status: 200,
+        json: {
+          mountainId: '2',
+          nodeId: nodeByLongitude[String(longitude)] ?? '900',
+          distanceM: 12.4,
+          coordinates: [longitude + 0.0001, latitude + 0.0001],
+        },
+      });
+    },
+  );
+}
 
 test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서 상태를 유지한다', async ({ page }) => {
+  await mockSnap(page);
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/routes/setup');
 
@@ -42,15 +70,17 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('button', { name: /관악산 연주대/ }).click();
   await page.getByRole('button', { name: '도착지로 설정' }).click();
   await expect(next).toBeEnabled();
-  await expect(page.getByText('예시 장소 · 실제 경로 추천 미연결')).toBeVisible();
+  await expect(
+    page.getByText('검색 장소는 예시 · 선택 위치를 등산로 지점에 연결해요'),
+  ).toBeVisible();
 
   await next.click();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
   await page.getByRole('radio', { name: /중급/ }).click();
   await page.getByRole('button', { name: '다음', exact: false }).click();
   await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeDisabled();
-  await expect(page.getByText(/실제 경로 추천 기능은 아직 연결되지 않았어요/)).toBeVisible();
+  await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeEnabled();
+  await expect(page.getByText(/현재는 거리 우선으로만 탐색해요/)).toBeVisible();
 
   await page.goBack();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
@@ -124,6 +154,7 @@ test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', 
 });
 
 test('지도에서 지정한 좌표는 예시 장소와 구분해 출발지 후보로 확인한다', async ({ page }) => {
+  await mockSnap(page);
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/routes/setup');
   await page.getByRole('button', { name: '출발지 지도에서 선택' }).click();

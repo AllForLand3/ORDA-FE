@@ -1,9 +1,12 @@
+import { useNavigate } from 'react-router-dom';
+
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import beginnerIcon from '@/assets/route/level-beginner.svg';
 import intermediateIcon from '@/assets/route/level-intermediate.svg';
 import experiencedIcon from '@/assets/route/level-experienced.svg';
 
+import { getRouteSnapErrorMessage } from '../api/route-snap-errors';
 import { useRouteSetupState } from '../hooks/useRouteSetupState';
 import {
   ROUTE_DIFFICULTIES,
@@ -30,6 +33,60 @@ function getRoleLabel(role: RoutePointRole) {
   return role === 'origin' ? '출발지' : '도착지';
 }
 
+function formatSnapDistance(distanceM: number) {
+  return `약 ${Math.round(distanceM).toLocaleString('ko-KR')}m`;
+}
+
+function SnapStatus({ role, state }: { role: RoutePointRole; state: RouteSetupState }) {
+  const snap = state.pendingSnap;
+
+  if (snap.isPending) {
+    return (
+      <p aria-busy="true" className="route-setup-snap route-setup-snap--loading" role="status">
+        가까운 등산로 지점을 찾고 있어요…
+      </p>
+    );
+  }
+
+  if (snap.isError) {
+    const message = getRouteSnapErrorMessage(snap.error);
+
+    return (
+      <div className="route-setup-snap route-setup-snap--error" role="alert">
+        <strong>{message.title}</strong>
+        <p>{message.description}</p>
+        {message.retryable ? (
+          <Button
+            disabled={snap.isFetching}
+            onClick={() => {
+              void snap.refetch();
+            }}
+            size="sm"
+            variant="secondary"
+          >
+            다시 시도
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
+
+  const otherRole = role === 'origin' ? 'destination' : 'origin';
+  const otherNodeId = otherRole === 'origin' ? state.originNodeId : state.destinationNodeId;
+
+  return (
+    <div className="route-setup-snap" role="status">
+      <p>가까운 등산로 지점에 연결돼요 · 선택 위치에서 {formatSnapDistance(snap.data.distanceM)}</p>
+      {otherNodeId === snap.data.nodeId ? (
+        <p className="route-setup-snap__warning">
+          {getRoleLabel(otherRole)}와 같은 등산로 지점이에요. 서로 다른 지점이어야 경로를 탐색할 수
+          있어요.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function PlaceConfirmation({
   place,
   role,
@@ -46,11 +103,12 @@ function PlaceConfirmation({
       </p>
       <strong>{place.name}</strong>
       <span>{place.address}</span>
+      <SnapStatus role={role} state={state} />
       <div className="route-setup-confirm__actions">
         <Button onClick={state.cancelPending} size="sm" variant="secondary">
           취소
         </Button>
-        <Button onClick={state.confirmPlace} size="sm">
+        <Button disabled={!state.pendingSnap.isSuccess} onClick={state.confirmPlace} size="sm">
           {getRoleLabel(role)}로 설정
         </Button>
       </div>
@@ -87,6 +145,8 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
           <div className="route-setup-locations">
             {(['origin', 'destination'] as const).map((role) => {
               const place = role === 'origin' ? state.origin : state.destination;
+              const nodeId = role === 'origin' ? state.originNodeId : state.destinationNodeId;
+              const snap = role === 'origin' ? state.originSnap : state.destinationSnap;
               const isSearching = state.searchRole === role;
 
               return (
@@ -106,6 +166,19 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                         <strong>{place?.name ?? `${getRoleLabel(role)}를 검색해주세요`}</strong>
                         {place?.source === 'map' ? (
                           <small className="route-setup-location__source">지도에서 직접 선택</small>
+                        ) : null}
+                        {place && nodeId ? (
+                          <small className="route-setup-location__node">
+                            등산로 지점 연결
+                            {snap.isSuccess && snap.data.nodeId === nodeId
+                              ? ` · ${formatSnapDistance(snap.data.distanceM)}`
+                              : ''}
+                          </small>
+                        ) : null}
+                        {place && !nodeId ? (
+                          <small className="route-setup-location__node route-setup-location__node--missing">
+                            등산로 지점 미연결 · 다시 선택해주세요
+                          </small>
                         ) : null}
                       </span>
                       <span aria-hidden="true" className="route-setup-location__action">
@@ -289,7 +362,7 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
 
           <fieldset className="route-setup-condition-group">
             <legend>
-              탐색 기준 <small>(경로 탐색에 반영돼요)</small>
+              탐색 기준 <small>(현재는 거리 우선만 반영돼요)</small>
             </legend>
             <div className="route-setup-priorities">
               {ROUTE_PRIORITIES.map((item, index) => {
@@ -350,10 +423,28 @@ export interface RouteSetupFooterProps {
   state: RouteSetupState;
 }
 
+function getLocationsBlockedReason(state: RouteSetupState) {
+  if (state.isSameNode) {
+    return '출발지와 도착지가 같은 등산로 지점에 연결됐어요. 서로 다른 위치를 선택해주세요.';
+  }
+  if ((state.origin && !state.originNodeId) || (state.destination && !state.destinationNodeId)) {
+    return '등산로 지점에 연결되지 않은 장소가 있어요. 해당 장소를 다시 선택해주세요.';
+  }
+  return null;
+}
+
 export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
+  const navigate = useNavigate();
+  const blockedReason = getLocationsBlockedReason(state);
+
   if (state.step === 'locations') {
     return (
       <div className="route-setup-footer">
+        {blockedReason ? (
+          <p className="route-setup-footer__blocked" role="alert">
+            {blockedReason}
+          </p>
+        ) : null}
         <Button
           aria-describedby="route-setup-next-help"
           disabled={!state.canContinueFromLocations}
@@ -392,7 +483,10 @@ export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
         <Button
           aria-describedby="route-setup-recommendation-note"
           className="route-setup-footer__next"
-          disabled
+          disabled={!state.searchHref}
+          onClick={() => {
+            if (state.searchHref) navigate(state.searchHref);
+          }}
           size="lg"
         >
           맞춤 경로 탐색하기
@@ -404,7 +498,9 @@ export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
           id="route-setup-recommendation-note"
           role="note"
         >
-          실제 경로 추천 기능은 아직 연결되지 않았어요.
+          {state.searchHref
+            ? '현재는 거리 우선으로만 탐색해요. 수준·탐색 기준·비교 정보는 아직 반영되지 않아요.'
+            : (blockedReason ?? '출발지와 도착지를 등산로 지점에 연결하면 탐색할 수 있어요.')}
         </span>
       ) : null}
     </div>
