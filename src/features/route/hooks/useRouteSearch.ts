@@ -18,5 +18,6 @@ export function useRouteSearch(request: RouteSearchRequest | null) {
     ],
     queryFn: request ? () => searchRoutes(request) : skipToken,
     retry: false,
+    staleTime: Infinity,
   });
 }
