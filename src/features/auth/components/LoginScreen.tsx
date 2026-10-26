@@ -1,9 +1,12 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
+import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
+import { storeAccessToken } from '@/lib/accessToken';
+import type { ApiErrorResponse } from '@/shared/types/api';
 
-import emailIcon from '../assets/login-email.svg';
+import loginIdIcon from '../assets/login-email.svg';
 import loginBackground from '../assets/login-background.svg';
 import logoMark from '../assets/login-logo-mark.png';
 import logoTile from '../assets/login-logo-tile.svg';
@@ -14,11 +17,13 @@ import kakaoIcon from '../assets/login-social-kakao.svg';
 import contourBottom from '../assets/login-contour-bottom.svg';
 import contourMiddle from '../assets/login-contour-middle.svg';
 import contourTop from '../assets/login-contour-top.svg';
+import { useLoginMutation } from '../hooks/useLoginMutation';
 import '../auth.css';
 
 export function LoginScreen() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const loginMutation = useLoginMutation();
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -29,7 +34,46 @@ export function LoginScreen() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    navigate('/mountains');
+
+    if (loginMutation.isPending) {
+      return;
+    }
+
+    if (!loginId.trim() || !password) {
+      setNotice('아이디와 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    setNotice('');
+    loginMutation.mutate(
+      { loginId: loginId.trim(), password },
+      {
+        onSuccess: ({ accessToken }) => {
+          storeAccessToken(accessToken, rememberMe);
+          navigate('/mountains');
+        },
+        onError: (error) => {
+          if (axios.isAxiosError<ApiErrorResponse>(error)) {
+            if (error.response?.data.code === 'UNAUTHORIZED') {
+              setNotice('아이디 또는 비밀번호를 확인해주세요.');
+              return;
+            }
+
+            if (error.response?.data.message) {
+              setNotice(error.response.data.message);
+              return;
+            }
+
+            if (!error.response) {
+              setNotice('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+              return;
+            }
+          }
+
+          setNotice('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        },
+      },
+    );
   }
 
   function showUnavailableAction(action: string) {
@@ -69,23 +113,25 @@ export function LoginScreen() {
 
           <form className="auth-login__form" noValidate onSubmit={submit}>
             <TextField
-              autoComplete="email"
+              autoComplete="username"
+              disabled={loginMutation.isPending}
               hideLabel
-              id="login-email"
-              label="이메일"
-              name="email"
+              id="login-id"
+              label="아이디"
+              name="loginId"
               onChange={(event) => {
-                setEmail(event.target.value);
+                setLoginId(event.target.value);
                 setNotice('');
               }}
-              placeholder="이메일을 입력해주세요"
+              placeholder="아이디를 입력해주세요"
               required
-              startAdornment={<img alt="" aria-hidden="true" src={emailIcon} />}
-              type="email"
-              value={email}
+              startAdornment={<img alt="" aria-hidden="true" src={loginIdIcon} />}
+              type="text"
+              value={loginId}
             />
             <TextField
               autoComplete="current-password"
+              disabled={loginMutation.isPending}
               endAdornment={
                 <button
                   aria-label={passwordVisible ? '비밀번호 숨기기' : '비밀번호 표시'}
@@ -115,6 +161,7 @@ export function LoginScreen() {
             <div className="auth-login__options">
               <Checkbox
                 checked={rememberMe}
+                disabled={loginMutation.isPending}
                 label="로그인 상태 유지"
                 onChange={(event) => setRememberMe(event.target.checked)}
               />
@@ -127,8 +174,14 @@ export function LoginScreen() {
               </button>
             </div>
 
-            <Button className="auth-submit auth-login__submit" fullWidth size="lg" type="submit">
-              로그인하기
+            <Button
+              className="auth-submit auth-login__submit"
+              disabled={loginMutation.isPending}
+              fullWidth
+              size="lg"
+              type="submit"
+            >
+              {loginMutation.isPending ? '로그인 중...' : '로그인하기'}
             </Button>
           </form>
 
@@ -169,7 +222,7 @@ export function LoginScreen() {
             계정이 없으신가요? <Link to="/signup">회원가입하기</Link>
           </p>
           <p aria-live="polite" className="auth-notice" role="status">
-            {notice || '시연용 로그인입니다. 입력값 검증·인증 없이 산 선택 화면으로 이동합니다.'}
+            {notice}
           </p>
         </div>
       </section>
