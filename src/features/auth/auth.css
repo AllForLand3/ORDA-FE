@@ -4,6 +4,32 @@
   background: var(--color-background-muted);
 }
 
+.auth-route-status {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-route-status__card {
+  width: min(100%, 420px);
+  border-radius: 20px;
+  background: var(--color-background-surface);
+  padding: 32px;
+  box-shadow: 0 18px 52px rgb(18 61 50 / 12%);
+  text-align: center;
+}
+
+.auth-route-status__card h1 {
+  margin: 0;
+  color: var(--color-primary-900);
+  font-size: 22px;
+}
+
+.auth-route-status__card p {
+  margin: 12px 0 24px;
+  color: var(--color-text-secondary);
+}
+
 .auth-page {
   position: relative;
   isolation: isolate;

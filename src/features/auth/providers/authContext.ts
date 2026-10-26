@@ -7,6 +7,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isInitializing: boolean;
   isUnavailable: boolean;
+  retryAuthentication: () => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

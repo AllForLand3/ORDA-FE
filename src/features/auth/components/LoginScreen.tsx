@@ -1,7 +1,7 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
 import { storeAccessToken } from '@/lib/accessToken';
@@ -24,6 +24,7 @@ import type { CurrentUserResponse } from '../types/auth';
 import '../auth.css';
 
 export function LoginScreen() {
+  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const loginMutation = useLoginMutation();
@@ -60,7 +61,14 @@ export function LoginScreen() {
             nickname,
             role,
           });
-          navigate('/mountains');
+          const requestedPath = location.state?.from;
+          const destination =
+            typeof requestedPath === 'string' &&
+            requestedPath.startsWith('/') &&
+            !requestedPath.startsWith('//')
+              ? requestedPath
+              : '/mountains';
+          navigate(destination, { replace: true });
         },
         onError: (error) => {
           if (axios.isAxiosError<ApiErrorResponse>(error)) {
