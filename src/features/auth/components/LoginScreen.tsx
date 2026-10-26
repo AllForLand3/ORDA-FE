@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -17,11 +18,14 @@ import kakaoIcon from '../assets/login-social-kakao.svg';
 import contourBottom from '../assets/login-contour-bottom.svg';
 import contourMiddle from '../assets/login-contour-middle.svg';
 import contourTop from '../assets/login-contour-top.svg';
+import { authQueryKeys } from '../hooks/useCurrentUserQuery';
 import { useLoginMutation } from '../hooks/useLoginMutation';
+import type { CurrentUserResponse } from '../types/auth';
 import '../auth.css';
 
 export function LoginScreen() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const loginMutation = useLoginMutation();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
@@ -48,8 +52,14 @@ export function LoginScreen() {
     loginMutation.mutate(
       { loginId: loginId.trim(), password },
       {
-        onSuccess: ({ accessToken }) => {
+        onSuccess: ({ accessToken, userId, loginId: authenticatedLoginId, nickname, role }) => {
           storeAccessToken(accessToken, rememberMe);
+          queryClient.setQueryData<CurrentUserResponse>(authQueryKeys.currentUser, {
+            userId,
+            loginId: authenticatedLoginId,
+            nickname,
+            role,
+          });
           navigate('/mountains');
         },
         onError: (error) => {
