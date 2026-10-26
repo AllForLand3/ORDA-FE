@@ -8,8 +8,17 @@ export type {
   MountainSort,
 } from './components/MountainSelectionPanel';
 export { useMountainMarkerLayer } from './hooks/useMountainMarkerLayer';
+export { useMountainDetailQuery } from './hooks/useMountainDetailQuery';
+export { useMountainsQuery } from './hooks/useMountainsQuery';
+export { useServiceAreaQuery } from './hooks/useServiceAreaQuery';
 export { DEFAULT_MOUNTAIN_ID, MOUNTAIN_MOCKS } from './mocks/mountains';
 export type { MountainDifficulty, MountainRegion, MountainSummary } from './mocks/mountains';
+export type {
+  MountainDetail,
+  MountainListItem,
+  MountainSearchParams,
+  ServiceAreaFeatureCollection,
+} from './types/mountain';
 export { MyCoursesNavigation } from './components/MyCoursesNavigation';
 export { MyCoursesPanel } from './components/MyCoursesPanel';
 export { CourseDetailPanel } from './components/CourseDetailPanel';
