@@ -114,6 +114,9 @@ test('목록과 상세는 360~1512px에서 넘치지 않으며 지도와 내비�
     await page.setViewportSize(viewport);
     await page.goto('/my-courses');
     await expect(page.getByRole('article')).toHaveCount(4);
+    const navigation = page.getByRole('navigation', { name: '내 코스 내비게이션' });
+    if (viewport.width < 768) await expect(navigation).toBeVisible();
+    else await expect(navigation).not.toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       viewport.width,
     );
@@ -157,10 +160,11 @@ test('목록과 상세는 360~1512px에서 넘치지 않으며 지도와 내비�
       if (!content || !mapBox) throw new Error('PC 상세 레이아웃이 없습니다.');
       expect(content.x + content.width).toBeLessThanOrEqual(mapBox.x + 1);
     }
-    await page
-      .getByRole('navigation', { name: '내 코스 내비게이션' })
-      .getByRole('link', { name: '내 코스' })
-      .click();
+    if (viewport.width < 768) {
+      await navigation.getByRole('link', { name: '내 코스' }).click();
+    } else {
+      await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
+    }
     await expect(page).toHaveURL(/\/my-courses$/);
   }
   await page.goto('/mountains');

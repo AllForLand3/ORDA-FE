@@ -33,7 +33,6 @@ export function CourseDetailPage() {
             <img alt="" aria-hidden="true" src={backIcon} />
             <span>코스 상세 분석</span>
           </Link>
-          <MyCoursesNavigation />
           <div aria-label="코스 관리" className="course-detail-actions">
             {state.course && !state.isError ? (
               <Link to={state.editHref}>편집</Link>
@@ -117,6 +116,7 @@ export function CourseDetailPage() {
           </section>
         </main>
       )}
+      <MyCoursesNavigation />
       {state.course && !state.isError && state.isExportOpen ? (
         <CourseExportDialog courseName={state.course.name} onOpenChange={state.setExportOpen} />
       ) : null}
