@@ -32,6 +32,36 @@ test('산 선택 화면은 440px에서 지도와 산 선택 패널을 표시한�
   await page.screenshot({ path: 'test-results/mountain-select-440.png' });
 });
 
+test('모바일 하단 내비게이션은 내 코스와 같은 아이콘·글자 크기를 사용한다', async ({ page }) => {
+  await page.setViewportSize({ width: 440, height: 956 });
+
+  const readNavigationMetrics = async (navigationName: string) =>
+    page
+      .getByRole('navigation', { name: navigationName })
+      .getByRole('link')
+      .evaluateAll((links) =>
+        links.map((link) => {
+          const image = link.querySelector('img');
+          const label = link.querySelector('span');
+          const imageBox = image?.getBoundingClientRect();
+
+          return {
+            fontSize: label ? getComputedStyle(label).fontSize : null,
+            imageHeight: imageBox?.height ?? null,
+            imageWidth: imageBox?.width ?? null,
+          };
+        }),
+      );
+
+  await page.goto('/my-courses');
+  const myCoursesMetrics = await readNavigationMetrics('내 코스 내비게이션');
+
+  await page.goto('/mountains');
+  const mountainMetrics = await readNavigationMetrics('산 선택 화면 내비게이션');
+
+  expect(mountainMetrics).toEqual(myCoursesMetrics);
+});
+
 test('산 선택 레이아웃은 360·768·1024px에서 넘치지 않고 패널과 지도를 분리한다', async ({
   page,
 }) => {
