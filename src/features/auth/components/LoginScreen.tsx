@@ -33,6 +33,10 @@ export function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(true);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [notice, setNotice] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const loginIdError = !loginId.trim() && submitted ? '아이디를 입력해주세요.' : loginError;
+  const passwordError = !password && submitted ? '비밀번호를 입력해주세요.' : loginError;
   const backgroundStyle: CSSProperties = {
     backgroundImage: `url("${loginBackground}")`,
   };
@@ -44,12 +48,15 @@ export function LoginScreen() {
       return;
     }
 
+    setSubmitted(true);
+    setLoginError('');
+    setNotice('');
+
     if (!loginId.trim() || !password) {
-      setNotice('아이디와 비밀번호를 입력해주세요.');
+      setLoginError('아이디와 비밀번호를 입력해주세요.');
       return;
     }
 
-    setNotice('');
     loginMutation.mutate(
       { loginId: loginId.trim(), password },
       {
@@ -66,18 +73,18 @@ export function LoginScreen() {
         },
         onError: (error) => {
           if (axios.isAxiosError<ApiErrorResponse>(error)) {
-            if (error.response?.data.code === 'UNAUTHORIZED') {
-              setNotice('아이디 또는 비밀번호를 확인해주세요.');
-              return;
-            }
-
-            if (error.response?.data.message) {
-              setNotice(error.response.data.message);
+            if (error.response?.status === 401 || error.response?.data.code === 'UNAUTHORIZED') {
+              setLoginError('아이디 또는 비밀번호를 확인해주세요.');
               return;
             }
 
             if (!error.response) {
               setNotice('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+              return;
+            }
+
+            if (error.response.data.message) {
+              setNotice(error.response.data.message);
               return;
             }
           }
@@ -136,8 +143,11 @@ export function LoginScreen() {
               id="login-id"
               label="아이디"
               name="loginId"
+              invalid={Boolean(loginIdError)}
               onChange={(event) => {
                 setLoginId(event.target.value);
+                setLoginError('');
+                setSubmitted(false);
                 setNotice('');
               }}
               placeholder="아이디를 입력해주세요"
@@ -163,8 +173,12 @@ export function LoginScreen() {
               id="login-password"
               label="비밀번호"
               name="password"
+              invalid={Boolean(passwordError)}
+              error={loginError || undefined}
               onChange={(event) => {
                 setPassword(event.target.value);
+                setLoginError('');
+                setSubmitted(false);
                 setNotice('');
               }}
               placeholder="비밀번호를 입력해주세요"
