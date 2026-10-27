@@ -150,7 +150,7 @@ test('회원가입은 입력·약관 동의 전 비활성이고 실제 계정을
   await expect(page).toHaveURL('/login');
 });
 
-test('인증 화면은 모바일과 데스크톱 폭에서 가로 넘침 없이 중앙 배치된다', async ({ page }) => {
+test('인증 화면은 모바일 카드와 데스크톱 분할 레이아웃을 제공한다', async ({ page }) => {
   for (const width of [360, 390, 440, 768, 1024, 1440, 1512]) {
     await page.setViewportSize({ width, height: width < 768 ? 956 : 982 });
 
@@ -158,17 +158,49 @@ test('인증 화면은 모바일과 데스크톱 폭에서 가로 넘침 없이 
       await page.goto(path);
       const layout = await page.evaluate(() => {
         const pageElement = document.querySelector('.auth-page');
+        const brandElement = document.querySelector('.auth-login__brand, .auth-signup__heading');
+        const surfaceElement = document.querySelector('.auth-surface');
         const rect = pageElement?.getBoundingClientRect();
+        const brandRect = brandElement?.getBoundingClientRect();
+        const surfaceRect = surfaceElement?.getBoundingClientRect();
         return {
           documentWidth: document.documentElement.scrollWidth,
           pageLeft: rect?.left ?? -1,
           pageWidth: rect?.width ?? 0,
+          brandRight: brandRect?.right ?? 0,
+          surfaceLeft: surfaceRect?.left ?? 0,
         };
       });
 
       expect(layout.documentWidth).toBeLessThanOrEqual(width);
-      expect(layout.pageWidth).toBeLessThanOrEqual(440);
       expect(layout.pageLeft).toBeGreaterThanOrEqual(0);
+      if (width >= 1024) {
+        expect(layout.pageWidth).toBeGreaterThan(800);
+        expect(layout.surfaceLeft).toBeGreaterThanOrEqual(layout.brandRight - 1);
+      } else {
+        expect(layout.pageWidth).toBeLessThanOrEqual(440);
+      }
+
+      if (width === 1512) {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.screenshot({
+          path: `test-results/auth-${path.slice(1)}-desktop.png`,
+          animations: 'disabled',
+        });
+      }
     }
   }
+
+  await page.setViewportSize({ width: 1512, height: 982 });
+  const desktopFrames = [];
+  for (const path of ['/login', '/signup']) {
+    await page.goto(path);
+    desktopFrames.push(
+      await page.locator('.auth-page').evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }),
+    );
+  }
+  expect(desktopFrames[0]).toEqual(desktopFrames[1]);
 });

@@ -7,17 +7,16 @@ import { Button, Checkbox, TextField } from '@/components/ui';
 import { storeAccessToken } from '@/lib/accessToken';
 import type { ApiErrorResponse } from '@/shared/types/api';
 
-import loginIdIcon from '../assets/login-email.svg';
 import loginBackground from '../assets/login-background.svg';
 import logoMark from '../assets/login-logo-mark.png';
-import logoTile from '../assets/login-logo-tile.svg';
-import passwordIcon from '../assets/login-password.svg';
 import appleIcon from '../assets/login-social-apple.svg';
 import googleIcon from '../assets/login-social-google.svg';
 import kakaoIcon from '../assets/login-social-kakao.svg';
 import contourBottom from '../assets/login-contour-bottom.svg';
 import contourMiddle from '../assets/login-contour-middle.svg';
 import contourTop from '../assets/login-contour-top.svg';
+import eye from '../assets/eye.svg';
+import eyeOff from '../assets/eye-off.svg';
 import { authQueryKeys } from '../hooks/useCurrentUserQuery';
 import { useLoginMutation } from '../hooks/useLoginMutation';
 import type { CurrentUserResponse } from '../types/auth';
@@ -108,21 +107,26 @@ export function LoginScreen() {
 
         <header className="auth-login__brand">
           <div aria-label="ORDA 로고" className="auth-login__logo" role="img">
-            <img alt="" className="auth-login__logo-tile" src={logoTile} />
             <img alt="" className="auth-login__logo-mark" src={logoMark} />
           </div>
+          <span className="auth__eyebrow">LOGIN ORDA</span>
           <h1 className="auth-login__brand-title">다시, 산으로</h1>
           <p className="auth-login__tagline">
             <span>지도와 데이터로 만나는</span>
             <span>나만의 등산 코스</span>
           </p>
+          <ul className="auth-desktop-highlights">
+            <li>산별 서비스 영역을 한눈에 확인</li>
+            <li>조건에 맞는 등산 경로 탐색</li>
+            <li>고도와 경사 데이터를 통한 코스 비교</li>
+          </ul>
         </header>
 
         <div className="auth-surface auth-login__surface">
           <h2 className="auth-login__title" id="login-title">
             로그인
           </h2>
-          <p className="auth-login__description">AllForLand와 함께 산을 더 가까이</p>
+          <p className="auth-login__description">ORDA와 함께 산을 더 가까이</p>
 
           <form className="auth-login__form" noValidate onSubmit={submit}>
             <TextField
@@ -138,7 +142,6 @@ export function LoginScreen() {
               }}
               placeholder="아이디를 입력해주세요"
               required
-              startAdornment={<img alt="" aria-hidden="true" src={loginIdIcon} />}
               type="text"
               value={loginId}
             />
@@ -153,7 +156,7 @@ export function LoginScreen() {
                   onClick={() => setPasswordVisible((visible) => !visible)}
                   type="button"
                 >
-                  {passwordVisible ? '숨기기' : '표시'}
+                  <img src={passwordVisible ? eyeOff : eye} alt="" />
                 </button>
               }
               hideLabel
@@ -166,7 +169,6 @@ export function LoginScreen() {
               }}
               placeholder="비밀번호를 입력해주세요"
               required
-              startAdornment={<img alt="" aria-hidden="true" src={passwordIcon} />}
               type={passwordVisible ? 'text' : 'password'}
               value={password}
             />

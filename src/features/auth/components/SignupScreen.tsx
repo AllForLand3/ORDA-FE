@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
 
+import logoMark from '../assets/login-logo-mark.png';
 import signupBackground from '../assets/signup-background.svg';
 import contourBottom from '../assets/signup-contour-bottom.svg';
 import contourTop from '../assets/signup-contour-top.svg';
+import eye from '../assets/eye.svg';
+import eyeOff from '../assets/eye-off.svg';
 import '../auth.css';
 
 type SignupField = 'email' | 'password' | 'passwordConfirm' | 'nickname';
@@ -50,7 +53,7 @@ export function SignupScreen() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [passwordConfirmVisible, setPasswordConfirmVisible] = useState(false);
   const [expandedTerm, setExpandedTerm] = useState<'service' | 'privacy' | null>(null);
-  const [touched, setTouched] = useState<Partial<Record<SignupField, boolean>>>({ password: true });
+  const [touched, setTouched] = useState<Partial<Record<SignupField, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [notice, setNotice] = useState('');
   const backgroundStyle: CSSProperties = {
@@ -110,7 +113,6 @@ export function SignupScreen() {
   }
 
   function updateField(field: SignupField, value: string) {
-    touch(field);
     setNotice('');
 
     if (field === 'email') setEmail(value);
@@ -155,8 +157,17 @@ export function SignupScreen() {
         </div>
 
         <header className="auth-signup__heading">
+          <div aria-label="ORDA 로고" className="auth-signup__desktop-logo" role="img">
+            <img alt="" className="auth-signup__desktop-logo-mark" src={logoMark} />
+          </div>
+          <span className="auth__eyebrow">JOIN ORDA</span>
           <h1 id="signup-title">회원가입</h1>
-          <p>AllForLand와 함께 더 많은 산을 만나보세요</p>
+          <p>ORDA와 함께 더 많은 산을 만나보세요</p>
+          <ul className="auth-desktop-highlights">
+            <li>나만의 등산 코스 저장과 관리</li>
+            <li>산별 공간정보와 경로 데이터 확인</li>
+            <li>안전하고 편리한 산행 계획</li>
+          </ul>
         </header>
 
         <div className="auth-surface auth-signup__surface">
@@ -189,7 +200,7 @@ export function SignupScreen() {
                       onClick={() => setPasswordVisible((visible) => !visible)}
                       type="button"
                     >
-                      {passwordVisible ? '숨기기' : '표시'}
+                      <img src={passwordVisible ? eyeOff : eye} alt="" />
                     </button>
                   }
                   error={passwordError || undefined}
@@ -218,7 +229,7 @@ export function SignupScreen() {
                       onClick={() => setPasswordConfirmVisible((visible) => !visible)}
                       type="button"
                     >
-                      {passwordConfirmVisible ? '숨기기' : '표시'}
+                      <img src={passwordConfirmVisible ? eyeOff : eye} alt="" />
                     </button>
                   }
                   error={passwordConfirmError || undefined}
