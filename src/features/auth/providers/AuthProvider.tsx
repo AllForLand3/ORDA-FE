@@ -11,9 +11,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const currentUserQuery = useCurrentUserQuery(hasAccessToken);
   const value: AuthContextValue = {
     currentUser: hasAccessToken ? (currentUserQuery.data ?? null) : null,
+
     isAuthenticated: hasAccessToken && currentUserQuery.data !== undefined,
-    isInitializing: hasAccessToken && (currentUserQuery.isLoading || currentUserQuery.isRefetching),
-    isUnavailable: hasAccessToken && currentUserQuery.isError && !currentUserQuery.isFetching,
+
+    isInitializing:
+      hasAccessToken && currentUserQuery.data === undefined && currentUserQuery.isFetching,
+
+    isUnavailable:
+      hasAccessToken &&
+      currentUserQuery.data === undefined &&
+      currentUserQuery.isError &&
+      !currentUserQuery.isFetching,
+
     retryAuthentication: () => {
       void currentUserQuery.refetch();
     },
