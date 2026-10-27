@@ -59,7 +59,13 @@ export function LoginScreen() {
       { loginId: loginId.trim(), password },
       {
         onSuccess: ({ accessToken, userId, loginId: authenticatedLoginId, nickname, role }) => {
-          storeAccessToken(accessToken, rememberMe);
+          try {
+            storeAccessToken(accessToken, rememberMe);
+          } catch {
+            setNotice('로그인 정보를 저장할 수 없습니다. 브라우저 설정을 확인해주세요.');
+            return;
+          }
+
           queryClient.setQueryData<CurrentUserResponse>(authQueryKeys.currentUser, {
             userId,
             loginId: authenticatedLoginId,
