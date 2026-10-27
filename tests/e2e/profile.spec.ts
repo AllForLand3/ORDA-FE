@@ -47,7 +47,7 @@ test('마이페이지는 로그인 사용자 정보를 표시하고 로그아웃
   await expect(page.getByRole('heading', { name: '내 정보 수정', exact: true })).toBeVisible();
   await page.getByRole('link', { name: '마이페이지로 돌아가기', exact: true }).click();
   await page.getByRole('button', { name: '로그아웃' }).click();
-  await expect(page).toHaveURL('/login');
+  await expect(page).toHaveURL('/');
   await expect
     .poll(() =>
       page.evaluate(() => ({

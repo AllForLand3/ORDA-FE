@@ -36,7 +36,7 @@ export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
   function logout() {
     clearAccessToken();
     queryClient.clear();
-    window.location.replace('/login');
+    window.location.replace('/');
   }
 
   return (
