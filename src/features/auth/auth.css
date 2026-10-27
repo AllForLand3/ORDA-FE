@@ -373,7 +373,7 @@
   gap: 0;
 }
 
-.auth-signup__field--email,
+.auth-signup__field--login-id,
 .auth-signup__field--confirm {
   min-height: 85px;
 }
@@ -714,12 +714,12 @@
     row-gap: 20px;
   }
 
-  .auth-signup__field--email,
+  .auth-signup__field--login-id,
   .auth-signup__field--nickname {
     grid-column: 1 / -1;
   }
 
-  .auth-signup__field--email,
+  .auth-signup__field--login-id,
   .auth-signup__field--confirm,
   .auth-signup__field--password,
   .auth-signup__field--nickname {

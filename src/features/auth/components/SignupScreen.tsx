@@ -11,16 +11,16 @@ import eye from '../assets/eye.svg';
 import eyeOff from '../assets/eye-off.svg';
 import '../auth.css';
 
-type SignupField = 'email' | 'password' | 'passwordConfirm' | 'nickname';
+type SignupField = 'loginId' | 'password' | 'passwordConfirm' | 'nickname';
 
-function getEmailError(value: string) {
+function getLoginIdError(value: string) {
   if (!value.trim()) {
-    return '이메일을 입력해주세요.';
+    return '아이디를 입력해주세요.';
   }
 
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+  return /^[A-Za-z0-9][A-Za-z0-9._-]{2,49}$/.test(value)
     ? ''
-    : '올바른 이메일 주소를 입력해주세요.';
+    : '아이디는 영문, 숫자, 마침표, 밑줄, 하이픈만 사용할 수 있습니다.';
 }
 
 function getPasswordError(value: string) {
@@ -44,7 +44,7 @@ function getNicknameError(value: string) {
 }
 
 export function SignupScreen() {
-  const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [nickname, setNickname] = useState('');
@@ -60,7 +60,7 @@ export function SignupScreen() {
     backgroundImage: `url("${signupBackground}")`,
   };
 
-  const emailError = submitted || touched.email ? getEmailError(email) : '';
+  const loginIdError = submitted || touched.loginId ? getLoginIdError(loginId) : '';
   const passwordError = submitted
     ? getPasswordError(password)
     : touched.password
@@ -78,7 +78,7 @@ export function SignupScreen() {
       : '';
   const nicknameError = submitted || touched.nickname ? getNicknameError(nickname) : '';
   const formIsValid =
-    !getEmailError(email) &&
+    !getLoginIdError(loginId) &&
     !getPasswordError(password) &&
     Boolean(passwordConfirm) &&
     passwordConfirm === password &&
@@ -96,15 +96,15 @@ export function SignupScreen() {
     setNotice('');
 
     if (!formIsValid) {
-      const firstInvalidField: SignupField = getEmailError(email)
-        ? 'email'
+      const firstInvalidField: SignupField = getLoginIdError(loginId)
+        ? 'loginId'
         : getPasswordError(password)
           ? 'password'
           : !passwordConfirm || passwordConfirm !== password
             ? 'passwordConfirm'
             : getNicknameError(nickname)
               ? 'nickname'
-              : 'email';
+              : 'loginId';
       document.getElementById(`signup-${firstInvalidField}`)?.focus();
       return;
     }
@@ -115,7 +115,7 @@ export function SignupScreen() {
   function updateField(field: SignupField, value: string) {
     setNotice('');
 
-    if (field === 'email') setEmail(value);
+    if (field === 'loginId') setLoginId(value);
     if (field === 'password') setPassword(value);
     if (field === 'passwordConfirm') setPasswordConfirm(value);
     if (field === 'nickname') setNickname(value);
@@ -176,16 +176,16 @@ export function SignupScreen() {
               <div className="auth-signup__field auth-signup__field--email">
                 <TextField
                   autoComplete="email"
-                  error={emailError || undefined}
-                  id="signup-email"
-                  label="이메일"
-                  name="email"
-                  onBlur={() => touch('email')}
-                  onChange={(event) => updateField('email', event.target.value)}
-                  placeholder="이메일을 입력해주세요"
+                  error={loginIdError || undefined}
+                  id="signup-loginId"
+                  label="아이디"
+                  name="loginId"
+                  onBlur={() => touch('loginId')}
+                  onChange={(event) => updateField('loginId', event.target.value)}
+                  placeholder="아이디를 입력해주세요"
                   required
-                  type="email"
-                  value={email}
+                  type="text"
+                  value={loginId}
                 />
               </div>
 
