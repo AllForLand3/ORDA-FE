@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 import { ProtectedRoute, PublicOnlyRoute } from '@/features/auth';
-import { HomePage } from '@/pages/HomePage';
+import { HomeRedirect } from '@/features/auth/components/HomeRedirect';
 import { LoginPage } from '@/pages/LoginPage';
 import { MountainSelectPage } from '@/pages/MountainSelectPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -17,7 +17,7 @@ import { ProfileEditPage } from '@/pages/ProfileEditPage';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <HomePage />,
+    element: <HomeRedirect />,
   },
   {
     element: <PublicOnlyRoute />,

@@ -309,3 +309,33 @@ test('인증 화면은 모바일 카드와 데스크톱 분할 레이아웃을 �
 
   expect(desktopFrames[0]).toEqual(desktopFrames[1]);
 });
+
+test('비로그인 사용자는 기본 홈 화면을 볼 수 있다', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('main')).toBeVisible();
+
+  await expect(page.getByRole('link', { name: '로그인', exact: true })).toBeVisible();
+});
+
+test('로그인 사용자는 기본 경로에서 산 목록으로 이동한다', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('orda.accessToken', 'valid-token');
+  });
+
+  await page.route('**/api/auth/me', async (route) => {
+    await route.fulfill({
+      json: {
+        userId: '1',
+        loginId: 'orda-user',
+        nickname: '오르다',
+        role: 'USER',
+      },
+    });
+  });
+
+  await page.goto('/');
+
+  await expect(page).toHaveURL('/mountains');
+});
