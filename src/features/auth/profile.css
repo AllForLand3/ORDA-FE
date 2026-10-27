@@ -20,7 +20,7 @@
 }
 .profile-hero header {
   position: relative;
-  padding: 0.5rem 1.125rem;
+  padding: 1.5rem;
 }
 .profile-hero h1 {
   margin: 0;
@@ -214,12 +214,24 @@
   margin-top: 0;
 }
 
+.profile-mobile-navigation {
+  display: block;
+}
+
+.profile-hero__header-content {
+  display: block;
+}
+
+.profile-hero__back {
+  display: none;
+}
+
 @media (min-width: 48rem) {
   .profile-page {
     padding-bottom: 0;
   }
   .profile-hero {
-    height: 20rem;
+    height: 19rem;
   }
   .profile-hero__image {
     inset: 0;
@@ -228,10 +240,45 @@
     object-position: center 45%;
   }
   .profile-hero header {
-    max-width: 40rem;
-    margin: auto;
-    padding: 2rem 1.125rem;
+    position: absolute;
+    bottom: 12rem;
+    left: 50%;
+    width: min(40rem, 100%);
+    margin: 0;
+    padding: 0 1.125rem;
+    transform: translateX(-50%);
   }
+  .profile-hero__header-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+  .profile-hero__heading {
+    min-width: 0;
+  }
+  .profile-hero__back {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: rgb(255 255 255 / 85%);
+    color: var(--color-primary-900);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .profile-hero__back:hover {
+    background: #fff;
+  }
+  .profile-main {
+    margin-top: -2rem;
+  }
+
   .profile-page .my-courses-navigation {
     position: relative;
     width: min(40rem, calc(100% - 2.25rem));
@@ -241,5 +288,19 @@
   }
   .profile-edit-page {
     padding-top: 1rem;
+  }
+
+  .profile-mobile-navigation {
+    display: none;
+  }
+}
+
+@media (min-width: 48rem) and (max-width: 63.999rem) {
+  .profile-page .my-courses-navigation {
+    position: relative;
+    width: min(40rem, calc(100% - 2.25rem));
+    min-height: 4rem;
+    margin: auto;
+    border-top: 1px solid var(--color-border-default);
   }
 }

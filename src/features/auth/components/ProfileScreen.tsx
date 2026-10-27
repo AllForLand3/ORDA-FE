@@ -44,8 +44,16 @@ export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
       <div className="profile-hero">
         <img alt="" aria-hidden="true" className="profile-hero__image" src={mountain} />
         <header>
-          <h1>마이페이지</h1>
-          <p>내 정보를 관리해보세요</p>
+          <div className="profile-hero__header-content">
+            <div className="profile-hero__heading">
+              <h1>마이페이지</h1>
+              <p>내 정보를 관리해보세요</p>
+            </div>
+
+            <Link className="profile-hero__back" to="/mountains">
+              <span aria-hidden="true">←</span>산 탐색으로
+            </Link>
+          </div>
         </header>
       </div>
       <main className="profile-main">
@@ -82,13 +90,13 @@ export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
             <img alt="" aria-hidden="true" src={nextIcon} />
           </button>
         </nav>
-        <Button className="profile-logout" fullWidth onClick={logout}>
+        <Button className="profile-logout" variant="danger" fullWidth onClick={logout}>
           <img alt="" aria-hidden="true" src={logoutIcon} />
           로그아웃
         </Button>
         <p className="profile-demo-note">프로필 수정 기능은 아직 연결되지 않았습니다.</p>
       </main>
-      {navigation}
+      <div className="profile-mobile-navigation">{navigation}</div>
       <Dialog
         description={activeNotice?.message}
         footer={
