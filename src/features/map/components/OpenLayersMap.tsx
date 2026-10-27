@@ -7,6 +7,7 @@ import Map from 'ol/Map.js';
 import type BaseLayer from 'ol/layer/Base.js';
 import { defaults as defaultInteractions } from 'ol/interaction/defaults.js';
 import OSM from 'ol/source/OSM.js';
+import XYZ from 'ol/source/XYZ.js';
 import TileLayer from 'ol/layer/Tile.js';
 import View from 'ol/View.js';
 import { fromLonLat, toLonLat } from 'ol/proj.js';
@@ -20,9 +21,12 @@ import 'ol/ol.css';
 import './openlayers-map.css';
 
 export type LongitudeLatitude = readonly [longitude: number, latitude: number];
+export type BaseMapType = 'street' | 'satellite';
 
 export interface MapController {
   centerOn: (coordinate: LongitudeLatitude, zoom?: number) => boolean;
+  isBaseMapAvailable: (type: BaseMapType) => boolean;
+  setBaseMap: (type: BaseMapType) => boolean;
 }
 
 export interface OpenLayersMapProps {
@@ -37,6 +41,7 @@ export interface OpenLayersMapProps {
 const INITIAL_ZOOM = 14;
 const MAX_ZOOM = 19;
 const EMPTY_LAYERS: BaseLayer[] = [];
+const VWORLD_KEY = import.meta.env.VITE_VWORLD_KEY?.trim();
 
 function isValidCoordinate(coordinate: readonly number[]): coordinate is LongitudeLatitude {
   const [longitude, latitude] = coordinate;
@@ -81,6 +86,17 @@ export function OpenLayersMap({
     const osmLayer = new TileLayer({
       source: new OSM(),
     });
+    const satelliteLayer = VWORLD_KEY
+      ? new TileLayer({
+          source: new XYZ({
+            attributions:
+              '© <a href="https://www.vworld.kr/" target="_blank" rel="noopener noreferrer">VWorld</a>',
+            maxZoom: MAX_ZOOM,
+            url: `https://api.vworld.kr/req/wmts/1.0.0/${encodeURIComponent(VWORLD_KEY)}/Satellite/{z}/{y}/{x}.jpeg`,
+          }),
+          visible: false,
+        })
+      : null;
     let isActive = true;
     const view = new View({
       center: initialCenter ? fromLonLat([...initialCenter]) : undefined,
@@ -97,7 +113,7 @@ export function OpenLayersMap({
         altShiftDragRotate: false,
         pinchRotate: false,
       }),
-      layers: [osmLayer, ...additionalLayers],
+      layers: [osmLayer, ...(satelliteLayer ? [satelliteLayer] : []), ...additionalLayers],
       target,
       view,
     });
@@ -108,6 +124,7 @@ export function OpenLayersMap({
       const zoom = view.getZoom();
 
       target.dataset.mapReady = 'true';
+      target.dataset.mapBaseLayer = satelliteLayer?.getVisible() ? 'satellite' : 'street';
       target.dataset.mapProjection = view.getProjection().getCode();
 
       if (zoom !== undefined) {
@@ -156,6 +173,19 @@ export function OpenLayersMap({
 
         return true;
       },
+      isBaseMapAvailable: (type) => type === 'street' || satelliteLayer !== null,
+      setBaseMap: (type) => {
+        if (!isActive || (type === 'satellite' && !satelliteLayer)) {
+          return false;
+        }
+
+        const isSatellite = type === 'satellite';
+        osmLayer.setVisible(!isSatellite);
+        satelliteLayer?.setVisible(isSatellite);
+        target.dataset.mapBaseLayer = type;
+
+        return true;
+      },
     };
 
     refreshMapState();
@@ -170,6 +200,7 @@ export function OpenLayersMap({
       unByKey(mapClickKey);
       onControllerChangeRef.current?.(null);
       delete target.dataset.mapReady;
+      delete target.dataset.mapBaseLayer;
       delete target.dataset.mapProjection;
       delete target.dataset.mapZoom;
       delete target.dataset.mapSize;

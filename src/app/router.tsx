@@ -31,6 +31,10 @@ export const router = createBrowserRouter([
     element: <MountainSelectPage />,
   },
   {
+    path: '/terrain-3d',
+    lazy: async () => ({ Component: (await import('@/pages/Terrain3DPage')).Terrain3DPage }),
+  },
+  {
     path: '/routes/setup',
     element: <RouteSetupPage />,
   },
