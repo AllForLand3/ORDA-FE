@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
 
@@ -9,6 +9,7 @@ import contourBottom from '../assets/signup-contour-bottom.svg';
 import contourTop from '../assets/signup-contour-top.svg';
 import eye from '../assets/eye.svg';
 import eyeOff from '../assets/eye-off.svg';
+import { useSignupMutation } from '../hooks/useSignupMutation';
 import '../auth.css';
 
 type SignupField = 'loginId' | 'password' | 'passwordConfirm' | 'nickname';
@@ -44,6 +45,8 @@ function getNicknameError(value: string) {
 }
 
 export function SignupScreen() {
+  const navigate = useNavigate();
+  const signupMutation = useSignupMutation();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -91,6 +94,10 @@ export function SignupScreen() {
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
+    if (signupMutation.isPending) {
+      return;
+    }
+
     event.preventDefault();
     setSubmitted(true);
     setNotice('');
@@ -109,7 +116,21 @@ export function SignupScreen() {
       return;
     }
 
-    setNotice('인증 서버가 연결되지 않아 계정이 생성되지 않았습니다.');
+    signupMutation.mutate(
+      {
+        loginId: loginId.trim(),
+        nickname: nickname.trim(),
+        password,
+      },
+      {
+        onSuccess: () => {
+          navigate('/login', { replace: true });
+        },
+        onError: () => {
+          setNotice('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
+        },
+      },
+    );
   }
 
   function updateField(field: SignupField, value: string) {
@@ -292,12 +313,12 @@ export function SignupScreen() {
 
             <Button
               className="auth-submit auth-signup__submit"
-              disabled={!formIsValid}
+              disabled={!formIsValid || signupMutation.isPending}
               fullWidth
               size="lg"
               type="submit"
             >
-              회원가입하기
+              {signupMutation.isPending ? '회원가입 중...' : '회원가입하기'}
             </Button>
           </form>
 
