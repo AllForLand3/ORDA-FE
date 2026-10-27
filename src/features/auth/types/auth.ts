@@ -15,4 +15,16 @@ export interface LoginResponse extends AuthUser {
   tokenType: string;
 }
 
+export interface SignupRequest {
+  loginId: string;
+  nickname: string;
+  password: string;
+}
+
+export interface SignupResponse {
+  userId: string;
+  loginId: string;
+  nickname: string;
+}
+
 export type CurrentUserResponse = AuthUser;
