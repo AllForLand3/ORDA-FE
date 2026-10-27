@@ -5,7 +5,10 @@ test('산 선택 화면은 440px에서 지도와 산 선택 패널을 표시한�
   await page.goto('/mountains');
 
   await expect(page.getByRole('heading', { name: '어느 산으로 갈까요?' })).toBeVisible();
-  await expect(page.getByRole('searchbox', { name: '산 이름 검색' })).toBeVisible();
+  const panel = page.getByRole('complementary', { name: '산 선택 패널' });
+  await expect(panel.getByRole('searchbox', { name: '산 이름 검색' })).toBeVisible();
+  await expect(page.locator('.orda-map-layout__header').getByRole('searchbox')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'ORDA 홈으로 이동' })).toBeVisible();
   await expect(page.getByText('화면 확인용 예시 데이터')).toBeVisible();
   await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
     'data-map-ready',
@@ -59,6 +62,7 @@ test('산 선택 레이아웃은 360·768·1024px에서 넘치지 않고 패널�
 
     if (viewport.width >= 768) {
       expect(layout.mapLeft).toBeGreaterThanOrEqual(layout.panelRight - 1);
+      await expect(page.getByRole('navigation', { name: '주요 메뉴' })).toBeVisible();
     }
   }
 });

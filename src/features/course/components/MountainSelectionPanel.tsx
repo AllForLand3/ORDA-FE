@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 
 import { MOUNTAIN_MOCKS } from '../mocks/mountains';
 import type { MountainDifficulty, MountainRegion, MountainSummary } from '../mocks/mountains';
+import { MountainSearchBar } from './MountainSearchBar';
 
 import './mountain-select.css';
 
@@ -13,11 +14,13 @@ export type MountainSort = 'popularity' | 'elevation';
 export interface MountainSelectionPanelProps {
   difficulty: MountainDifficulty | '전체';
   filtersExpanded: boolean;
+  onFilterToggle: () => void;
   onClearFilters: () => void;
   onDifficultyChange: (difficulty: MountainDifficulty | '전체') => void;
   onMountainSelect: (mountainId: string | null) => void;
   onRegionChange: (region: MountainRegion | '전체') => void;
   onSortChange: (sort: MountainSort) => void;
+  onSearchChange: (value: string) => void;
   region: MountainRegion | '전체';
   searchQuery: string;
   selectedMountainId: string | null;
@@ -52,8 +55,10 @@ export function MountainSelectionPanel({
   filtersExpanded,
   onClearFilters,
   onDifficultyChange,
+  onFilterToggle,
   onMountainSelect,
   onRegionChange,
+  onSearchChange,
   onSortChange,
   region,
   searchQuery,
@@ -93,6 +98,12 @@ export function MountainSelectionPanel({
         <p className="mountain-selection__description">
           원하는 산을 선택하면 코스를 탐색할 수 있어요.
         </p>
+        <MountainSearchBar
+          filtersExpanded={filtersExpanded}
+          onFilterToggle={onFilterToggle}
+          onSearchChange={onSearchChange}
+          searchQuery={searchQuery}
+        />
       </header>
 
       <div aria-label="지역 필터" className="mountain-selection__filters" role="group">

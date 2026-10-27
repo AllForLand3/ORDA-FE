@@ -148,7 +148,7 @@ test('산 목록 높이는 키보드로도 조절하고 PC 전환·접기에서�
   await expect(handle).toBeVisible();
 });
 
-test('PC의 검색창 옆 메뉴와 태블릿 두 번째 줄 메뉴가 세 경로를 연결한다', async ({ page }) => {
+test('PC·태블릿 헤더 메뉴와 패널 검색창이 분리되고 세 경로를 연결한다', async ({ page }) => {
   for (const viewport of [
     { width: 768, height: 1024 },
     { width: 1024, height: 768 },
@@ -168,11 +168,12 @@ test('PC의 검색창 옆 메뉴와 태블릿 두 번째 줄 메뉴가 세 경�
       '/routes/setup',
     );
     await expect(nav.getByRole('link', { name: '내 코스' })).toHaveAttribute('href', '/my-courses');
-    const search = await page.getByRole('searchbox', { name: '산 이름 검색' }).boundingBox();
+    const panel = page.getByRole('complementary', { name: '산 선택 패널' });
+    const search = await panel.getByRole('searchbox', { name: '산 이름 검색' }).boundingBox();
     const navBox = await nav.boundingBox();
     if (!search || !navBox) throw new Error('PC 메뉴가 없습니다.');
-    if (viewport.width >= 1024) expect(navBox.x).toBeGreaterThan(search.x + search.width);
-    else expect(navBox.y).toBeGreaterThanOrEqual(search.y + search.height);
+    await expect(page.locator('.orda-map-layout__header').getByRole('searchbox')).toHaveCount(0);
+    expect(navBox.y + navBox.height).toBeLessThanOrEqual(search.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       viewport.width,
     );

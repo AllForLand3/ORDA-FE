@@ -9,7 +9,7 @@ import {
   DEFAULT_MOUNTAIN_ID,
   MOUNTAIN_MOCKS,
   MountainBottomNavigation,
-  MountainSearchBar,
+  MountainHeader,
   MountainSelectionPanel,
   useMountainMarkerLayer,
 } from '@/features/course';
@@ -53,14 +53,7 @@ export function MountainSelectPage() {
     <MapPageLayout
       bottomNavigation={<MountainBottomNavigation />}
       bottomNavigationLabel="산 선택 화면 내비게이션"
-      header={
-        <MountainSearchBar
-          filtersExpanded={filtersExpanded}
-          onFilterToggle={() => setFiltersExpanded((isExpanded) => !isExpanded)}
-          onSearchChange={setSearchQuery}
-          searchQuery={searchQuery}
-        />
-      }
+      header={<MountainHeader />}
       mapContainerRef={mapContainerRef}
       mapContent={
         <OpenLayersMap
@@ -79,8 +72,10 @@ export function MountainSelectPage() {
           filtersExpanded={filtersExpanded}
           onClearFilters={clearFilters}
           onDifficultyChange={setDifficulty}
+          onFilterToggle={() => setFiltersExpanded((expanded) => !expanded)}
           onMountainSelect={handleMountainSelect}
           onRegionChange={setRegion}
+          onSearchChange={setSearchQuery}
           onSortChange={setSort}
           region={region}
           searchQuery={searchQuery}
