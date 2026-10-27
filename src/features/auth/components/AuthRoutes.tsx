@@ -3,7 +3,6 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui';
 
 import { useAuth } from '../providers/authContext';
-import { getSafeRedirectPath } from '../utils/redirect';
 
 function AuthenticationStatus({ unavailable = false }: { unavailable?: boolean }) {
   const { retryAuthentication } = useAuth();
@@ -44,7 +43,6 @@ export function ProtectedRoute() {
 }
 
 export function PublicOnlyRoute() {
-  const location = useLocation();
   const { isAuthenticated, isInitializing, isUnavailable } = useAuth();
 
   if (isInitializing) {
@@ -56,9 +54,7 @@ export function PublicOnlyRoute() {
   }
 
   if (isAuthenticated) {
-    const requestedPath = new URLSearchParams(location.search).get('redirect');
-    return <Navigate replace to={getSafeRedirectPath(requestedPath)} />;
+    return <Navigate replace to="/mountains" />;
   }
-
   return <Outlet />;
 }

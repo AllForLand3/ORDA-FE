@@ -1,7 +1,7 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
 import { storeAccessToken } from '@/lib/accessToken';
@@ -20,12 +20,10 @@ import eyeOff from '../assets/eye-off.svg';
 import { authQueryKeys } from '../hooks/useCurrentUserQuery';
 import { useLoginMutation } from '../hooks/useLoginMutation';
 import type { CurrentUserResponse } from '../types/auth';
-import { getSafeRedirectPath } from '../utils/redirect';
 import '../auth.css';
 
 export function LoginScreen() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const loginMutation = useLoginMutation();
   const [loginId, setLoginId] = useState('');
@@ -68,8 +66,7 @@ export function LoginScreen() {
             nickname,
             role,
           });
-          const destination = getSafeRedirectPath(searchParams.get('redirect'));
-          navigate(destination, { replace: true });
+          navigate('/mountains', { replace: true });
         },
         onError: (error) => {
           if (axios.isAxiosError<ApiErrorResponse>(error)) {
