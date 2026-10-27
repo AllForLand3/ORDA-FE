@@ -171,8 +171,14 @@ test('PC·태블릿 헤더 메뉴와 패널 검색창이 분리되고 세 경로
     const panel = page.getByRole('complementary', { name: '산 선택 패널' });
     const search = await panel.getByRole('searchbox', { name: '산 이름 검색' }).boundingBox();
     const navBox = await nav.boundingBox();
-    if (!search || !navBox) throw new Error('PC 메뉴가 없습니다.');
+    const brandBox = await page.getByRole('link', { name: 'ORDA 홈으로 이동' }).boundingBox();
+    if (!search || !navBox || !brandBox) throw new Error('PC 메뉴가 없습니다.');
     await expect(page.locator('.orda-map-layout__header').getByRole('searchbox')).toHaveCount(0);
+    expect(
+      Math.abs(navBox.y + navBox.height / 2 - (brandBox.y + brandBox.height / 2)),
+    ).toBeLessThan(2);
+    expect(Math.abs(navBox.x + navBox.width / 2 - viewport.width / 2)).toBeLessThan(2);
+    expect(brandBox.x).toBeLessThan(viewport.width * 0.15);
     expect(navBox.y + navBox.height).toBeLessThanOrEqual(search.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       viewport.width,

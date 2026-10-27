@@ -280,10 +280,6 @@
   resize: vertical;
 }
 
-.orda-text-area:focus-visible {
-  border-color: var(--color-border-focus);
-}
-
 .orda-text-area--invalid,
 .orda-text-area--invalid:focus-visible {
   border-color: var(--color-status-error);
