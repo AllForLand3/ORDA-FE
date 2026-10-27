@@ -1,4 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
+import type { ApiErrorResponse } from '@/shared/types/api';
+import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
@@ -59,11 +61,13 @@ export function SignupScreen() {
   const [touched, setTouched] = useState<Partial<Record<SignupField, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [notice, setNotice] = useState('');
+  const [signupIdError, setSignupIdError] = useState('');
   const backgroundStyle: CSSProperties = {
     backgroundImage: `url("${signupBackground}")`,
   };
 
-  const loginIdError = submitted || touched.loginId ? getLoginIdError(loginId) : '';
+  const loginIdError =
+    signupIdError || (submitted || touched.loginId ? getLoginIdError(loginId) : '');
   const passwordError = submitted
     ? getPasswordError(password)
     : touched.password
@@ -94,6 +98,8 @@ export function SignupScreen() {
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
     if (signupMutation.isPending) {
       return;
     }
@@ -126,8 +132,28 @@ export function SignupScreen() {
         onSuccess: () => {
           navigate('/login', { replace: true });
         },
-        onError: () => {
-          setNotice('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
+        onError: (error) => {
+          if (axios.isAxiosError<ApiErrorResponse>(error)) {
+            const code = error.response?.data.code;
+            const message = error.response?.data.message;
+
+            if (code === 'DUPLICATE_LOGIN_ID') {
+              setSignupIdError(message || '이미 사용 중인 아이디입니다.');
+              return;
+            }
+
+            if (!error.response) {
+              setNotice('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+              return;
+            }
+
+            if (message) {
+              setNotice(message);
+              return;
+            }
+          }
+
+          setNotice('회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         },
       },
     );
@@ -136,7 +162,11 @@ export function SignupScreen() {
   function updateField(field: SignupField, value: string) {
     setNotice('');
 
-    if (field === 'loginId') setLoginId(value);
+    if (field === 'loginId') {
+      setLoginId(value);
+      setSignupIdError('');
+    }
+
     if (field === 'password') setPassword(value);
     if (field === 'passwordConfirm') setPasswordConfirm(value);
     if (field === 'nickname') setNickname(value);
@@ -194,9 +224,9 @@ export function SignupScreen() {
         <div className="auth-surface auth-signup__surface">
           <form className="auth-signup__form" noValidate onSubmit={submit}>
             <div className="auth-signup__fields">
-              <div className="auth-signup__field auth-signup__field--email">
+              <div className="auth-signup__field auth-signup__field--login-id">
                 <TextField
-                  autoComplete="email"
+                  autoComplete="username"
                   error={loginIdError || undefined}
                   id="signup-loginId"
                   label="아이디"
