@@ -1,23 +1,20 @@
-import { expect, test } from '@playwright/test';
+import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest';
 
-test('마이페이지는 예시 프로필과 미연결 메뉴를 표시하고 서버 로그아웃을 가장하지 않는다', async ({
-  page,
-}) => {
+test('마이페이지는 로그인 사용자 정보를 표시하고 로그아웃한다', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) requests.push(request.url());
+    if (isDomainApiRequest(request.url())) requests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/mountains');
   await page.getByRole('link', { name: '마이페이지로 이동' }).click();
   await expect(page).toHaveURL('/my-page');
   await expect(page.getByRole('heading', { name: '마이페이지', exact: true })).toBeVisible();
-  await expect(page.getByText('orda@example.com', { exact: true })).toBeVisible();
-  await expect(page.getByText('예시 프로필입니다.', { exact: false })).toBeVisible();
+  await expect(page.getByText('테스트 사용자', { exact: true })).toBeVisible();
+  await expect(page.getByText('e2e-user', { exact: true })).toBeVisible();
   for (const [buttonName, title] of [
     ['다운로드 파일', '다운로드 파일 준비 중'],
     ['앱 설정', '앱 설정 준비 중'],
-    ['로그아웃', '로그아웃 미연결'],
   ]) {
     const trigger = page.getByRole('button', { name: new RegExp(buttonName) });
     await trigger.focus();
@@ -48,6 +45,17 @@ test('마이페이지는 예시 프로필과 미연결 메뉴를 표시하고 �
   await expect(page.getByLabel('이름', { exact: true })).toHaveValue('오르다');
   await page.reload();
   await expect(page.getByRole('heading', { name: '내 정보 수정', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: '마이페이지로 돌아가기', exact: true }).click();
+  await page.getByRole('button', { name: '로그아웃' }).click();
+  await expect(page).toHaveURL('/login');
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        localToken: localStorage.getItem('orda.accessToken'),
+        sessionToken: sessionStorage.getItem('orda.accessToken'),
+      })),
+    )
+    .toEqual({ localToken: null, sessionToken: null });
   expect(requests).toEqual([]);
 });
 

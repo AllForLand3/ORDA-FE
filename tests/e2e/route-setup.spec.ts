@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures/authenticatedTest';
 
 test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서 상태를 유지한다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });

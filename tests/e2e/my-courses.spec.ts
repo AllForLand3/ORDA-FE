@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest';
 
 test('내 코스는 예시 4+1개를 분류하고 검색·정렬·키보드 탭을 처리한다', async ({ page }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+    if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/my-courses');

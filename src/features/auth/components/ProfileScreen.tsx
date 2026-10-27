@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { Button, Dialog } from '@/components/ui';
 import { clearAccessToken } from '@/lib/accessToken';
@@ -28,7 +28,6 @@ const NOTICES = {
 };
 
 export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
   const [notice, setNotice] = useState<keyof typeof NOTICES | null>(null);
@@ -37,7 +36,7 @@ export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
   function logout() {
     clearAccessToken();
     queryClient.clear();
-    navigate('/login', { replace: true });
+    window.location.replace('/login');
   }
 
   return (

@@ -1,34 +1,54 @@
 import { expect, test } from '@playwright/test';
 
-test('시연용 로그인은 키보드·비밀번호 표시를 지원하고 인증 없이 산 선택으로 이동한다', async ({
-  page,
-}) => {
+test('로그인 성공 시 토큰을 저장하고 원래 요청한 보호 화면으로 이동한다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });
-  const apiRequests: string[] = [];
-  page.on('request', (request) => {
-    if (request.url().includes('/api/')) apiRequests.push(request.url());
+  let loginAuthorization: string | undefined;
+  await page.route('**/api/auth/login', async (route) => {
+    const request = route.request();
+    expect(request.postDataJSON()).toEqual({ loginId: 'orda-user', password: 'password' });
+    loginAuthorization = request.headers().authorization;
+    await route.fulfill({
+      json: {
+        accessToken: 'issued-access-token',
+        tokenType: 'Bearer',
+        userId: '1',
+        loginId: 'orda-user',
+        nickname: '오르다',
+        role: 'USER',
+      },
+    });
+  });
+  await page.route('**/api/auth/me', async (route) => {
+    await route.fulfill({
+      json: {
+        userId: '1',
+        loginId: 'orda-user',
+        nickname: '오르다',
+        role: 'USER',
+      },
+    });
   });
 
-  await page.goto('/login');
+  await page.goto('/my-page');
+  await expect(page).toHaveURL(/\/login\?redirect=%2Fmy-page$/);
   await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
   await expect(page.getByText('9:41')).toHaveCount(0);
 
-  const email = page.getByLabel('이메일');
+  const loginId = page.getByLabel('아이디');
   const password = page.locator('#login-password');
-  await email.focus();
+  await loginId.focus();
   await page.keyboard.press('Tab');
   await expect(password).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: '비밀번호 표시' })).toBeFocused();
 
-  await email.fill('not-an-email');
+  await loginId.fill('orda-user');
   await password.fill('password');
   await page.getByRole('button', { name: '비밀번호 표시' }).click();
   await expect(password).toHaveAttribute('type', 'text');
   await page.getByRole('button', { name: '비밀번호 숨기기' }).click();
   await expect(password).toHaveAttribute('type', 'password');
 
-  await expect(page.getByRole('status')).toContainText('시연용 로그인');
   await page.getByRole('button', { name: 'Google로 로그인' }).click();
   await expect(page.getByRole('status')).toContainText(
     'Google 로그인 기능은 아직 연결되지 않았습니다.',
@@ -37,35 +57,66 @@ test('시연용 로그인은 키보드·비밀번호 표시를 지원하고 인�
   await expect(page.getByRole('status')).toContainText(
     '비밀번호 찾기 기능은 아직 연결되지 않았습니다.',
   );
-  const storageBefore = await page.evaluate(() => ({
-    local: { ...localStorage },
-    session: { ...sessionStorage },
-    cookie: document.cookie,
-  }));
   await page.getByRole('button', { name: '로그인하기' }).click();
-  await expect(page).toHaveURL('/mountains');
+  await expect(page).toHaveURL('/my-page');
+  await expect(page.getByText('오르다', { exact: true })).toBeVisible();
+  expect(loginAuthorization).toBeUndefined();
   expect(
     await page.evaluate(() => ({
-      local: { ...localStorage },
-      session: { ...sessionStorage },
-      cookie: document.cookie,
+      localToken: localStorage.getItem('orda.accessToken'),
+      sessionToken: sessionStorage.getItem('orda.accessToken'),
     })),
-  ).toEqual(storageBefore);
-  await page.goBack();
-  await expect(page).toHaveURL('/login');
-  expect(apiRequests).toHaveLength(0);
+  ).toEqual({ localToken: 'issued-access-token', sessionToken: null });
 
-  await page.getByRole('link', { name: '회원가입하기' }).click();
-  await expect(page).toHaveURL('/signup');
-  await page.goBack();
+  await page.goto('/login');
+  await expect(page).toHaveURL('/mountains');
+});
+
+test('로그인 실패 시 서버 오류 메시지를 사용자 안내로 변환한다', async ({ page }) => {
+  await page.route('**/api/auth/login', async (route) => {
+    await route.fulfill({
+      status: 401,
+      json: {
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: '인증이 필요합니다.',
+      },
+    });
+  });
+
+  await page.goto('/login');
+  await page.getByLabel('아이디').fill('wrong-user');
+  await page.locator('#login-password').fill('wrong-password');
+  await page.getByRole('button', { name: '로그인하기' }).click();
+
+  await expect(page.getByRole('status')).toHaveText('아이디 또는 비밀번호를 확인해주세요.');
   await expect(page).toHaveURL('/login');
+  expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBeNull();
+});
+
+test('만료된 저장 토큰은 제거하고 로그인 화면으로 이동한다', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('orda.accessToken', 'expired-token'));
+  await page.route('**/api/auth/me', async (route) => {
+    await route.fulfill({
+      status: 401,
+      json: {
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: '인증이 필요합니다.',
+      },
+    });
+  });
+
+  await page.goto('/mountains');
+  await expect(page).toHaveURL(/\/login\?redirect=%2Fmountains$/);
+  expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBeNull();
 });
 
 test('회원가입은 입력·약관 동의 전 비활성이고 실제 계정을 만들지 않는다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (request.url().includes('/api/')) apiRequests.push(request.url());
+    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
   });
 
   await page.goto('/signup');
@@ -77,7 +128,7 @@ test('회원가입은 입력·약관 동의 전 비활성이고 실제 계정을
 
   await page.getByLabel('이메일').fill('hiker@example.com');
   await page.locator('#signup-password').fill('Hiking!2026');
-  await page.getByLabel('비밀번호 확인').fill('Hiking!2026');
+  await page.locator('#signup-passwordConfirm').fill('Hiking!2026');
   await page.getByLabel('닉네임').fill('산친구');
   await page.getByRole('checkbox', { name: /서비스 이용약관/ }).check();
   await page.getByRole('checkbox', { name: /개인정보 수집 및 이용/ }).check();
