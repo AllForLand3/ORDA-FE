@@ -61,7 +61,7 @@
   --color-primary-pressed: var(--color-primary-900);
   --color-primary-disabled: var(--color-primary-100);
 
-  --color-quiet-hover: var(--color-neutral-25);
+  --color-quiet-hover: var(--color-neutral-50);
   --color-quiet-pressed: var(--color-neutral-200);
 
   /* Reusable values shown in the Figma component and color system */

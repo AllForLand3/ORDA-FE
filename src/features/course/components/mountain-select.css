@@ -536,7 +536,8 @@
     white-space: nowrap;
   }
 
-  .mountain-explorer-header__my-courses:hover {
+  .mountain-explorer-header__my-courses:hover,
+  .mountain-explorer-header__account:hover {
     background: var(--color-primary-50);
   }
 

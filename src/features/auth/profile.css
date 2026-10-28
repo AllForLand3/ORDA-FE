@@ -225,6 +225,9 @@
 .profile-hero__back {
   display: none;
 }
+.profile-hero__back:hover {
+  background-color: var(--color-quiet-hover);
+}
 
 @media (min-width: 48rem) {
   .profile-page {
@@ -271,9 +274,6 @@
     font-weight: 600;
     text-decoration: none;
     transition: background 0.2s;
-  }
-  .profile-hero__back:hover {
-    background: #fff;
   }
   .profile-main {
     margin-top: -2rem;
