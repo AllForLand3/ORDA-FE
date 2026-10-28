@@ -21,7 +21,7 @@ export function MountainSelectPage() {
   const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
-  const [selectedMountainId, setSelectedMountainId] = useState<string | null>(DEFAULT_MOUNTAIN_ID);
+  const [selectedMountainId, setSelectedMountainId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [region, setRegion] = useState<MountainRegion | '전체'>('전체');
   const [difficulty, setDifficulty] = useState<MountainDifficulty | '전체'>('전체');
