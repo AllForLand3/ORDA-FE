@@ -106,6 +106,11 @@ test('모바일 산 목록은 실제 터치 드래그로 높이를 바꾸고 내
         .poll(() => panel.evaluate((element) => element.clientHeight))
         .toBe(initialHeight);
       expect(await panel.getAttribute('data-dragging')).toBeNull();
+      await swipeHandle(120);
+      await expect(panel).not.toBeVisible();
+      await page.getByRole('button', { name: '패널 펼치기' }).click();
+      await expect(panel).toBeVisible();
+      await expect(root).toHaveAttribute('data-panel-height', 'compact');
       await page.locator('.orda-responsive-panel__resize-handle').focus();
       await page.keyboard.press('Enter');
       await expect(root).toHaveAttribute('data-panel-height', 'expanded');
@@ -128,13 +133,14 @@ test('산 목록 높이는 키보드로도 조절하고 PC 전환·접기에서�
   await expect(root).toHaveAttribute('data-panel-height', 'expanded');
   await page.keyboard.press('ArrowDown');
   await expect(root).toHaveAttribute('data-panel-height', 'compact');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('complementary', { name: '산 선택 패널' })).not.toBeVisible();
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await handle.focus();
   await page.keyboard.press('Enter');
   await expect(root).toHaveAttribute('data-panel-height', 'expanded');
   await page.keyboard.press('Space');
   await expect(root).toHaveAttribute('data-panel-height', 'compact');
-  await page.getByRole('button', { name: '패널 접기' }).click();
-  await expect(page.getByRole('complementary', { name: '산 선택 패널' })).not.toBeVisible();
-  await page.getByRole('button', { name: '패널 펼치기' }).click();
   await expect(handle).toBeVisible();
   await page.setViewportSize({ width: 1024, height: 768 });
   await expect(handle).not.toBeVisible();

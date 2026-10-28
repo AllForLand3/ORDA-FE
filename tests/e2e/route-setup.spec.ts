@@ -115,6 +115,103 @@ test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지
   await expect(page.getByRole('button', { name: /위험 관련 지점/ })).toBeVisible();
 });
 
+test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+
+  const readTypography = async (selectors: {
+    description: string;
+    eyebrow: string;
+    title: string;
+  }) =>
+    page.evaluate(({ description, eyebrow, title }) => {
+      const eyebrowElement = document.querySelector(eyebrow);
+      const titleElement = document.querySelector(title);
+      const descriptionElement = document.querySelector(description);
+      if (!eyebrowElement || !titleElement || !descriptionElement) return null;
+
+      const eyebrowBox = eyebrowElement.getBoundingClientRect();
+      const titleBox = titleElement.getBoundingClientRect();
+      const descriptionBox = descriptionElement.getBoundingClientRect();
+
+      return {
+        descriptionFontSize: getComputedStyle(descriptionElement).fontSize,
+        eyebrowFontSize: getComputedStyle(eyebrowElement).fontSize,
+        eyebrowTitleGap: titleBox.top - eyebrowBox.bottom,
+        titleDescriptionGap: descriptionBox.top - titleBox.bottom,
+        titleFontSize: getComputedStyle(titleElement).fontSize,
+      };
+    }, selectors);
+
+  await page.goto('/mountains');
+  await expect(page.getByRole('heading', { name: '어느 산으로 갈까요?' })).toBeVisible();
+  const mountainCloseFontSize = await page
+    .getByRole('button', { name: '패널 접기' })
+    .evaluate((button) => getComputedStyle(button).fontSize);
+  const mountainCloseBox = await page.getByRole('button', { name: '패널 접기' }).boundingBox();
+  const mountainTypography = await readTypography({
+    description: '.mountain-selection__description',
+    eyebrow: '.mountain-selection__eyebrow',
+    title: '.mountain-selection__intro h1',
+  });
+
+  await page.goto('/routes/setup');
+  await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
+  const routeTypography = await readTypography({
+    description: '.route-setup-panel__description',
+    eyebrow: '.route-setup-panel__eyebrow',
+    title: '.route-setup-panel__title',
+  });
+
+  expect(routeTypography).toEqual(mountainTypography);
+  const routeClose = page.getByRole('button', { name: '패널 접기' });
+  const routeCloseBox = await routeClose.boundingBox();
+  const routeEyebrowBox = await page.locator('.route-setup-panel__eyebrow').boundingBox();
+  const routeDescriptionBox = await page.locator('.route-setup-panel__description').boundingBox();
+  const routeStepBox = await page.locator('.route-setup-panel__step-count').boundingBox();
+  if (!routeEyebrowBox || !routeDescriptionBox || !routeStepBox) {
+    throw new Error('맞춤 경로 패널 머리말을 찾을 수 없습니다.');
+  }
+  await expect(routeClose).toHaveText('접기');
+  await expect(routeClose).toHaveCSS('font-size', mountainCloseFontSize);
+  expect(routeCloseBox).toEqual(mountainCloseBox);
+  expect(
+    Math.abs(
+      routeStepBox.y +
+        routeStepBox.height / 2 -
+        (routeEyebrowBox.y + routeDescriptionBox.y + routeDescriptionBox.height) / 2,
+    ),
+  ).toBeLessThan(2);
+  await routeClose.hover();
+  await expect(routeClose).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(routeClose).toHaveCSS('text-decoration-line', 'underline');
+  await routeClose.click();
+  await expect(page.getByRole('complementary', { name: '코스 탐색 설정' })).not.toBeVisible();
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await expect(page.getByRole('complementary', { name: '코스 탐색 설정' })).toBeVisible();
+
+  await page.setViewportSize({ width: 440, height: 956 });
+  await page.goto('/routes/setup');
+  const mobilePanel = page.getByRole('complementary', { name: '코스 탐색 설정' });
+  const swipeHandle = page.getByRole('button', { name: '패널을 아래로 밀어 접기' });
+  await expect(page.getByRole('button', { name: '패널 접기' })).not.toBeVisible();
+  await swipeHandle.click();
+  await expect(mobilePanel).toBeVisible();
+
+  const handleBox = await swipeHandle.boundingBox();
+  if (!handleBox) throw new Error('모바일 패널 드래그 손잡이를 찾을 수 없습니다.');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    handleBox.x + handleBox.width / 2,
+    handleBox.y + handleBox.height / 2 + 100,
+    { steps: 10 },
+  );
+  await page.mouse.up();
+  await expect(mobilePanel).not.toBeVisible();
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await expect(mobilePanel).toBeVisible();
+});
+
 test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/mountains');

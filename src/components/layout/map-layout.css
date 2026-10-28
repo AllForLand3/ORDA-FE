@@ -233,6 +233,27 @@
 }
 
 @media (max-width: 47.999rem) {
+  .orda-responsive-panel[data-mobile-resizable='true'] .orda-responsive-panel__resize-handle {
+    inset-inline: 0;
+  }
+
+  .orda-responsive-panel[data-mobile-swipe-to-close='true'] .orda-responsive-panel__resize-handle {
+    inset-inline: 0;
+  }
+
+  .orda-responsive-panel[data-mobile-resizable='true'] .orda-responsive-panel__resize-close {
+    display: none;
+  }
+
+  .orda-responsive-panel[data-mobile-swipe-to-close='true'] .orda-responsive-panel__resize-close {
+    display: none;
+  }
+
+  .orda-responsive-panel[data-mobile-swipe-to-close='true']
+    .orda-responsive-panel__surface[data-dragging='true'] {
+    transform: translateY(var(--orda-panel-drag-offset, 0));
+  }
+
   .orda-responsive-panel[data-mobile-resizable='true'] .orda-responsive-panel__surface {
     --orda-panel-compact-height: min(
       22.375rem,
@@ -249,12 +270,26 @@
     max-height: var(--orda-panel-expanded-height);
   }
 
+  .orda-responsive-panel[data-mobile-resizable='true']
+    .orda-responsive-panel__surface[data-dragging='true'] {
+    height: clamp(
+      3rem,
+      var(--orda-panel-drag-height, var(--orda-panel-target-height)),
+      var(--orda-panel-expanded-height)
+    );
+  }
+
   .orda-responsive-panel[data-mobile-resizable='true'][data-panel-height='expanded']
     .orda-responsive-panel__surface {
     --orda-panel-target-height: var(--orda-panel-expanded-height);
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    .orda-responsive-panel[data-mobile-swipe-to-close='true']
+      .orda-responsive-panel__surface:not([data-dragging='true']) {
+      transition: transform 160ms ease;
+    }
+
     .orda-responsive-panel[data-mobile-resizable='true']
       .orda-responsive-panel__surface:not([data-dragging='true']) {
       transition: height 160ms ease;
@@ -290,6 +325,32 @@
   .orda-responsive-panel__resize-bar {
     flex-basis: 3rem;
   }
+
+  .orda-responsive-panel__resize-close,
+  .orda-responsive-panel__toggle--close {
+    display: flex;
+    min-width: 3.5rem;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    margin-inline-end: 0.25rem;
+    border-radius: 0.5rem;
+    padding-inline: 0.75rem;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: color 140ms ease;
+  }
+
+  .orda-responsive-panel__resize-close:hover,
+  .orda-responsive-panel__toggle--close:hover {
+    background: transparent;
+    color: var(--color-text-link);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
   .orda-map-layout__header {
     position: relative;
     z-index: 3;
@@ -347,9 +408,8 @@
   }
 
   .orda-responsive-panel__toggle--close {
-    min-height: 3rem;
-    justify-content: flex-end;
-    padding-inline: 1rem;
+    width: auto;
+    flex: 0 0 3rem;
   }
 
   .orda-responsive-panel__handle {
@@ -363,7 +423,7 @@
     overflow: visible;
     clip: auto;
     clip-path: none;
-    font-size: 0.875rem;
+    font-size: inherit;
     white-space: nowrap;
   }
 

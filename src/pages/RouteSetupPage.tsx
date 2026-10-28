@@ -85,6 +85,7 @@ export function RouteSetupPage() {
         }
         mapControls={<MapControls controller={mapController} />}
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
+        mobilePanelSwipeToClose
         panel={<RouteSetupPanel state={state} />}
         panelFooter={
           <>
@@ -98,6 +99,7 @@ export function RouteSetupPage() {
             ) : null}
           </>
         }
+        panelCloseText="접기"
         panelLabel="코스 탐색 설정"
         panelSize="content"
       />
