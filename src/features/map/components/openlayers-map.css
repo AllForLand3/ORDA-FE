@@ -53,6 +53,45 @@
   gap: 0.375rem;
 }
 
+.orda-map-controls__mountain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  max-width: 11rem;
+
+  border: 1px solid var(--color-border-default);
+  border-radius: 0.625rem;
+  padding: 0.5rem 0.75rem;
+
+  background: var(--color-background-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.orda-map-controls__mountain > span:first-child {
+  color: var(--color-neutral-700);
+  font-weight: 600;
+}
+
+.orda-map-controls__divider {
+  width: 1px;
+  height: 0.875rem;
+  flex-shrink: 0;
+  background: var(--color-border-strong);
+}
+
+.orda-map-controls__mountain strong {
+  overflow: hidden;
+  color: var(--color-primary-700);
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
 .orda-map-controls__button {
   min-width: 3rem;
 }

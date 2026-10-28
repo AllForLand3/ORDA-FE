@@ -87,7 +87,9 @@ export function MountainSelectPage() {
         <Button
           disabled={!selectedMountainId}
           fullWidth
-          onClick={() => navigate('/routes/setup')}
+          onClick={() =>
+            navigate(`/routes/setup?mountainId=${encodeURIComponent(selectedMountainId!)}`)
+          }
           size="lg"
         >
           코스 탐색 설정

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
-import { MountainHeader } from '@/features/course';
+import { MOUNTAIN_MOCKS, MountainHeader } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
@@ -18,6 +18,9 @@ import './route-setup.css';
 
 export function RouteSetupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mountainId = searchParams.get('mountainId');
+  const selectedMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const state = useRouteSetupState();
@@ -50,21 +53,18 @@ export function RouteSetupPage() {
           <>
             <div className="route-setup-mobile-header">
               <button
-                aria-label="뒤로가기"
+                aria-label="뒤로 가기"
                 className="route-setup-mobile-back"
                 onClick={goBack}
                 type="button"
               >
                 <img alt="" aria-hidden="true" src={backIcon} />
-                <span>뒤로</span>
               </button>
               <strong>코스 탐색 설정</strong>
             </div>
+
             <div className="route-setup-desktop-header">
               <MountainHeader />
-            </div>
-            <div className="route-setup-map-chip" role="note">
-              예시 장소 · 실제 경로 추천 미연결
             </div>
           </>
         }
@@ -82,7 +82,9 @@ export function RouteSetupPage() {
             targetRef={mapContainerRef}
           />
         }
-        mapControls={<MapControls controller={mapController} />}
+        mapControls={
+          <MapControls controller={mapController} mountainName={selectedMountain?.name} />
+        }
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
         mobilePanelSwipeToClose
         panel={<RouteSetupPanel state={state} />}

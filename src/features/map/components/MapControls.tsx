@@ -12,6 +12,7 @@ import './openlayers-map.css';
 
 export interface MapControlsProps {
   controller: MapController | null;
+  mountainName?: string;
 }
 
 function hasValidPosition(
@@ -49,7 +50,7 @@ function getGeolocationErrorMessage(error: GeolocationPositionError): string {
   }
 }
 
-export function MapControls({ controller }: MapControlsProps) {
+export function MapControls({ controller, mountainName }: MapControlsProps) {
   const [isLocating, setIsLocating] = useState(false);
   const [status, setStatus] = useState('');
   const requestIdRef = useRef(0);
@@ -116,6 +117,14 @@ export function MapControls({ controller }: MapControlsProps) {
 
   return (
     <div className="orda-map-controls">
+      {mountainName && (
+        <div className="orda-map-controls__mountain">
+          <span>선택한 산</span>
+          <span aria-hidden="true" className="orda-map-controls__divider" />
+          <strong>{mountainName}</strong>
+        </div>
+      )}
+
       <Button
         aria-label={isLocating ? '현재 위치 확인 중' : '현재 위치로 이동'}
         title={isLocating ? '위치 확인 중' : '현재 위치로 이동'}
