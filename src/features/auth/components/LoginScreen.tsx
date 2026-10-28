@@ -76,7 +76,7 @@ export function LoginScreen() {
         },
         onError: (error) => {
           if (axios.isAxiosError<ApiErrorResponse>(error)) {
-            if (error.response?.status === 401 || error.response?.data.code === 'UNAUTHORIZED') {
+            if (error.response?.status === 401 || error.response?.data?.code === 'UNAUTHORIZED') {
               setLoginError('아이디 또는 비밀번호를 확인해주세요.');
               return;
             }
