@@ -102,7 +102,9 @@ test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지
     }
     if (viewport.width >= 768) {
       expect(geometry.mapLeft).toBeGreaterThanOrEqual(geometry.panelRight - 1);
-      await expect(page.getByText('코스 탐색 설정', { exact: true }).last()).toBeVisible();
+      await expect(page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' })).toBeVisible();
+      await expect(page.getByRole('link', { name: '내 코스', exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: '마이페이지로 이동' })).toBeVisible();
       if (viewport.width === 1024) {
         await page.screenshot({ path: 'test-results/route-setup-1024.png' });
       }

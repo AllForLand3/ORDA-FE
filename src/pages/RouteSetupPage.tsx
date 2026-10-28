@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
+import { MountainHeader } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
@@ -60,9 +61,7 @@ export function RouteSetupPage() {
               <strong>코스 탐색 설정</strong>
             </div>
             <div className="route-setup-desktop-header">
-              <Link to="/mountains">← 산 선택</Link>
-              <span aria-hidden="true">/</span>
-              <strong>코스 탐색 설정</strong>
+              <MountainHeader />
             </div>
             <div className="route-setup-map-chip" role="note">
               예시 장소 · 실제 경로 추천 미연결

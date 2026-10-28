@@ -154,7 +154,7 @@ test('산 목록 높이는 키보드로도 조절하고 PC 전환·접기에서�
   await expect(handle).toBeVisible();
 });
 
-test('PC·태블릿 헤더 메뉴와 패널 검색창이 분리되고 세 경로를 연결한다', async ({ page }) => {
+test('PC·태블릿 헤더는 로고와 개인 메뉴만 표시하고 패널 검색창과 분리된다', async ({ page }) => {
   for (const viewport of [
     { width: 768, height: 1024 },
     { width: 1024, height: 768 },
@@ -163,38 +163,31 @@ test('PC·태블릿 헤더 메뉴와 패널 검색창이 분리되고 세 경로
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/mountains');
-    const nav = page.getByRole('navigation', { name: '주요 메뉴', exact: true });
-    await expect(nav.getByRole('link')).toHaveCount(3);
-    await expect(nav.getByRole('link', { name: '산 탐색' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    await expect(nav.getByRole('link', { name: '맞춤 경로' })).toHaveAttribute(
-      'href',
-      '/routes/setup',
-    );
-    await expect(nav.getByRole('link', { name: '내 코스' })).toHaveAttribute('href', '/my-courses');
+    await expect(page.getByRole('navigation', { name: '주요 메뉴', exact: true })).toHaveCount(0);
+    const header = page.locator('.mountain-explorer-header');
+    const myCourses = header.getByRole('link', { name: '내 코스', exact: true });
+    const myPage = header.getByRole('link', { name: '마이페이지로 이동' });
+    await expect(myCourses).toHaveAttribute('href', '/my-courses');
+    await expect(myPage).toHaveAttribute('href', '/my-page');
     const panel = page.getByRole('complementary', { name: '산 선택 패널' });
     const search = await panel.getByRole('searchbox', { name: '산 이름 검색' }).boundingBox();
-    const navBox = await nav.boundingBox();
-    const brandBox = await page.getByRole('link', { name: 'ORDA 홈으로 이동' }).boundingBox();
-    if (!search || !navBox || !brandBox) throw new Error('PC 메뉴가 없습니다.');
+    const actionsBox = await header.locator('.mountain-explorer-header__actions').boundingBox();
+    const brandBox = await page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' }).boundingBox();
+    if (!search || !actionsBox || !brandBox) throw new Error('PC 헤더가 없습니다.');
     await expect(page.locator('.orda-map-layout__header').getByRole('searchbox')).toHaveCount(0);
     expect(
-      Math.abs(navBox.y + navBox.height / 2 - (brandBox.y + brandBox.height / 2)),
+      Math.abs(actionsBox.y + actionsBox.height / 2 - (brandBox.y + brandBox.height / 2)),
     ).toBeLessThan(2);
-    expect(Math.abs(navBox.x + navBox.width / 2 - viewport.width / 2)).toBeLessThan(2);
     expect(brandBox.x).toBeLessThan(viewport.width * 0.15);
-    expect(navBox.y + navBox.height).toBeLessThanOrEqual(search.y);
+    expect(actionsBox.x + actionsBox.width).toBeGreaterThan(viewport.width * 0.85);
+    expect(actionsBox.y + actionsBox.height).toBeLessThanOrEqual(search.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       viewport.width,
     );
-    await page.screenshot({ path: `test-results/mountain-navigation-${viewport.width}.png` });
-    await nav.getByRole('link', { name: '맞춤 경로' }).click();
-    await expect(page).toHaveURL('/routes/setup');
-    await page.goBack();
-    await nav.getByRole('link', { name: '내 코스' }).click();
+    await page.screenshot({ path: `test-results/mountain-header-${viewport.width}.png` });
+    await myCourses.click();
     await expect(page).toHaveURL('/my-courses');
+    await page.goBack();
   }
 });
 

@@ -8,18 +8,9 @@
 
 .route-setup-desktop-header {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 0.75rem;
-}
-
-.route-setup-desktop-header a {
-  color: var(--color-text-link);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.route-setup-desktop-header span {
-  color: var(--color-text-secondary);
 }
 
 .route-setup-map-note {
