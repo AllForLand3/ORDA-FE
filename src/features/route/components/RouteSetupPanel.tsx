@@ -3,6 +3,8 @@ import { TextField } from '@/components/ui/TextField';
 import beginnerIcon from '@/assets/route/level-beginner.svg';
 import intermediateIcon from '@/assets/route/level-intermediate.svg';
 import experiencedIcon from '@/assets/route/level-experienced.svg';
+import gpsIcon from '@/assets/icons/gps.svg';
+import flagIcon from '@/assets/route/flag.svg';
 
 import { useRouteSetupState } from '../hooks/useRouteSetupState';
 import {
@@ -28,6 +30,29 @@ const LEVEL_ICONS = {
 
 function getRoleLabel(role: RoutePointRole) {
   return role === 'origin' ? '출발지' : '도착지';
+}
+
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 25 25">
+      <circle cx="10.75" cy="10.75" r="5.75" stroke="currentColor" strokeWidth="1.75" />
+      <path d="m15 15 4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.75" />
+    </svg>
+  );
+}
+
+function MapPickIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M12 21s6-5.35 6-11a6 6 0 1 0-12 0c0 5.65 6 11 6 11Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+      <circle cx="12" cy="10" r="2.15" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
 }
 
 function PlaceConfirmation({
@@ -94,13 +119,20 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                   <div className="route-setup-location__row">
                     <button
                       aria-expanded={isSearching}
-                      className={`route-setup-location__select${place ? ' route-setup-location__select--selected' : ''}`}
+                      className={`route-setup-location__select route-setup-location__select--${role}${place ? ' route-setup-location__select--selected' : ''}`}
                       onClick={() => state.openSearch(role)}
                       type="button"
                     >
-                      <span aria-hidden="true" className="route-setup-location__icon">
-                        {role === 'origin' ? '●' : '⚑'}
+                      <span
+                        aria-hidden="true"
+                        className={`route-setup-location__icon route-setup-location__icon--${role}`}
+                      >
+                        <span
+                          className="route-setup-location__icon-image"
+                          style={{ maskImage: `url("${flagIcon}")` }}
+                        />
                       </span>
+
                       <span className="route-setup-location__text">
                         <span className="route-setup-location__label">{getRoleLabel(role)}</span>
                         <strong>{place?.name ?? `${getRoleLabel(role)}를 검색해주세요`}</strong>
@@ -109,29 +141,20 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                         ) : null}
                       </span>
                       <span aria-hidden="true" className="route-setup-location__action">
-                        ⌕
+                        <SearchIcon />
                       </span>
                     </button>
-                    <Button
-                      aria-label={`${getRoleLabel(role)} 지도에서 선택`}
-                      className="route-setup-location__map-select"
-                      onClick={() => state.beginMapSelection(role)}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      지도
-                    </Button>
-                    {place ? (
+                    <div className="route-setup-location__actions">
                       <Button
-                        aria-label={`${getRoleLabel(role)} 선택 해제`}
-                        className="route-setup-location__clear"
-                        onClick={() => state.clearPlace(role)}
+                        aria-label={`${getRoleLabel(role)} 지도에서 선택`}
+                        className="route-setup-location__map-select"
+                        onClick={() => state.beginMapSelection(role)}
                         size="sm"
-                        variant="quiet"
+                        variant="secondary"
                       >
-                        해제
+                        <MapPickIcon />
                       </Button>
-                    ) : null}
+                    </div>
                   </div>
 
                   {isSearching ? (
@@ -149,18 +172,28 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                               state={state}
                             />
                           ) : (
-                            <p role="status">지도를 눌러 {getRoleLabel(role)}를 선택해주세요.</p>
+                            <div className="route-setup-map-select-panel__status">
+                              <img alt="" aria-hidden="true" src={gpsIcon} />
+                              <p role="status">지도를 눌러 {getRoleLabel(role)}를 선택해주세요.</p>
+                            </div>
                           )}
                           <div className="route-setup-confirm__actions">
                             <Button
+                              aria-label="장소 검색으로 전환"
                               onClick={() => state.openSearch(role)}
                               size="sm"
                               variant="secondary"
                             >
-                              장소 검색으로 전환
+                              장소 검색
                             </Button>
-                            <Button onClick={state.closeSearch} size="sm" variant="quiet">
-                              닫기
+                            <Button
+                              aria-label="지도 선택 닫기"
+                              className="route-setup-map-select-panel__close"
+                              onClick={state.closeSearch}
+                              size="sm"
+                              variant="quiet"
+                            >
+                              <span aria-hidden="true">×</span>
                             </Button>
                           </div>
                         </div>
@@ -179,11 +212,12 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                             />
                             <Button
                               aria-label="장소 검색 닫기"
+                              className="route-setup-search__close"
                               onClick={state.closeSearch}
                               size="sm"
                               variant="quiet"
                             >
-                              닫기
+                              <span aria-hidden="true">×</span>
                             </Button>
                           </div>
 
@@ -209,12 +243,12 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                                       onClick={() => state.choosePlace(place, role)}
                                       type="button"
                                     >
-                                      <span
+                                      <img
+                                        alt=""
                                         aria-hidden="true"
                                         className="route-setup-search-result__pin"
-                                      >
-                                        ⌖
-                                      </span>
+                                        src={gpsIcon}
+                                      />
                                       <span>
                                         <strong>{place.name}</strong>
                                         <small>

@@ -18,7 +18,9 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('searchbox', { name: '출발지 검색' }).fill('서울대');
   await page.getByRole('button', { name: /서울대 건설환경종합연구소 앞/ }).click();
   await expect(page.getByText('이 예시 장소를 출발지로 설정할까요?')).toBeVisible();
+  await page.screenshot({ path: 'test-results/route-setup-place-confirmation-440.png' });
   await page.getByRole('button', { name: '출발지로 설정' }).click();
+  await page.screenshot({ path: 'test-results/route-setup-selected-origin-440.png' });
 
   await page.getByRole('button', { name: '도착지를 검색해주세요' }).click();
   await page.getByRole('searchbox', { name: '도착지 검색' }).fill('연주대');
@@ -35,9 +37,7 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('button', { name: /관악산 서울대입구/ }).click();
   await page.getByRole('button', { name: '도착지로 설정' }).click();
   await expect(page.getByRole('button', { name: /관악산 서울대입구/ })).toBeVisible();
-  await page.getByRole('button', { name: '도착지 선택 해제' }).click();
-  await expect(next).toBeDisabled();
-  await page.getByRole('button', { name: '도착지를 검색해주세요' }).click();
+  await page.getByRole('button', { name: /관악산 서울대입구/ }).click();
   await page.getByRole('searchbox', { name: '도착지 검색' }).fill('연주대');
   await page.getByRole('button', { name: /관악산 연주대/ }).click();
   await page.getByRole('button', { name: '도착지로 설정' }).click();
