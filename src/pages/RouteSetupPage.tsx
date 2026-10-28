@@ -74,6 +74,7 @@ export function RouteSetupPage() {
           <OpenLayersMap
             additionalLayers={layers}
             onMapClick={(coordinate) => {
+              if (state.step !== 'locations' || state.canContinueFromLocations) return;
               if (state.searchRole && state.isMapSelectionMode) {
                 state.setPendingCoordinate(state.searchRole, coordinate);
               }

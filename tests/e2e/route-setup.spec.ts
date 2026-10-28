@@ -42,6 +42,8 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('button', { name: /관악산 연주대/ }).click();
   await page.getByRole('button', { name: '도착지로 설정' }).click();
   await expect(next).toBeEnabled();
+  await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeDisabled();
   await expect(page.getByText('예시 장소 · 실제 경로 추천 미연결')).toBeVisible();
 
   await next.click();
@@ -52,7 +54,9 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('button', { name: '다음', exact: false }).click();
   await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
   await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeDisabled();
-  await expect(page.getByText(/실제 경로 추천 기능은 아직 연결되지 않았어요/)).toBeVisible();
+  await expect(
+    page.getByText('탐색 기준과 비교 정보를 각각 하나 이상 선택해주세요.'),
+  ).toBeVisible();
 
   await page.goBack();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();

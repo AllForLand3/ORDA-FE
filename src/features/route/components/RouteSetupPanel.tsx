@@ -155,6 +155,7 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                       <Button
                         aria-label={`${getRoleLabel(role)} 지도에서 선택`}
                         className="route-setup-location__map-select"
+                        disabled={state.canContinueFromLocations}
                         onClick={() => state.beginMapSelection(role)}
                         size="sm"
                         variant="secondary"

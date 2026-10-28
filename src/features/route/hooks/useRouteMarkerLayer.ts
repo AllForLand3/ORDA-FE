@@ -13,7 +13,7 @@ import Text from 'ol/style/Text.js';
 
 import type { RoutePlace, RoutePointRole } from '../mocks/route-setup';
 
-function createMarkerStyle(role: RoutePointRole | 'pending') {
+function createMarkerStyle(role: RoutePointRole | 'pending', placeName: string) {
   const fill = role === 'destination' ? '#e4573d' : '#075c47';
   const label = role === 'pending' ? '선택 중' : role === 'origin' ? '출발' : '도착';
 
@@ -27,8 +27,8 @@ function createMarkerStyle(role: RoutePointRole | 'pending') {
       }),
     }),
     text: new Text({
-      text: label,
-      offsetY: role === 'pending' ? -34 : -28,
+      text: `${label}\n${placeName}`,
+      offsetY: role === 'pending' ? -44 : -38,
       font: '700 13px Pretendard, sans-serif',
       fill: new Fill({ color: '#123d32' }),
       backgroundFill: new Fill({ color: '#ffffff' }),
@@ -72,7 +72,8 @@ export function useRouteMarkerLayer(
       });
       feature.setId(`${role}:${place.id}`);
       feature.set('role', role);
-      feature.setStyle(createMarkerStyle(role));
+      feature.set('placeName', place.name);
+      feature.setStyle(createMarkerStyle(role, place.name));
       source.addFeature(feature);
     };
 
