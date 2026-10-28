@@ -25,19 +25,16 @@ export function ProtectedRoute() {
   return <Outlet />;
 }
 
-export function PublicOnlyRoute() {
-  const { isAuthenticated, isInitializing, isUnavailable } = useAuth();
+export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isInitializing } = useAuth();
 
   if (isInitializing) {
     return <AuthenticationStatus />;
   }
 
-  if (isUnavailable) {
-    return <AuthenticationStatus unavailable />;
+  if (isAuthenticated) {
+    return <Navigate to="/mountains" replace />;
   }
 
-  if (isAuthenticated) {
-    return <Navigate replace to="/mountains" />;
-  }
-  return <Outlet />;
+  return children;
 }
