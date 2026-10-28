@@ -1,3 +1,5 @@
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import beginnerIcon from '@/assets/route/level-beginner.svg';
@@ -5,6 +7,10 @@ import intermediateIcon from '@/assets/route/level-intermediate.svg';
 import experiencedIcon from '@/assets/route/level-experienced.svg';
 import gpsIcon from '@/assets/icons/gps.svg';
 import flagIcon from '@/assets/route/flag.svg';
+import selectedIcon from '@/assets/icons/selected.svg';
+import unSelectedIcon from '@/assets/icons/unselected.svg';
+import shortestIcon from '@/assets/route/shortest.svg';
+import stairIcon from '@/assets/route/stair.svg';
 
 import { useRouteSetupState } from '../hooks/useRouteSetupState';
 import {
@@ -27,6 +33,7 @@ const LEVEL_ICONS = {
   intermediate: intermediateIcon,
   experienced: experiencedIcon,
 };
+const PRIORITY_ICONS = [shortestIcon, intermediateIcon, stairIcon];
 
 function getRoleLabel(role: RoutePointRole) {
   return role === 'origin' ? '출발지' : '도착지';
@@ -337,12 +344,19 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                     onClick={() => state.togglePriority(item.id)}
                     type="button"
                   >
-                    <span aria-hidden="true" className="route-setup-priority__icon">
-                      {index === 0 ? '↗' : index === 1 ? '⌁' : '▤'}
-                    </span>
-                    <span aria-hidden="true" className="route-setup-priority__check">
-                      {selected ? '✓' : '○'}
-                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="route-setup-priority__icon"
+                      style={{
+                        maskImage: `url("${PRIORITY_ICONS[index]}")`,
+                      }}
+                    />
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="route-setup-priority__check"
+                      src={selected ? selectedIcon : unSelectedIcon}
+                    />
                     <strong>{item.label}</strong>
                     <small>{item.description}</small>
                   </button>
@@ -367,7 +381,12 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                     onClick={() => state.toggleFacility(item.id)}
                     type="button"
                   >
-                    <span aria-hidden="true">{selected ? '✓' : '○'}</span>
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="route-setup-facility__state"
+                      src={selected ? selectedIcon : unSelectedIcon}
+                    />
                     {item.label}
                   </button>
                 );
@@ -385,6 +404,10 @@ export interface RouteSetupFooterProps {
 }
 
 export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const canExplore = state.priorities.length > 0 && state.facilities.length > 0;
+
   if (state.step === 'locations') {
     return (
       <div className="route-setup-footer">
@@ -426,7 +449,8 @@ export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
         <Button
           aria-describedby="route-setup-recommendation-note"
           className="route-setup-footer__next"
-          disabled
+          disabled={!canExplore}
+          onClick={() => navigate({ pathname: '/routes/results', search: location.search })}
           size="lg"
         >
           맞춤 경로 탐색하기
@@ -438,7 +462,9 @@ export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
           id="route-setup-recommendation-note"
           role="note"
         >
-          실제 경로 추천 기능은 아직 연결되지 않았어요.
+          {canExplore
+            ? '선택한 조건으로 예시 코스를 보여드려요.'
+            : '탐색 기준과 비교 정보를 각각 하나 이상 선택해주세요.'}
         </span>
       ) : null}
     </div>

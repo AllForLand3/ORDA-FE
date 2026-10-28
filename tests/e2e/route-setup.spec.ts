@@ -117,6 +117,50 @@ test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지
   await expect(page.getByRole('button', { name: /위험 관련 지점/ })).toBeVisible();
 });
 
+test('탐색 기준과 비교 정보는 기본 선택 없이 항목별로 독립 선택한다', async ({ page }) => {
+  await page.goto('/routes/setup?step=conditions');
+
+  const distance = page.getByRole('button', { name: /거리 우선/ });
+  const gentleSlope = page.getByRole('button', { name: /완만한 경사/ });
+  const restroom = page.getByRole('button', { name: /화장실/ });
+  const shelter = page.getByRole('button', { name: /쉼터/ });
+  const explore = page.getByRole('button', { name: '맞춤 경로 탐색하기' });
+
+  await expect(distance).toHaveAttribute('aria-pressed', 'false');
+  await expect(gentleSlope).toHaveAttribute('aria-pressed', 'false');
+  await expect(restroom).toHaveAttribute('aria-pressed', 'false');
+  await expect(shelter).toHaveAttribute('aria-pressed', 'false');
+  await expect(explore).toBeDisabled();
+  await expect(distance.locator('.route-setup-priority__icon')).toHaveCSS(
+    'background-color',
+    'rgb(75, 87, 82)',
+  );
+
+  await distance.click();
+  await expect(distance).toHaveAttribute('aria-pressed', 'true');
+  await expect(explore).toBeDisabled();
+  await expect(distance.locator('.route-setup-priority__icon')).toHaveCSS(
+    'background-color',
+    'rgb(0, 143, 104)',
+  );
+  await gentleSlope.click();
+  await expect(distance).toHaveAttribute('aria-pressed', 'true');
+  await expect(gentleSlope).toHaveAttribute('aria-pressed', 'true');
+  await distance.click();
+  await expect(distance).toHaveAttribute('aria-pressed', 'false');
+  await expect(gentleSlope).toHaveAttribute('aria-pressed', 'true');
+
+  await restroom.click();
+  await expect(restroom).toHaveAttribute('aria-pressed', 'true');
+  await expect(explore).toBeEnabled();
+  await shelter.click();
+  await expect(restroom).toHaveAttribute('aria-pressed', 'true');
+  await expect(shelter).toHaveAttribute('aria-pressed', 'true');
+  await restroom.click();
+  await expect(restroom).toHaveAttribute('aria-pressed', 'false');
+  await expect(shelter).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 768 });
 

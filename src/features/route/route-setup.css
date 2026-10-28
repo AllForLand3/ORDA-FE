@@ -560,11 +560,11 @@
 .route-setup-priority {
   position: relative;
   display: grid;
-  min-height: 8.25rem;
+  min-height: 8.5rem;
   align-content: start;
   justify-items: start;
-  gap: 0.375rem;
-  border: 1px solid var(--color-border-strong);
+  gap: 0;
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 0.75rem;
   background: var(--color-background-surface);
   color: var(--color-text-primary);
@@ -576,29 +576,53 @@
 .route-setup-priority--selected {
   border: 2px solid var(--color-action-primary);
   background: var(--color-primary-50);
-  padding: calc(0.75rem - 1px);
+  padding: calc(0.75rem - 0.5px);
 }
 
 .route-setup-priority__icon {
-  color: var(--color-primary-500);
-  font-size: 1.5rem;
+  display: block;
+  width: 1.875rem;
+  height: 1.875rem;
+  flex-shrink: 0;
+  background-color: var(--color-neutral-700);
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: 1.875rem;
+}
+
+.route-setup-priority:nth-child(2) .route-setup-priority__icon {
+  mask-size: 2.8125rem;
+}
+
+.route-setup-priority--selected .route-setup-priority__icon {
+  background-color: var(--color-primary-500);
 }
 
 .route-setup-priority__check {
   position: absolute;
-  inset-block-start: 0.625rem;
+  inset-block-start: 0.9375rem;
   inset-inline-end: 0.625rem;
+  width: 1.5625rem;
+  height: 1.5625rem;
+  color: var(--color-neutral-500);
+}
+
+.route-setup-priority--selected .route-setup-priority__check {
   color: var(--color-primary-700);
 }
 
 .route-setup-priority strong {
-  font-size: 0.8125rem;
+  margin-block-start: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
   white-space: nowrap;
 }
 
 .route-setup-priority small {
-  color: var(--color-text-secondary);
-  font-size: 0.6875rem;
+  margin-block-start: 0.25rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
@@ -633,6 +657,13 @@
   color: var(--color-primary-700);
 }
 
+.route-setup-facility__state {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
 .route-setup-footer {
   display: grid;
   gap: 0.5rem;
@@ -648,7 +679,7 @@
 
 .route-setup-footer--split {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
   align-items: center;
   gap: 0.75rem;
 }
@@ -659,6 +690,10 @@
   flex: 1 1 0;
   padding-inline: 0.75rem;
   white-space: normal;
+}
+
+.route-setup-footer__next {
+  white-space: nowrap;
 }
 
 .route-setup-footer__recommendation-note {
@@ -692,15 +727,15 @@
   }
 
   .route-setup-priority--selected {
-    padding-inline: calc(0.5rem - 1px);
+    padding-inline: calc(0.5rem - 0.5px);
   }
 
   .route-setup-priority strong {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 
   .route-setup-priority small {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
   }
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
@@ -16,7 +16,6 @@ import '@/features/route/route-setup.css';
 import './route-setup.css';
 
 export function RouteSetupPage() {
-  const location = useLocation();
   const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
@@ -87,18 +86,7 @@ export function RouteSetupPage() {
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
         mobilePanelSwipeToClose
         panel={<RouteSetupPanel state={state} />}
-        panelFooter={
-          <>
-            <RouteSetupFooter state={state} />
-            {state.step === 'conditions' ? (
-              <div className="route-setup-demo-entry">
-                <Link to={{ pathname: '/routes/results', search: location.search }}>
-                  예시 코스 비교 보기
-                </Link>
-              </div>
-            ) : null}
-          </>
-        }
+        panelFooter={<RouteSetupFooter state={state} />}
         panelCloseText="접기"
         panelLabel="코스 탐색 설정"
         panelSize="content"

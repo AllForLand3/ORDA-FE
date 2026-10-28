@@ -72,10 +72,10 @@ export function useRouteSetupState() {
     : 'beginner';
   const priorities = params.has('priorities')
     ? readTokenList<RoutePriority>(params.get('priorities'), ROUTE_PRIORITIES)
-    : (['distance', 'fewer-stairs'] satisfies RoutePriority[]);
+    : [];
   const facilities = params.has('facilities')
     ? readTokenList<RouteFacility>(params.get('facilities'), ROUTE_FACILITIES)
-    : (['restroom', 'shelter'] satisfies RouteFacility[]);
+    : [];
 
   const update = (mutate: (next: URLSearchParams) => void, replace = true) => {
     setParams(
@@ -175,20 +175,22 @@ export function useRouteSetupState() {
     setDifficulty: (value: RouteDifficulty) => update((next) => next.set('level', value)),
     togglePriority: (value: RoutePriority) =>
       update((next) => {
-        const selected = readTokenList<RoutePriority>(next.get('priorities'), ROUTE_PRIORITIES);
-        const result = selected.includes(value)
-          ? selected.filter((item) => item !== value)
-          : [...selected, value];
-        if (result.length) next.set('priorities', result.join(','));
+        const selected = new Set(
+          readTokenList<RoutePriority>(next.get('priorities'), ROUTE_PRIORITIES),
+        );
+        if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
+        if (selected.size) next.set('priorities', [...selected].join(','));
         else next.delete('priorities');
       }),
     toggleFacility: (value: RouteFacility) =>
       update((next) => {
-        const selected = readTokenList<RouteFacility>(next.get('facilities'), ROUTE_FACILITIES);
-        const result = selected.includes(value)
-          ? selected.filter((item) => item !== value)
-          : [...selected, value];
-        if (result.length) next.set('facilities', result.join(','));
+        const selected = new Set(
+          readTokenList<RouteFacility>(next.get('facilities'), ROUTE_FACILITIES),
+        );
+        if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
+        if (selected.size) next.set('facilities', [...selected].join(','));
         else next.delete('facilities');
       }),
   };

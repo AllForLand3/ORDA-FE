@@ -168,13 +168,17 @@ test('모바일과 PC에서 패널·지도·에셋이 넘치지 않고 접기·�
 });
 
 test('설정 화면의 예시 진입과 조건 변경 링크가 입력된 조건을 유지한다', async ({ page }) => {
-  await page.goto('/routes/setup?step=conditions&level=intermediate&priorities=gentle-slope');
-  await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeDisabled();
-  await page.getByRole('link', { name: '예시 코스 비교 보기' }).click();
+  await page.goto(
+    '/routes/setup?step=conditions&level=intermediate&priorities=gentle-slope&facilities=shelter',
+  );
+  const explore = page.getByRole('button', { name: '맞춤 경로 탐색하기' });
+  await expect(explore).toBeEnabled();
+  await explore.click();
   await expect(page).toHaveURL(/\/routes\/results/);
   await expect(page.getByText('3개 코스 · 모든 지표는 예시 데이터입니다.')).toBeVisible();
   await page.getByRole('link', { name: '← 조건 변경' }).click();
   await expect(page).toHaveURL(/level=intermediate/);
   await expect(page).toHaveURL(/priorities=gentle-slope/);
+  await expect(page).toHaveURL(/facilities=shelter/);
   await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
 });
