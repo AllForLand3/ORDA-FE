@@ -88,7 +88,11 @@ export function MountainSelectionPanel({
       aria-label="산 선택"
       className="mountain-selection"
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && selectedMountainId) {
+        if (
+          event.key === 'Escape' &&
+          selectedMountainId &&
+          !(event.target instanceof HTMLInputElement)
+        ) {
           onMountainSelect(null);
         }
       }}
