@@ -5,6 +5,7 @@ import { Button, Dialog, Tabs, TextField } from '@/components/ui';
 
 import type { useMyCoursesState } from '../hooks/useMyCoursesState';
 import { MyCourseCard } from './MyCourseCard';
+import { Select } from '@/components/ui/Select';
 
 interface MyCoursesPanelProps {
   state: ReturnType<typeof useMyCoursesState>;
@@ -20,14 +21,17 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
           {selectedTab?.label}{' '}
           <strong>{state.preview === 'error' ? '—' : state.filteredCourses.length}</strong>
         </p>
-        <label>
-          <span className="sr-only">코스 정렬</span>
-          <select onChange={(event) => state.setSort(event.target.value)} value={state.sort}>
-            <option value="latest">최신순</option>
-            <option value="oldest">오래된순</option>
-            <option value="name">이름순</option>
-          </select>
-        </label>
+        <Select
+          ariaLabel="코스 정렬"
+          className="my-courses-sort"
+          onValueChange={state.setSort}
+          options={[
+            { value: 'latest', label: '최신순' },
+            { value: 'oldest', label: '오래된순' },
+            { value: 'name', label: '이름순' },
+          ]}
+          value={state.sort}
+        />
       </div>
       {state.preview === 'error' ? (
         <div className="my-courses-feedback" role="alert">
@@ -104,14 +108,17 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
           value={state.query}
           variant="search"
         />
-        <label>
-          <span className="sr-only">내 코스 목록 상태</span>
-          <select onChange={(event) => state.setPreview(event.target.value)} value={state.preview}>
-            <option value="ready">예시 목록</option>
-            <option value="empty">빈 목록 데모</option>
-            <option value="error">오류 데모</option>
-          </select>
-        </label>
+        <Select
+          ariaLabel="내 코스 목록 상태"
+          className="my-courses-preview-select"
+          onValueChange={state.setPreview}
+          options={[
+            { value: 'ready', label: '예시 목록' },
+            { value: 'empty', label: '빈 목록 데모' },
+            { value: 'error', label: '오류 데모' },
+          ]}
+          value={state.preview}
+        />
       </div>
       <Tabs
         ariaLabel="내 코스 분류"

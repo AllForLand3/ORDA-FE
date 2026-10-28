@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import mountainPhoto from '@/assets/home/mountain-background.png';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 
 import { MOUNTAIN_MOCKS } from '../mocks/mountains';
 import type { MountainDifficulty, MountainRegion, MountainSummary } from '../mocks/mountains';
@@ -127,17 +128,16 @@ export function MountainSelectionPanel({
             )}
           </button>
         ))}
-        <label className="mountain-selection__sort">
-          <span className="sr-only">산 정렬</span>
-          <select
-            aria-label="산 정렬"
-            onChange={(event) => onSortChange(event.currentTarget.value as MountainSort)}
-            value={sort}
-          >
-            <option value="popularity">인기순</option>
-            <option value="elevation">높은 산순</option>
-          </select>
-        </label>
+        <Select
+          ariaLabel="산 정렬"
+          className="mountain-selection__sort"
+          onValueChange={(value: string) => onSortChange(value as MountainSort)}
+          options={[
+            { value: 'popularity', label: '인기순' },
+            { value: 'elevation', label: '높은 산순' },
+          ]}
+          value={sort}
+        />
       </div>
 
       <div
