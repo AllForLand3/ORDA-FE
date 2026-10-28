@@ -46,7 +46,9 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
 
   await next.click();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/route-setup-difficulty-default-440.png' });
   await page.getByRole('radio', { name: /중급/ }).click();
+  await page.screenshot({ path: 'test-results/route-setup-difficulty-selected-440.png' });
   await page.getByRole('button', { name: '다음', exact: false }).click();
   await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
   await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeDisabled();

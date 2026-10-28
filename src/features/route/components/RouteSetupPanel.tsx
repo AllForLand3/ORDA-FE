@@ -295,12 +295,12 @@ export function RouteSetupPanel({ state }: RouteSetupPanelProps) {
                   type="radio"
                   value={item.id}
                 />
-                <img
-                  alt=""
-                  aria-hidden="true"
-                  className="route-setup-difficulty__mark"
-                  src={LEVEL_ICONS[item.id]}
-                />
+                <span aria-hidden="true" className="route-setup-difficulty__mark">
+                  <span
+                    className="route-setup-difficulty__mark-icon"
+                    style={{ maskImage: `url("${LEVEL_ICONS[item.id]}")` }}
+                  />
+                </span>
                 <span className="route-setup-difficulty__copy">
                   <strong>{item.label}</strong>
                   <small>{item.description}</small>

@@ -125,7 +125,6 @@
 
 .route-setup-location__select:focus-visible,
 .route-setup-search-result:focus-visible,
-.route-setup-difficulty:focus-visible,
 .route-setup-priority:focus-visible,
 .route-setup-facility:focus-visible {
   outline: 2px solid var(--color-border-focus);
@@ -467,19 +466,42 @@
 }
 
 .route-setup-difficulty:focus-within {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
+  border: 2px solid var(--color-border-focus);
+  padding: calc(0.75rem - 1px);
+  outline: none;
 }
 
 .route-setup-difficulty--selected {
   border: 2px solid var(--color-action-primary);
   background: var(--color-primary-50);
+  padding: calc(0.75rem - 1px);
 }
 
 .route-setup-difficulty__mark {
+  display: grid;
   width: 2.8125rem;
   height: 2.8125rem;
   flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.625rem;
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-700);
+  pointer-events: none;
+}
+
+.route-setup-difficulty__mark-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+}
+
+.route-setup-difficulty--selected .route-setup-difficulty__mark {
+  background: var(--color-primary-100);
+  color: var(--color-primary-500);
 }
 
 .route-setup-difficulty__copy {
