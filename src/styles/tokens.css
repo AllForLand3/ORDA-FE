@@ -60,7 +60,7 @@
   --color-primary-hover: #064d3c;
   --color-primary-pressed: var(--color-primary-900);
   --color-primary-disabled: var(--color-primary-100);
-
+  
   --color-quiet-hover: var(--color-neutral-50);
   --color-quiet-pressed: var(--color-neutral-200);
 
