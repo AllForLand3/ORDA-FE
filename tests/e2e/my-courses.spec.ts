@@ -79,9 +79,22 @@ test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 �
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(upload).toBeFocused();
-  await expect(
-    page.getByRole('article').first().getByRole('button', { name: '삭제', exact: true }),
-  ).toBeDisabled();
+  const firstCard = page.getByRole('article').first();
+  const edit = firstCard.getByRole('link', { name: '편집', exact: true });
+  const exportCourse = firstCard.getByRole('link', { name: '내보내기', exact: true });
+  const remove = firstCard.getByRole('button', { name: '삭제', exact: true });
+  await expect(remove).toHaveAttribute('aria-disabled', 'true');
+  await expect(edit).toHaveCSS('color', 'rgb(116, 129, 124)');
+  await expect(exportCourse).toHaveCSS('color', 'rgb(116, 129, 124)');
+  await edit.focus();
+  await expect(edit).toHaveCSS('color', 'rgb(7, 92, 71)');
+  await exportCourse.focus();
+  await expect(exportCourse).toHaveCSS('color', 'rgb(7, 92, 71)');
+  await remove.focus();
+  await expect(remove).toHaveCSS('color', 'rgb(159, 45, 28)');
+  expect(
+    await exportCourse.evaluate((element) => getComputedStyle(element, '::before').backgroundColor),
+  ).toBe('rgb(160, 170, 166)');
   const preview = page.getByRole('combobox', { name: '내 코스 목록 상태' });
   await preview.selectOption('empty');
   await expect(page.getByText('표시할 코스가 없어요', { exact: true })).toBeVisible();
@@ -114,6 +127,7 @@ test('목록과 상세는 360~1512px에서 넘치지 않으며 지도와 내비�
     await page.setViewportSize(viewport);
     await page.goto('/my-courses');
     await expect(page.getByRole('article')).toHaveCount(4);
+    expect(await page.evaluate(() => getComputedStyle(document.body).scrollbarWidth)).toBe('none');
     const navigation = page.getByRole('navigation', { name: '내 코스 내비게이션' });
     if (viewport.width < 768) await expect(navigation).toBeVisible();
     else await expect(navigation).not.toBeVisible();

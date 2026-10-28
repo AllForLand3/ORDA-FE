@@ -5,6 +5,14 @@
   background: var(--color-background-default);
 }
 
+html:has(.my-courses-page) {
+  scrollbar-width: none;
+}
+
+html:has(.my-courses-page)::-webkit-scrollbar {
+  display: none;
+}
+
 .my-courses-site-header {
   position: relative;
   z-index: 5;

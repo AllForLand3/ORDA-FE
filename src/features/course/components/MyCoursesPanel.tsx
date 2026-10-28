@@ -45,7 +45,6 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
         <div className="my-courses-grid">
           {state.filteredCourses.map((course) => (
             <MyCourseCard
-              analysisHref={state.getDetailHref(course.id, 'terrain')}
               course={course}
               detailHref={state.getDetailHref(course.id)}
               editHref={state.getEditHref(course.id)}
@@ -104,7 +103,7 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
           label="내 코스 검색"
           onChange={(event) => state.setQuery(event.target.value)}
           placeholder="코스 이름이나 산 이름 검색"
-          type="search"
+          type="text"
           value={state.query}
           variant="search"
         />
