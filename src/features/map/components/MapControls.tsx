@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/Button';
 import type { MapController } from './OpenLayersMap';
 import type { LongitudeLatitude } from './OpenLayersMap';
 
+import gpsIcon from '@/assets/icons/gps.svg';
+import layerIcon from '@/assets/icons/layer.svg';
+
 import './openlayers-map.css';
 
 export interface MapControlsProps {
@@ -114,23 +117,33 @@ export function MapControls({ controller }: MapControlsProps) {
   return (
     <div className="orda-map-controls">
       <Button
-        aria-label="현재 위치로 이동"
+        aria-label={isLocating ? '현재 위치 확인 중' : '현재 위치로 이동'}
+        title={isLocating ? '위치 확인 중' : '현재 위치로 이동'}
         className="orda-map-controls__button"
         disabled={!controller || isLocating}
         onClick={handleLocate}
         size="sm"
         variant="secondary"
       >
-        {isLocating ? '위치 확인 중' : '내 위치'}
+        <span
+          aria-hidden="true"
+          className={`orda-map-controls__icon${isLocating ? ' is-locating' : ''}`}
+          style={{ maskImage: `url("${gpsIcon}")` }}
+        />
       </Button>
       <Button
         aria-label="지도 레이어 선택 (준비되지 않음)"
+        title="레이어 선택 (준비 중)"
         className="orda-map-controls__button"
         disabled
         size="sm"
         variant="secondary"
       >
-        레이어
+        <span
+          aria-hidden="true"
+          className="orda-map-controls__icon"
+          style={{ maskImage: `url("${layerIcon}")` }}
+        />
       </Button>
       <p aria-live="polite" className="orda-map-controls__status" role="status">
         {status}
