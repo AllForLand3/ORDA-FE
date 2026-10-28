@@ -3,16 +3,10 @@ import { Link } from 'react-router-dom';
 import desktopArrowRight from '@/assets/home/desktop-arrow-right.svg';
 import desktopLogo from '@/assets/home/desktop-logo.png';
 import desktopMountain from '@/assets/home/desktop-mountain-background.png';
-import desktopTrail from '@/assets/home/desktop-trail.svg';
-import desktopTrailMarkerLower from '@/assets/home/desktop-trail-marker-lower.svg';
-import desktopTrailMarkerMiddle from '@/assets/home/desktop-trail-marker-middle.svg';
-import desktopTrailMarkerTop from '@/assets/home/desktop-trail-marker-top.svg';
-import desktopTrailMarkerUpper from '@/assets/home/desktop-trail-marker-upper.svg';
 import arrowRight from '@/assets/home/arrow-right.svg';
 import homeLogoMark from '@/assets/home/logo-mark.png';
 import homeLogoTile from '@/assets/home/logo-tile.svg';
 import homeMountain from '@/assets/home/mountain-background.png';
-import homeTrail from '@/assets/home/trail.svg';
 import './HomePage.css';
 
 const serviceMenuItems = ['서비스 소개', '주요 기능', '코스 추천', '이용 안내'];
@@ -59,33 +53,6 @@ export function HomePage() {
             </Link>
           </nav>
         </header>
-
-        <picture aria-hidden="true" className="home-page__trail home-page__trail--mobile">
-          <img alt="" src={homeTrail} />
-        </picture>
-        <div aria-hidden="true" className="home-page__trail-desktop">
-          <img alt="" className="home-page__trail-path" src={desktopTrail} />
-          <img
-            alt=""
-            className="home-page__trail-marker home-page__trail-marker--top"
-            src={desktopTrailMarkerTop}
-          />
-          <img
-            alt=""
-            className="home-page__trail-marker home-page__trail-marker--upper"
-            src={desktopTrailMarkerUpper}
-          />
-          <img
-            alt=""
-            className="home-page__trail-marker home-page__trail-marker--middle"
-            src={desktopTrailMarkerMiddle}
-          />
-          <img
-            alt=""
-            className="home-page__trail-marker home-page__trail-marker--lower"
-            src={desktopTrailMarkerLower}
-          />
-        </div>
 
         <div className="home-page__copy">
           <h1 className="home-page__title" id="home-title">

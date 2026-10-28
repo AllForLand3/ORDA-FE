@@ -20,17 +20,18 @@
 .home-page__background-picture {
   position: absolute;
   display: block;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   inset: 0;
 }
 
 .home-page__mountain {
-  position: absolute;
-  top: -2.406svh;
-  left: -40vw;
-  width: max(155.4545vw, 71.5481svh);
-  max-width: none;
-  height: auto;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
 }
 
 .home-page__wash {
@@ -72,6 +73,14 @@
 
 .home-page__header {
   display: none;
+}
+
+.home-page__header-action--login:hover {
+  background: var(--color-quiet-hover);
+}
+
+.home-page__header-action--signup:hover {
+  background-color: var(--color-primary-hover);
 }
 
 .home-page__menu {
@@ -198,13 +207,11 @@
   }
 
   .home-page__mountain {
-    top: 0;
-    left: 50%;
     width: 100%;
     height: 100%;
-    transform: translateX(-50%);
     object-fit: cover;
     object-position: 74% center;
+    transform: none;
   }
 
   .home-page__wash {
@@ -258,7 +265,7 @@
   .home-page__header-action {
     display: inline-flex;
     width: 120px;
-    height: 48px;
+    height: 40px;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-primary-700);
@@ -432,50 +439,68 @@
     gap: 0;
   }
 
+  .home-page__desktop-logo {
+    width: 155px;
+    height: 50px;
+  }
+
   .home-page__header-brand {
-    gap: 40px;
+    gap: 32px;
   }
 
   .home-page__menu {
-    gap: 55px;
-    font-size: 20px;
+    gap: 40px;
+    font-size: 17px;
   }
 
   .home-page__header-actions {
-    gap: 15px;
+    gap: 12px;
   }
 
   .home-page__header-action {
-    width: 140px;
-    height: 56px;
-    font-size: 25px;
+    width: 130px;
+    height: 48px;
+    font-size: 18px;
   }
 
   .home-page__title {
-    font-size: 75px;
-    line-height: 90px;
+    font-size: 62px;
+    line-height: 1.2;
   }
 
   .home-page__description {
-    line-height: 36px;
+    margin-top: 22px;
+    font-size: 23px;
+    line-height: 32px;
+  }
+
+  .home-page__actions {
+    gap: 14px;
+    margin-top: 24px;
   }
 
   .home-page__action {
-    min-height: 58px;
-    height: 58px;
-    font-size: 25px;
+    min-height: 52px;
+    height: 52px;
+    font-size: 19px;
+  }
+
+  .home-page__action.orda-button--lg {
+    font-size: 19px;
   }
 
   .home-page__action--login {
-    padding: 0 24px 0 40px;
+    width: 205px;
+    padding: 0 20px 0 28px;
   }
 
   .home-page__action--signup {
-    padding-inline: 36px;
+    width: 185px;
+    padding-inline: 24px;
   }
 
   .home-page__arrow img {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
   }
 }

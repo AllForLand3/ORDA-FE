@@ -93,7 +93,7 @@
 }
 
 .orda-button--quiet:hover:not(:disabled) {
-  background: var(--color-background-subtle);
+  background: var(--color-quiet-hover);
 }
 
 .orda-button--danger {

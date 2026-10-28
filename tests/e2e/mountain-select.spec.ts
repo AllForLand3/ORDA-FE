@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures/authenticatedTest';
 
 test('산 선택 화면은 440px에서 지도와 산 선택 패널을 표시한다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });

@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest';
 
 test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화·재진입을 구분한다', async ({ page }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+    if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/my-courses?tab=saved&q=예시+2&sort=oldest');
@@ -93,7 +93,7 @@ test('내보내기는 형식 선택과 완료 디자인 미리보기만 제공�
   const apiRequests: string[] = [];
   page.on('download', (download) => downloads.push(download.suggestedFilename()));
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+    if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/my-courses');

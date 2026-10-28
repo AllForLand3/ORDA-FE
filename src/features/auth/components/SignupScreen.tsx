@@ -1,23 +1,29 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import type { ApiErrorResponse } from '@/shared/types/api';
+import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Button, Checkbox, TextField } from '@/components/ui';
 
+import logoMark from '../assets/login-logo-mark.png';
 import signupBackground from '../assets/signup-background.svg';
 import contourBottom from '../assets/signup-contour-bottom.svg';
 import contourTop from '../assets/signup-contour-top.svg';
+import eye from '../assets/eye.svg';
+import eyeOff from '../assets/eye-off.svg';
+import { useSignupMutation } from '../hooks/useSignupMutation';
 import '../auth.css';
 
-type SignupField = 'email' | 'password' | 'passwordConfirm' | 'nickname';
+type SignupField = 'loginId' | 'password' | 'passwordConfirm' | 'nickname';
 
-function getEmailError(value: string) {
+function getLoginIdError(value: string) {
   if (!value.trim()) {
-    return '이메일을 입력해주세요.';
+    return '아이디를 입력해주세요.';
   }
 
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+  return /^[A-Za-z0-9][A-Za-z0-9._-]{2,49}$/.test(value)
     ? ''
-    : '올바른 이메일 주소를 입력해주세요.';
+    : '아이디는 영문, 숫자, 마침표, 밑줄, 하이픈만 사용할 수 있습니다.';
 }
 
 function getPasswordError(value: string) {
@@ -41,7 +47,9 @@ function getNicknameError(value: string) {
 }
 
 export function SignupScreen() {
-  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+  const signupMutation = useSignupMutation();
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [nickname, setNickname] = useState('');
@@ -50,14 +58,16 @@ export function SignupScreen() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [passwordConfirmVisible, setPasswordConfirmVisible] = useState(false);
   const [expandedTerm, setExpandedTerm] = useState<'service' | 'privacy' | null>(null);
-  const [touched, setTouched] = useState<Partial<Record<SignupField, boolean>>>({ password: true });
+  const [touched, setTouched] = useState<Partial<Record<SignupField, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [notice, setNotice] = useState('');
+  const [signupIdError, setSignupIdError] = useState('');
   const backgroundStyle: CSSProperties = {
     backgroundImage: `url("${signupBackground}")`,
   };
 
-  const emailError = submitted || touched.email ? getEmailError(email) : '';
+  const loginIdError =
+    signupIdError || (submitted || touched.loginId ? getLoginIdError(loginId) : '');
   const passwordError = submitted
     ? getPasswordError(password)
     : touched.password
@@ -75,7 +85,7 @@ export function SignupScreen() {
       : '';
   const nicknameError = submitted || touched.nickname ? getNicknameError(nickname) : '';
   const formIsValid =
-    !getEmailError(email) &&
+    !getLoginIdError(loginId) &&
     !getPasswordError(password) &&
     Boolean(passwordConfirm) &&
     passwordConfirm === password &&
@@ -89,31 +99,74 @@ export function SignupScreen() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (signupMutation.isPending) {
+      return;
+    }
+
+    event.preventDefault();
     setSubmitted(true);
     setNotice('');
 
     if (!formIsValid) {
-      const firstInvalidField: SignupField = getEmailError(email)
-        ? 'email'
+      const firstInvalidField: SignupField = getLoginIdError(loginId)
+        ? 'loginId'
         : getPasswordError(password)
           ? 'password'
           : !passwordConfirm || passwordConfirm !== password
             ? 'passwordConfirm'
             : getNicknameError(nickname)
               ? 'nickname'
-              : 'email';
+              : 'loginId';
       document.getElementById(`signup-${firstInvalidField}`)?.focus();
       return;
     }
 
-    setNotice('인증 서버가 연결되지 않아 계정이 생성되지 않았습니다.');
+    signupMutation.mutate(
+      {
+        loginId: loginId.trim(),
+        nickname: nickname.trim(),
+        password,
+      },
+      {
+        onSuccess: () => {
+          navigate('/login', { replace: true });
+        },
+        onError: (error) => {
+          if (axios.isAxiosError<ApiErrorResponse>(error)) {
+            const code = error.response?.data.code;
+            const message = error.response?.data.message;
+
+            if (code === 'DUPLICATE_LOGIN_ID') {
+              setSignupIdError(message || '이미 사용 중인 아이디입니다.');
+              return;
+            }
+
+            if (!error.response) {
+              setNotice('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+              return;
+            }
+
+            if (message) {
+              setNotice(message);
+              return;
+            }
+          }
+
+          setNotice('회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        },
+      },
+    );
   }
 
   function updateField(field: SignupField, value: string) {
-    touch(field);
     setNotice('');
 
-    if (field === 'email') setEmail(value);
+    if (field === 'loginId') {
+      setLoginId(value);
+      setSignupIdError('');
+    }
+
     if (field === 'password') setPassword(value);
     if (field === 'passwordConfirm') setPasswordConfirm(value);
     if (field === 'nickname') setNickname(value);
@@ -155,26 +208,35 @@ export function SignupScreen() {
         </div>
 
         <header className="auth-signup__heading">
+          <div aria-label="ORDA 로고" className="auth-signup__desktop-logo" role="img">
+            <img alt="" className="auth-signup__desktop-logo-mark" src={logoMark} />
+          </div>
+          <span className="auth__eyebrow">JOIN ORDA</span>
           <h1 id="signup-title">회원가입</h1>
-          <p>AllForLand와 함께 더 많은 산을 만나보세요</p>
+          <p>ORDA와 함께 더 많은 산을 만나보세요</p>
+          <ul className="auth-desktop-highlights">
+            <li>나만의 등산 코스 저장과 관리</li>
+            <li>산별 공간정보와 경로 데이터 확인</li>
+            <li>안전하고 편리한 산행 계획</li>
+          </ul>
         </header>
 
         <div className="auth-surface auth-signup__surface">
           <form className="auth-signup__form" noValidate onSubmit={submit}>
             <div className="auth-signup__fields">
-              <div className="auth-signup__field auth-signup__field--email">
+              <div className="auth-signup__field auth-signup__field--login-id">
                 <TextField
-                  autoComplete="email"
-                  error={emailError || undefined}
-                  id="signup-email"
-                  label="이메일"
-                  name="email"
-                  onBlur={() => touch('email')}
-                  onChange={(event) => updateField('email', event.target.value)}
-                  placeholder="이메일을 입력해주세요"
+                  autoComplete="username"
+                  error={loginIdError || undefined}
+                  id="signup-loginId"
+                  label="아이디"
+                  name="loginId"
+                  onBlur={() => touch('loginId')}
+                  onChange={(event) => updateField('loginId', event.target.value)}
+                  placeholder="아이디를 입력해주세요"
                   required
-                  type="email"
-                  value={email}
+                  type="text"
+                  value={loginId}
                 />
               </div>
 
@@ -189,7 +251,7 @@ export function SignupScreen() {
                       onClick={() => setPasswordVisible((visible) => !visible)}
                       type="button"
                     >
-                      {passwordVisible ? '숨기기' : '표시'}
+                      <img src={passwordVisible ? eyeOff : eye} alt="" />
                     </button>
                   }
                   error={passwordError || undefined}
@@ -218,7 +280,7 @@ export function SignupScreen() {
                       onClick={() => setPasswordConfirmVisible((visible) => !visible)}
                       type="button"
                     >
-                      {passwordConfirmVisible ? '숨기기' : '표시'}
+                      <img src={passwordConfirmVisible ? eyeOff : eye} alt="" />
                     </button>
                   }
                   error={passwordConfirmError || undefined}
@@ -281,12 +343,12 @@ export function SignupScreen() {
 
             <Button
               className="auth-submit auth-signup__submit"
-              disabled={!formIsValid}
+              disabled={!formIsValid || signupMutation.isPending}
               fullWidth
               size="lg"
               type="submit"
             >
-              회원가입하기
+              {signupMutation.isPending ? '회원가입 중...' : '회원가입하기'}
             </Button>
           </form>
 
