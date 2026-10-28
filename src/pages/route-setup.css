@@ -41,6 +41,10 @@
     inset-block-start: max(0.75rem, env(safe-area-inset-top, 0px));
   }
 
+  .route-setup-page .orda-responsive-panel__surface {
+    inset-block-end: 0;
+  }
+
   .route-setup-page .ol-attribution {
     inset-block-start: 7.25rem;
     inset-block-end: auto;
