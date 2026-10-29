@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest';
 
 test('예시 코스를 선택하고 탭·뒤로가기·새로고침에서도 선택을 유지한다', async ({ page }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+    if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/routes/results');

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, installAuthenticatedSession } from '../fixtures/authenticatedTest';
 
 test('모바일 산 목록은 실제 터치 드래그로 높이를 바꾸고 내부 스크롤·드래그 취소를 처리한다', async ({
   browser,
@@ -11,6 +11,7 @@ test('모바일 산 목록은 실제 터치 드래그로 높이를 바꾸고 내
     reducedMotion: 'reduce',
     viewport: { width: 440, height: 956 },
   });
+  await installAuthenticatedSession(context);
   const page = await context.newPage();
   const client = await context.newCDPSession(page);
   async function touch(

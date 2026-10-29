@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures/authenticatedTest';
 import type { Page, Route } from '@playwright/test';
 
 const MAP_SURFACE = '.orda-map-layout__map-surface';
@@ -203,16 +203,14 @@ test('ROUTE_SNAP_FAILED는 등산로 근처를 다시 고르도록 안내하고 
   await expect(page.getByRole('button', { name: /다음/ })).toBeDisabled();
 });
 
-test('UNAUTHORIZED는 로그인이 필요하다고 안내하고 확정을 막는다', async ({ page }) => {
+test('UNAUTHORIZED는 저장된 토큰을 지우고 로그인 화면으로 이동한다', async ({ page }) => {
   await mockSnap(page, () => ({ status: 401, json: errorResponse(401, 'UNAUTHORIZED') }));
 
   await openMapSelection(page, '출발지');
   await page.locator(MAP_SURFACE).click({ position: ORIGIN_TAP });
 
-  const alert = page.getByRole('alert').filter({ hasText: '로그인이 필요해요' });
-  await expect(alert).toBeVisible();
-  await expect(alert.getByRole('button', { name: '다시 시도' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '출발지로 설정' })).toBeDisabled();
+  await expect(page).toHaveURL(/\/login$/);
+  expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBeNull();
 });
 
 test('서버 오류는 다시 시도를 안내하고 재시도 성공 시 확정할 수 있다', async ({ page }) => {

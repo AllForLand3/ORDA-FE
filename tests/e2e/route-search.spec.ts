@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest';
 import type { Page } from '@playwright/test';
 
 const SEARCH_URL = '/routes/results?mountainId=1&startNodeId=10&endNodeId=20';
@@ -140,15 +140,12 @@ test('ROUTE_SAME_POINT는 경로 없음과 다른 안내를 보여준다', async
   await expect(page.getByRole('article')).toHaveCount(0);
 });
 
-test('UNAUTHORIZED는 로그인이 필요하다고 안내하고 재시도를 두지 않는다', async ({ page }) => {
+test('UNAUTHORIZED는 저장된 토큰을 지우고 로그인 화면으로 이동한다', async ({ page }) => {
   await mockRouteSearch(page, 401, errorResponse(401, 'UNAUTHORIZED'));
   await page.goto('/routes/results?mountainId=1&startNodeId=10&endNodeId=20');
 
-  const alert = page.getByRole('alert');
-  await expect(alert).toContainText('로그인이 필요해요');
-  await expect(alert).toContainText('경로 탐색은 로그인한 뒤 이용할 수 있어요.');
-  await expect(page.getByRole('article')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '다시 시도' })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/login$/);
+  expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBeNull();
 });
 
 test('빈 후보 목록은 결과 없음으로, 알 수 없는 서버 오류는 재시도로 안내한다', async ({ page }) => {
@@ -177,7 +174,7 @@ test('노드 ID가 하나라도 없으면 API를 호출하지 않고 기존 예�
 }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+    if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
 
   for (const url of ['/routes/results', '/routes/results?mountainId=1&startNodeId=10']) {

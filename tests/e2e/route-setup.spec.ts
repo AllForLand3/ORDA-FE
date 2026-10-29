@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures/authenticatedTest';
 import type { Page } from '@playwright/test';
 
 // 스냅 API를 모킹한다. 예시 장소는 경도별로 서로 다른 노드, 그 외 좌표는 별도 노드로 연결한다.
