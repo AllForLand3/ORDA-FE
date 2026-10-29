@@ -286,6 +286,46 @@
   font-size: 0.8125rem;
 }
 
+.route-setup-snap {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  color: var(--color-primary-700);
+  font-size: 0.8125rem;
+}
+
+.route-setup-snap p {
+  margin: 0;
+}
+
+.route-setup-snap--loading {
+  color: var(--color-text-secondary);
+}
+
+.route-setup-snap--error,
+.route-setup-snap__warning,
+.route-setup-footer__blocked,
+.route-setup-location__node--missing {
+  color: var(--color-error-700);
+}
+
+.route-setup-snap--error > .orda-button {
+  justify-self: start;
+}
+
+.route-setup-location__node {
+  display: block;
+  color: var(--color-primary-700);
+  font-size: 0.75rem;
+}
+
+.route-setup-footer__blocked {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .route-setup-confirm__actions {
   display: flex;
   justify-content: flex-end;
