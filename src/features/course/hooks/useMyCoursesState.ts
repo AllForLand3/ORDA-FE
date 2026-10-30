@@ -16,6 +16,12 @@ export function useMyCoursesState() {
   const [query, setQuery] = useState(urlQuery);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setQuery(urlQuery), 0);
+
+    return () => window.clearTimeout(timer);
+  }, [urlQuery]);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       if (query !== urlQuery) {
         setParams(
