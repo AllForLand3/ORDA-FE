@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { MOCK_MY_COURSES } from '../mocks/my-courses';
@@ -10,8 +11,40 @@ export const MY_COURSE_TABS = [
 
 export function useMyCoursesState() {
   const [params, setParams] = useSearchParams();
+
+  const urlQuery = params.get('q') ?? '';
+  const [query, setQuery] = useState(urlQuery);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setQuery(urlQuery), 0);
+
+    return () => window.clearTimeout(timer);
+  }, [urlQuery]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (query !== urlQuery) {
+        setParams(
+          (current) => {
+            const next = new URLSearchParams(current);
+
+            if (query) {
+              next.set('q', query);
+            } else {
+              next.delete('q');
+            }
+
+            return next;
+          },
+          { replace: true },
+        );
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [query, urlQuery, setParams]);
+
   const tab = MY_COURSE_TABS.find((item) => item.value === params.get('tab'))?.value ?? 'saved';
-  const query = params.get('q') ?? '';
   const sortParam = params.get('sort');
   const sort = sortParam === 'oldest' || sortParam === 'name' ? sortParam : 'latest';
   const previewParam = params.get('preview');
@@ -48,6 +81,18 @@ export function useMyCoursesState() {
     );
   }
 
+  function getCurrentListParams() {
+    const current = new URLSearchParams(params);
+
+    if (query) {
+      current.set('q', query);
+    } else {
+      current.delete('q');
+    }
+
+    return current.toString();
+  }
+
   return {
     tab,
     query,
@@ -62,17 +107,17 @@ export function useMyCoursesState() {
     setTab: (value: string) => {
       if (MY_COURSE_TABS.some((item) => item.value === value)) update('tab', value, false);
     },
-    setQuery: (value: string) => update('q', value),
+    setQuery,
     setSort: (value: string) => {
       if (value === 'latest' || value === 'oldest' || value === 'name') update('sort', value);
     },
     setPreview: (value: string) => {
       if (value === 'ready' || value === 'empty' || value === 'error') update('preview', value);
     },
-    resetSearch: () => update('q', ''),
+    resetSearch: () => setQuery(''),
     getDetailHref: (id: string, detailTab = 'overview') =>
-      `/my-courses/${encodeURIComponent(id)}?${new URLSearchParams({ tab: detailTab, list: params.toString() })}`,
+      `/my-courses/${encodeURIComponent(id)}?${new URLSearchParams({ tab: detailTab, list: getCurrentListParams() })}`,
     getEditHref: (id: string) =>
-      `/my-courses/${encodeURIComponent(id)}/edit?${new URLSearchParams({ list: params.toString() })}`,
+      `/my-courses/${encodeURIComponent(id)}/edit?${new URLSearchParams({ list: getCurrentListParams() })}`,
   };
 }

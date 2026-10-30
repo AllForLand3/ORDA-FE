@@ -13,7 +13,7 @@ import Text from 'ol/style/Text.js';
 
 import type { RoutePlace, RoutePointRole } from '../mocks/route-setup';
 
-function createMarkerStyle(role: RoutePointRole | 'pending', isUserSelected: boolean) {
+function createMarkerStyle(role: RoutePointRole | 'pending', placeName: string) {
   const fill = role === 'destination' ? '#e4573d' : '#075c47';
   const label = role === 'pending' ? '선택 중' : role === 'origin' ? '출발' : '도착';
 
@@ -22,14 +22,13 @@ function createMarkerStyle(role: RoutePointRole | 'pending', isUserSelected: boo
       radius: role === 'pending' ? 17 : 13,
       fill: new Fill({ color: role === 'pending' ? 'rgba(0, 143, 104, 0.25)' : fill }),
       stroke: new Stroke({
-        color: isUserSelected ? '#008f68' : role === 'pending' ? '#008f68' : '#ffffff',
-        width: isUserSelected ? 4 : 3,
-        lineDash: isUserSelected ? [4, 3] : undefined,
+        color: role === 'pending' ? '#008f68' : '#ffffff',
+        width: 3,
       }),
     }),
     text: new Text({
-      text: isUserSelected ? `${label} · 지도 선택` : label,
-      offsetY: role === 'pending' ? -34 : -28,
+      text: `${label}\n${placeName}`,
+      offsetY: role === 'pending' ? -44 : -38,
       font: '700 13px Pretendard, sans-serif',
       fill: new Fill({ color: '#123d32' }),
       backgroundFill: new Fill({ color: '#ffffff' }),
@@ -73,7 +72,8 @@ export function useRouteMarkerLayer(
       });
       feature.setId(`${role}:${place.id}`);
       feature.set('role', role);
-      feature.setStyle(createMarkerStyle(role, place.source === 'map'));
+      feature.set('placeName', place.name);
+      feature.setStyle(createMarkerStyle(role, place.name));
       source.addFeature(feature);
     };
 

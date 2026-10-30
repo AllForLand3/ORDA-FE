@@ -90,7 +90,7 @@
 
   .course-detail-workspace {
     display: grid;
-    height: calc(100dvh - 4rem - 1px);
+    height: calc(100dvh - 4.5rem - 1px);
     min-height: 30rem;
     grid-template-columns: clamp(22.5rem, 32vw, 27.5rem) minmax(0, 1fr);
     overflow: hidden;

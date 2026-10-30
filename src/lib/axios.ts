@@ -22,7 +22,15 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401 && error.config?.url !== '/auth/login') {
+    const requestAuthorization = error.config?.headers?.get('Authorization');
+    const currentToken = getAccessToken();
+
+    if (
+      error.response?.status === 401 &&
+      error.config?.url !== '/auth/login' &&
+      currentToken !== null &&
+      requestAuthorization === `Bearer ${currentToken}`
+    ) {
       clearAccessToken();
     }
 

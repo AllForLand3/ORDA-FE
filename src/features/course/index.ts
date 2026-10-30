@@ -1,4 +1,5 @@
 export { MountainBottomNavigation } from './components/MountainBottomNavigation';
+export { MountainHeader } from './components/MountainHeader';
 export { MountainSearchBar } from './components/MountainSearchBar';
 export type { MountainSearchBarProps } from './components/MountainSearchBar';
 export { MountainSelectionPanel } from './components/MountainSelectionPanel';

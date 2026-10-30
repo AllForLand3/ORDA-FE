@@ -5,33 +5,39 @@ import './map-layout.css';
 
 export interface ResponsivePanelProps {
   children: ReactNode;
+  closeText?: string;
   footer?: ReactNode;
   id: string;
   isOpen: boolean;
   label: string;
   onOpenChange: (isOpen: boolean) => void;
   mobileResizable?: boolean;
+  mobileSwipeToClose?: boolean;
   size?: 'content' | 'expanded';
 }
 
 export function ResponsivePanel({
   children,
+  closeText,
   footer,
   id,
   isOpen,
   label,
   onOpenChange,
   mobileResizable = false,
+  mobileSwipeToClose = false,
   size = 'content',
 }: ResponsivePanelProps) {
+  const effectiveCloseText = closeText ?? (mobileResizable ? '접기' : '패널 접기');
   const [isExpanded, setIsExpanded] = useState(false);
   const surfaceRef = useRef<HTMLElement>(null);
   const dragRef = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
   const suppressClickRef = useRef(false);
+  const hasMobileDragHandle = mobileResizable || mobileSwipeToClose;
 
   function startDrag(event: PointerEvent<HTMLButtonElement>) {
     if (
-      !mobileResizable ||
+      !hasMobileDragHandle ||
       event.button !== 0 ||
       !event.isPrimary ||
       !window.matchMedia('(max-width: 47.999rem)').matches
@@ -54,10 +60,14 @@ export function ResponsivePanel({
     if (!drag || drag.pointerId !== event.pointerId) return;
     const delta = event.clientY - drag.startY;
     if (Math.abs(delta) > 6) suppressClickRef.current = true;
-    surfaceRef.current?.style.setProperty(
-      '--orda-panel-drag-height',
-      `${drag.startHeight - delta}px`,
-    );
+    if (mobileSwipeToClose && !mobileResizable) {
+      surfaceRef.current?.style.setProperty('--orda-panel-drag-offset', `${Math.max(0, delta)}px`);
+    } else {
+      surfaceRef.current?.style.setProperty(
+        '--orda-panel-drag-height',
+        `${drag.startHeight - delta}px`,
+      );
+    }
   }
 
   function finishDrag(event: PointerEvent<HTMLButtonElement>, cancelled = false) {
@@ -66,9 +76,22 @@ export function ResponsivePanel({
     dragRef.current = null;
     const delta = event.clientY - drag.startY;
     if (Math.abs(delta) > 6) suppressClickRef.current = true;
-    if (!cancelled && Math.abs(delta) >= 48) setIsExpanded(delta < 0);
+    if (!cancelled) {
+      if (mobileSwipeToClose && !mobileResizable) {
+        if (delta >= 64) onOpenChange(false);
+      } else if (Math.abs(delta) >= 48) {
+        if (delta < 0) {
+          setIsExpanded(true);
+        } else if (isExpanded) {
+          setIsExpanded(false);
+        } else {
+          onOpenChange(false);
+        }
+      }
+    }
     if (surfaceRef.current) {
       surfaceRef.current.style.removeProperty('--orda-panel-drag-height');
+      surfaceRef.current.style.removeProperty('--orda-panel-drag-offset');
       delete surfaceRef.current.dataset.dragging;
     }
     if (event.currentTarget.hasPointerCapture(event.pointerId))
@@ -81,6 +104,7 @@ export function ResponsivePanel({
       data-panel-open={isOpen}
       data-panel-size={size}
       data-mobile-resizable={mobileResizable}
+      data-mobile-swipe-to-close={mobileSwipeToClose}
       data-panel-height={isExpanded ? 'expanded' : 'compact'}
     >
       <aside
@@ -90,25 +114,39 @@ export function ResponsivePanel({
         id={id}
         ref={surfaceRef}
       >
-        {mobileResizable ? (
+        {hasMobileDragHandle ? (
           <div className="orda-responsive-panel__resize-bar">
             <button
               aria-controls={id}
-              aria-expanded={isExpanded}
-              aria-label={isExpanded ? '패널 높이 줄이기' : '패널 높이 늘리기'}
+              aria-expanded={mobileResizable ? isExpanded : isOpen}
+              aria-label={
+                mobileSwipeToClose && !mobileResizable
+                  ? '패널을 아래로 밀어 접기'
+                  : isExpanded
+                    ? '패널 높이 줄이기'
+                    : '패널 높이 늘리기'
+              }
               className="orda-responsive-panel__resize-handle"
               onClick={() => {
                 if (suppressClickRef.current) {
                   suppressClickRef.current = false;
                   return;
                 }
-                setIsExpanded((expanded) => !expanded);
+                if (mobileResizable) setIsExpanded((expanded) => !expanded);
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') suppressClickRef.current = false;
                 if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
                   event.preventDefault();
-                  setIsExpanded(event.key === 'ArrowUp');
+                  if (mobileSwipeToClose && !mobileResizable) {
+                    if (event.key === 'ArrowDown') onOpenChange(false);
+                  } else if (event.key === 'ArrowUp') {
+                    setIsExpanded(true);
+                  } else if (isExpanded) {
+                    setIsExpanded(false);
+                  } else {
+                    onOpenChange(false);
+                  }
                 }
               }}
               onLostPointerCapture={(event) => finishDrag(event, true)}
@@ -128,7 +166,7 @@ export function ResponsivePanel({
               onClick={() => onOpenChange(false)}
               type="button"
             >
-              접기
+              {effectiveCloseText}
             </button>
           </div>
         ) : (
@@ -141,7 +179,7 @@ export function ResponsivePanel({
             type="button"
           >
             <span aria-hidden="true" className="orda-responsive-panel__handle" />
-            <span className="orda-responsive-panel__toggle-text">패널 접기</span>
+            <span className="orda-responsive-panel__toggle-text">{effectiveCloseText}</span>
           </button>
         )}
         <div className="orda-responsive-panel__content">{children}</div>

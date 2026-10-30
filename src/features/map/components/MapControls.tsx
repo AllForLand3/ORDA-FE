@@ -5,10 +5,14 @@ import { Button } from '@/components/ui/Button';
 import type { MapController } from './OpenLayersMap';
 import type { LongitudeLatitude } from './OpenLayersMap';
 
+import gpsIcon from '@/assets/icons/gps.svg';
+import layerIcon from '@/assets/icons/layer.svg';
+
 import './openlayers-map.css';
 
 export interface MapControlsProps {
   controller: MapController | null;
+  mountainName?: string;
 }
 
 function hasValidPosition(
@@ -46,7 +50,7 @@ function getGeolocationErrorMessage(error: GeolocationPositionError): string {
   }
 }
 
-export function MapControls({ controller }: MapControlsProps) {
+export function MapControls({ controller, mountainName }: MapControlsProps) {
   const [isLocating, setIsLocating] = useState(false);
   const [status, setStatus] = useState('');
   const requestIdRef = useRef(0);
@@ -113,24 +117,42 @@ export function MapControls({ controller }: MapControlsProps) {
 
   return (
     <div className="orda-map-controls">
+      {mountainName && (
+        <div className="orda-map-controls__mountain">
+          <span>선택한 산</span>
+          <span aria-hidden="true" className="orda-map-controls__divider" />
+          <strong>{mountainName}</strong>
+        </div>
+      )}
+
       <Button
-        aria-label="현재 위치로 이동"
+        aria-label={isLocating ? '현재 위치 확인 중' : '현재 위치로 이동'}
+        title={isLocating ? '위치 확인 중' : '현재 위치로 이동'}
         className="orda-map-controls__button"
         disabled={!controller || isLocating}
         onClick={handleLocate}
         size="sm"
         variant="secondary"
       >
-        {isLocating ? '위치 확인 중' : '내 위치'}
+        <span
+          aria-hidden="true"
+          className={`orda-map-controls__icon${isLocating ? ' is-locating' : ''}`}
+          style={{ maskImage: `url("${gpsIcon}")` }}
+        />
       </Button>
       <Button
         aria-label="지도 레이어 선택 (준비되지 않음)"
+        title="레이어 선택 (준비 중)"
         className="orda-map-controls__button"
         disabled
         size="sm"
         variant="secondary"
       >
-        레이어
+        <span
+          aria-hidden="true"
+          className="orda-map-controls__icon"
+          style={{ maskImage: `url("${layerIcon}")` }}
+        />
       </Button>
       <p aria-live="polite" className="orda-map-controls__status" role="status">
         {status}

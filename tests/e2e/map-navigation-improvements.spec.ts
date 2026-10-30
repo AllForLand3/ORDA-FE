@@ -106,6 +106,11 @@ test('모바일 산 목록은 실제 터치 드래그로 높이를 바꾸고 내
         .poll(() => panel.evaluate((element) => element.clientHeight))
         .toBe(initialHeight);
       expect(await panel.getAttribute('data-dragging')).toBeNull();
+      await swipeHandle(120);
+      await expect(panel).not.toBeVisible();
+      await page.getByRole('button', { name: '패널 펼치기' }).click();
+      await expect(panel).toBeVisible();
+      await expect(root).toHaveAttribute('data-panel-height', 'compact');
       await page.locator('.orda-responsive-panel__resize-handle').focus();
       await page.keyboard.press('Enter');
       await expect(root).toHaveAttribute('data-panel-height', 'expanded');
@@ -128,13 +133,14 @@ test('산 목록 높이는 키보드로도 조절하고 PC 전환·접기에서�
   await expect(root).toHaveAttribute('data-panel-height', 'expanded');
   await page.keyboard.press('ArrowDown');
   await expect(root).toHaveAttribute('data-panel-height', 'compact');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('complementary', { name: '산 선택 패널' })).not.toBeVisible();
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await handle.focus();
   await page.keyboard.press('Enter');
   await expect(root).toHaveAttribute('data-panel-height', 'expanded');
   await page.keyboard.press('Space');
   await expect(root).toHaveAttribute('data-panel-height', 'compact');
-  await page.getByRole('button', { name: '패널 접기' }).click();
-  await expect(page.getByRole('complementary', { name: '산 선택 패널' })).not.toBeVisible();
-  await page.getByRole('button', { name: '패널 펼치기' }).click();
   await expect(handle).toBeVisible();
   await page.setViewportSize({ width: 1024, height: 768 });
   await expect(handle).not.toBeVisible();
@@ -148,7 +154,7 @@ test('산 목록 높이는 키보드로도 조절하고 PC 전환·접기에서�
   await expect(handle).toBeVisible();
 });
 
-test('PC의 검색창 옆 메뉴와 태블릿 두 번째 줄 메뉴가 세 경로를 연결한다', async ({ page }) => {
+test('PC·태블릿 헤더는 로고와 개인 메뉴만 표시하고 패널 검색창과 분리된다', async ({ page }) => {
   for (const viewport of [
     { width: 768, height: 1024 },
     { width: 1024, height: 768 },
@@ -157,31 +163,31 @@ test('PC의 검색창 옆 메뉴와 태블릿 두 번째 줄 메뉴가 세 경�
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/mountains');
-    const nav = page.getByRole('navigation', { name: '주요 메뉴', exact: true });
-    await expect(nav.getByRole('link')).toHaveCount(3);
-    await expect(nav.getByRole('link', { name: '산 탐색' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    await expect(nav.getByRole('link', { name: '맞춤 경로' })).toHaveAttribute(
-      'href',
-      '/routes/setup',
-    );
-    await expect(nav.getByRole('link', { name: '내 코스' })).toHaveAttribute('href', '/my-courses');
-    const search = await page.getByRole('searchbox', { name: '산 이름 검색' }).boundingBox();
-    const navBox = await nav.boundingBox();
-    if (!search || !navBox) throw new Error('PC 메뉴가 없습니다.');
-    if (viewport.width >= 1024) expect(navBox.x).toBeGreaterThan(search.x + search.width);
-    else expect(navBox.y).toBeGreaterThanOrEqual(search.y + search.height);
+    await expect(page.getByRole('navigation', { name: '주요 메뉴', exact: true })).toHaveCount(0);
+    const header = page.locator('.mountain-explorer-header');
+    const myCourses = header.getByRole('link', { name: '내 코스', exact: true });
+    const myPage = header.getByRole('link', { name: '마이페이지로 이동' });
+    await expect(myCourses).toHaveAttribute('href', '/my-courses');
+    await expect(myPage).toHaveAttribute('href', '/my-page');
+    const panel = page.getByRole('complementary', { name: '산 선택 패널' });
+    const search = await panel.getByRole('searchbox', { name: '산 이름 검색' }).boundingBox();
+    const actionsBox = await header.locator('.mountain-explorer-header__actions').boundingBox();
+    const brandBox = await page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' }).boundingBox();
+    if (!search || !actionsBox || !brandBox) throw new Error('PC 헤더가 없습니다.');
+    await expect(page.locator('.orda-map-layout__header').getByRole('searchbox')).toHaveCount(0);
+    expect(
+      Math.abs(actionsBox.y + actionsBox.height / 2 - (brandBox.y + brandBox.height / 2)),
+    ).toBeLessThan(2);
+    expect(brandBox.x).toBeLessThan(viewport.width * 0.15);
+    expect(actionsBox.x + actionsBox.width).toBeGreaterThan(viewport.width * 0.85);
+    expect(actionsBox.y + actionsBox.height).toBeLessThanOrEqual(search.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       viewport.width,
     );
-    await page.screenshot({ path: `test-results/mountain-navigation-${viewport.width}.png` });
-    await nav.getByRole('link', { name: '맞춤 경로' }).click();
-    await expect(page).toHaveURL('/routes/setup');
-    await page.goBack();
-    await nav.getByRole('link', { name: '내 코스' }).click();
+    await page.screenshot({ path: `test-results/mountain-header-${viewport.width}.png` });
+    await myCourses.click();
     await expect(page).toHaveURL('/my-courses');
+    await page.goBack();
   }
 });
 
