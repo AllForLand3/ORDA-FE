@@ -64,27 +64,44 @@ test('모바일·PC 내비게이션은 구현된 화면을 연결하고 404를 �
     await page.setViewportSize({ width, height: 956 });
     await page.goto('/my-courses');
     await page.getByRole('link', { name: '마이페이지', exact: true }).click();
-    await page
-      .getByRole('navigation', { name: '내 코스 내비게이션' })
-      .getByRole('link', { name: '산 탐색' })
-      .click();
+
+    if (width < 768) {
+      await page
+        .getByRole('navigation', { name: '내 코스 내비게이션' })
+        .getByRole('link', { name: '산 탐색' })
+        .click();
+    } else {
+      await page.goBack();
+      await page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' }).click();
+    }
+
+    await expect(page).toHaveURL('/mountains');
+
     if (width < 768) {
       await page.getByRole('link', { name: '맞춤 경로', exact: true }).click();
       await expect(page).toHaveURL('/routes/setup');
     }
+
     await page.goto('/routes/results');
     await page.getByRole('link', { name: '마이페이지', exact: true }).click();
     await expect(page).toHaveURL('/my-page');
-    await page
-      .getByRole('navigation', { name: '내 코스 내비게이션' })
-      .getByRole('link', { name: '맞춤 경로' })
-      .click();
-    await expect(page).toHaveURL('/routes/setup');
+
+    if (width < 768) {
+      await page
+        .getByRole('navigation', { name: '내 코스 내비게이션' })
+        .getByRole('link', { name: '맞춤 경로' })
+        .click();
+    } else {
+      await page.goBack();
+      await page.getByRole('link', { name: '← 조건 변경' }).click();
+    }
+
+    await expect(page).toHaveURL(/\/routes\/setup(?:\?.*)?$/);
     await page.goto('/not-a-real-page');
     await expect(page.getByRole('heading', { name: '페이지를 찾을 수 없습니다.' })).toBeVisible();
     await page.reload();
     await expect(page.getByRole('link', { name: '홈으로 돌아가기' })).toHaveAttribute('href', '/');
     await page.getByRole('link', { name: '홈으로 돌아가기' }).click();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/mountains');
   }
 });
