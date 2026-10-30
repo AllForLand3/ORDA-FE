@@ -74,7 +74,7 @@ export function RouteSetupPage() {
             additionalLayers={layers}
             initialCenter={selectedMountain?.coordinates}
             onMapClick={(coordinate) => {
-              if (state.step !== 'locations' || state.canContinueFromLocations) return;
+              if (state.step !== 'locations') return;
               if (state.searchRole && state.isMapSelectionMode) {
                 state.setPendingCoordinate(state.searchRole, coordinate);
               }

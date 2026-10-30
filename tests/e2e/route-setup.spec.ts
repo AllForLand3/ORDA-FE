@@ -45,8 +45,8 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('button', { name: /관악산 연주대/ }).click();
   await page.getByRole('button', { name: '도착지로 설정' }).click();
   await expect(next).toBeEnabled();
-  await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
   await expect(page.getByText('예시 장소 · 실제 경로 추천 미연결')).toBeVisible();
 
   await next.click();
@@ -70,17 +70,18 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await expect(page.getByRole('button', { name: /관악산 연주대/ })).toBeVisible();
 });
 
-test('선택된 등산 수준 카드는 키보드 포커스 outline을 유지한다', async ({ page }) => {
+test('선택된 등산 수준 카드는 포커스 시 기본 녹색 단일 테두리를 유지한다', async ({ page }) => {
   await page.goto(`/routes/setup?${selectedPlaces}&step=difficulty&level=intermediate`);
 
   const intermediate = page.getByRole('radio', { name: /중급/ });
   const intermediateCard = intermediate.locator('..');
 
   await expect(intermediate).toBeChecked();
+  await expect(intermediateCard).toHaveCSS('border-color', 'rgb(0, 143, 104)');
   await intermediate.focus();
   await expect(intermediateCard).toHaveCSS('border-width', '2px');
-  await expect(intermediateCard).toHaveCSS('outline-style', 'solid');
-  await expect(intermediateCard).toHaveCSS('outline-offset', '2px');
+  await expect(intermediateCard).toHaveCSS('border-color', 'rgb(0, 143, 104)');
+  await expect(intermediateCard).toHaveCSS('outline-style', 'none');
 });
 
 test('선택한 산 좌표를 코스 설정 지도의 초기 중심으로 사용한다', async ({ page }) => {
@@ -304,9 +305,12 @@ test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', 
   await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
 });
 
-test('지도에서 지정한 좌표는 예시 장소와 구분해 출발지 후보로 확인한다', async ({ page }) => {
+test('설정된 출발지도 지도에서 새 좌표로 다시 선택할 수 있다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });
-  await page.goto('/routes/setup');
+  await page.goto(`/routes/setup?${selectedPlaces}`);
+
+  await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
   await page.getByRole('button', { name: '출발지 지도에서 선택' }).click();
   await expect(
     page.getByRole('status').filter({ hasText: '지도를 눌러 출발지를 선택해주세요.' }),
@@ -317,4 +321,6 @@ test('지도에서 지정한 좌표는 예시 장소와 구분해 출발지 후�
   await expect(page.getByText('사용자 지정 위치 · 주소 정보 없음')).toBeVisible();
   await page.getByRole('button', { name: '출발지로 설정' }).click();
   await expect(page.getByText('지도에서 직접 선택')).toBeVisible();
+  await expect(page.getByRole('button', { name: /관악산 연주대/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /다음/ })).toBeEnabled();
 });
