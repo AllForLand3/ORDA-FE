@@ -229,6 +229,9 @@ test('목록과 상세는 360~1512px에서 넘치지 않으며 지도와 내비�
     await page.goto('/my-courses');
 
     await expect(page.getByRole('article')).toHaveCount(4);
+    expect(
+      await page.evaluate(() => getComputedStyle(document.documentElement).scrollbarWidth),
+    ).toBe('none');
 
     const navigation = page.getByRole('navigation', { name: '내 코스 내비게이션' });
 
