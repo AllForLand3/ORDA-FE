@@ -25,7 +25,7 @@ export function ProtectedRoute() {
   return <Outlet />;
 }
 
-export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+export function PublicOnlyRoute() {
   const { isAuthenticated, isInitializing } = useAuth();
 
   if (isInitializing) {
@@ -36,5 +36,5 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/mountains" replace />;
   }
 
-  return children;
+  return <Outlet />;
 }
