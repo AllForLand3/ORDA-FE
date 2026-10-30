@@ -1,5 +1,8 @@
 import { expect, test } from '../fixtures/authenticatedTest';
 
+const selectedPlaces =
+  'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
+
 test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서 상태를 유지한다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/routes/setup');
@@ -124,7 +127,7 @@ test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지
 });
 
 test('탐색 기준과 비교 정보는 기본 선택 없이 항목별로 독립 선택한다', async ({ page }) => {
-  await page.goto('/routes/setup?step=conditions');
+  await page.goto(`/routes/setup?${selectedPlaces}&step=conditions`);
 
   const distance = page.getByRole('button', { name: /거리 우선/ });
   const gentleSlope = page.getByRole('button', { name: /완만한 경사/ });
@@ -165,6 +168,13 @@ test('탐색 기준과 비교 정보는 기본 선택 없이 항목별로 독립
   await restroom.click();
   await expect(restroom).toHaveAttribute('aria-pressed', 'false');
   await expect(shelter).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('출발지와 도착지 없이 조건 단계로 직접 진입하면 탐색할 수 없다', async ({ page }) => {
+  await page.goto('/routes/setup?step=conditions&priorities=gentle-slope&facilities=shelter');
+
+  await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeDisabled();
+  await expect(page.getByText('출발지와 도착지를 먼저 선택해주세요.')).toBeVisible();
 });
 
 test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다', async ({ page }) => {

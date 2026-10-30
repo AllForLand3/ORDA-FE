@@ -1,5 +1,8 @@
 import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest';
 
+const selectedPlaces =
+  'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
+
 test('예시 코스를 선택하고 탭·뒤로가기·새로고침에서도 선택을 유지한다', async ({ page }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
@@ -169,7 +172,7 @@ test('모바일과 PC에서 패널·지도·에셋이 넘치지 않고 접기·�
 
 test('설정 화면의 예시 진입과 조건 변경 링크가 입력된 조건을 유지한다', async ({ page }) => {
   await page.goto(
-    '/routes/setup?step=conditions&level=intermediate&priorities=gentle-slope&facilities=shelter',
+    `/routes/setup?${selectedPlaces}&step=conditions&level=intermediate&priorities=gentle-slope&facilities=shelter`,
   );
   const explore = page.getByRole('button', { name: '맞춤 경로 탐색하기' });
   await expect(explore).toBeEnabled();

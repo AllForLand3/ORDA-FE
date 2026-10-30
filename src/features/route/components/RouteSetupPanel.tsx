@@ -407,7 +407,8 @@ export interface RouteSetupFooterProps {
 export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const canExplore = state.priorities.length > 0 && state.facilities.length > 0;
+  const hasConditions = state.priorities.length > 0 && state.facilities.length > 0;
+  const canExplore = state.canContinueFromLocations && hasConditions;
 
   if (state.step === 'locations') {
     return (
@@ -463,9 +464,11 @@ export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
           id="route-setup-recommendation-note"
           role="note"
         >
-          {canExplore
-            ? '선택한 조건으로 예시 코스를 보여드려요.'
-            : '탐색 기준과 비교 정보를 각각 하나 이상 선택해주세요.'}
+          {!state.canContinueFromLocations
+            ? '출발지와 도착지를 먼저 선택해주세요.'
+            : hasConditions
+              ? '선택한 조건으로 예시 코스를 보여드려요.'
+              : '탐색 기준과 비교 정보를 각각 하나 이상 선택해주세요.'}
         </span>
       ) : null}
     </div>
