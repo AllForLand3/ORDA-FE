@@ -106,9 +106,17 @@ export function OpenLayersMap({
     const refreshMapState = () => {
       const size = map.getSize();
       const zoom = view.getZoom();
+      const center = view.getCenter();
 
       target.dataset.mapReady = 'true';
       target.dataset.mapProjection = view.getProjection().getCode();
+
+      if (center) {
+        const [longitude, latitude] = toLonLat(center, 'EPSG:3857');
+        target.dataset.mapCenter = `${longitude.toFixed(6)},${latitude.toFixed(6)}`;
+      } else {
+        delete target.dataset.mapCenter;
+      }
 
       if (zoom !== undefined) {
         target.dataset.mapZoom = String(Math.round(zoom * 100) / 100);
@@ -171,6 +179,7 @@ export function OpenLayersMap({
       onControllerChangeRef.current?.(null);
       delete target.dataset.mapReady;
       delete target.dataset.mapProjection;
+      delete target.dataset.mapCenter;
       delete target.dataset.mapZoom;
       delete target.dataset.mapSize;
       delete target.dataset.mapViewRevision;

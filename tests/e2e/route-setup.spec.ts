@@ -83,6 +83,15 @@ test('선택된 등산 수준 카드는 키보드 포커스 outline을 유지한
   await expect(intermediateCard).toHaveCSS('outline-offset', '2px');
 });
 
+test('선택한 산 좌표를 코스 설정 지도의 초기 중심으로 사용한다', async ({ page }) => {
+  await page.goto('/routes/setup?mountainId=bukhansan');
+
+  const map = page.locator('.orda-map-layout__map-surface');
+
+  await expect(map).toHaveAttribute('data-map-ready', 'true');
+  await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
+});
+
 test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지 않는다', async ({ page }) => {
   for (const viewport of [
     { width: 360, height: 800 },

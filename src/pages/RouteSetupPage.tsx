@@ -72,6 +72,7 @@ export function RouteSetupPage() {
         mapContent={
           <OpenLayersMap
             additionalLayers={layers}
+            initialCenter={selectedMountain?.coordinates}
             onMapClick={(coordinate) => {
               if (state.step !== 'locations' || state.canContinueFromLocations) return;
               if (state.searchRole && state.isMapSelectionMode) {
