@@ -137,6 +137,25 @@ test('뒤로가기와 앞으로가기로 변경된 검색어를 입력창과 목
   await expect(search).toHaveValue('예시 4');
 });
 
+test('검색 디바운스 전에도 카드 링크에 현재 검색어를 보존한다', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/my-courses');
+
+  await page.getByRole('textbox', { name: '내 코스 검색' }).fill('예시 2');
+  await expect(page).toHaveURL(/\/my-courses$/);
+
+  const card = page.getByRole('article');
+  const detailHref = await card.getByRole('link', { name: '코스 상세 보기' }).getAttribute('href');
+  const editHref = await card.getByRole('link', { name: '편집' }).getAttribute('href');
+
+  for (const href of [detailHref, editHref]) {
+    expect(href).not.toBeNull();
+
+    const list = new URL(href!, 'http://localhost').searchParams.get('list');
+    expect(new URLSearchParams(list ?? '').get('q')).toBe('예시 2');
+  }
+});
+
 test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 안내만 제공한다', async ({ page }) => {
   await page.goto('/my-courses');
 

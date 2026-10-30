@@ -81,6 +81,18 @@ export function useMyCoursesState() {
     );
   }
 
+  function getCurrentListParams() {
+    const current = new URLSearchParams(params);
+
+    if (query) {
+      current.set('q', query);
+    } else {
+      current.delete('q');
+    }
+
+    return current.toString();
+  }
+
   return {
     tab,
     query,
@@ -104,8 +116,8 @@ export function useMyCoursesState() {
     },
     resetSearch: () => setQuery(''),
     getDetailHref: (id: string, detailTab = 'overview') =>
-      `/my-courses/${encodeURIComponent(id)}?${new URLSearchParams({ tab: detailTab, list: params.toString() })}`,
+      `/my-courses/${encodeURIComponent(id)}?${new URLSearchParams({ tab: detailTab, list: getCurrentListParams() })}`,
     getEditHref: (id: string) =>
-      `/my-courses/${encodeURIComponent(id)}/edit?${new URLSearchParams({ list: params.toString() })}`,
+      `/my-courses/${encodeURIComponent(id)}/edit?${new URLSearchParams({ list: getCurrentListParams() })}`,
   };
 }
