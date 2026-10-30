@@ -457,9 +457,8 @@
 }
 
 .route-setup-difficulty:focus-within {
-  border: 2px solid var(--color-border-focus);
-  padding: calc(0.75rem - 1px);
-  outline: none;
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .route-setup-difficulty--selected {

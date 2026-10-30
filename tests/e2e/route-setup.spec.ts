@@ -70,6 +70,19 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await expect(page.getByRole('button', { name: /관악산 연주대/ })).toBeVisible();
 });
 
+test('선택된 등산 수준 카드는 키보드 포커스 outline을 유지한다', async ({ page }) => {
+  await page.goto(`/routes/setup?${selectedPlaces}&step=difficulty&level=intermediate`);
+
+  const intermediate = page.getByRole('radio', { name: /중급/ });
+  const intermediateCard = intermediate.locator('..');
+
+  await expect(intermediate).toBeChecked();
+  await intermediate.focus();
+  await expect(intermediateCard).toHaveCSS('border-width', '2px');
+  await expect(intermediateCard).toHaveCSS('outline-style', 'solid');
+  await expect(intermediateCard).toHaveCSS('outline-offset', '2px');
+});
+
 test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지 않는다', async ({ page }) => {
   for (const viewport of [
     { width: 360, height: 800 },
