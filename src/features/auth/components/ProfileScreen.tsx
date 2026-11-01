@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
 import { Button, Dialog } from '@/components/ui';
+import { clearAccessToken } from '@/lib/accessToken';
 
 import accountIcon from '../assets/profile-account.svg';
 import avatar from '../assets/profile-avatar.svg';
@@ -10,7 +12,7 @@ import logoutIcon from '../assets/profile-logout.svg';
 import mountain from '../assets/profile-mountain.png';
 import nextIcon from '../assets/profile-next.svg';
 import settingsIcon from '../assets/profile-settings.svg';
-import { MOCK_PROFILE } from '../mocks/profile';
+import { useAuth } from '../providers/authContext';
 import '../profile.css';
 
 const NOTICES = {
@@ -23,32 +25,43 @@ const NOTICES = {
     title: '앱 설정 준비 중',
     message: '설정 항목과 저장 정책이 확정되지 않았습니다. 현재 변경할 수 있는 설정은 없습니다.',
   },
-  logout: {
-    title: '로그아웃 미연결',
-    message:
-      '현재 예시 프로필 화면이며 로그인 세션이 없습니다. 서버 로그아웃이나 계정 변경은 수행하지 않았습니다.',
-  },
 };
 
 export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
+  const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
   const [notice, setNotice] = useState<keyof typeof NOTICES | null>(null);
   const activeNotice = notice ? NOTICES[notice] : null;
+
+  function logout() {
+    clearAccessToken();
+    queryClient.clear();
+    window.location.replace('/');
+  }
 
   return (
     <div className="profile-page">
       <div className="profile-hero">
         <img alt="" aria-hidden="true" className="profile-hero__image" src={mountain} />
         <header>
-          <h1>마이페이지</h1>
-          <p>내 정보를 관리해보세요</p>
+          <div className="profile-hero__header-content">
+            <div className="profile-hero__heading">
+              <h1>마이페이지</h1>
+              <p>내 정보를 관리해보세요</p>
+            </div>
+
+            <Link className="profile-hero__back" to="/mountains">
+              <span aria-hidden="true">←</span>산 탐색으로
+            </Link>
+          </div>
         </header>
       </div>
       <main className="profile-main">
         <Link className="profile-summary" to="/my-page/edit">
           <img alt="" aria-hidden="true" src={avatar} />
           <span>
-            <strong>{MOCK_PROFILE.name}</strong>
-            <small>{MOCK_PROFILE.email}</small>
+            <strong>{currentUser?.nickname ?? '사용자'}</strong>
+            <small>{currentUser?.loginId}</small>
           </span>
           <img alt="" aria-hidden="true" src={nextIcon} />
         </Link>
@@ -77,15 +90,13 @@ export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
             <img alt="" aria-hidden="true" src={nextIcon} />
           </button>
         </nav>
-        <Button className="profile-logout" fullWidth onClick={() => setNotice('logout')}>
+        <Button className="profile-logout" variant="danger" fullWidth onClick={logout}>
           <img alt="" aria-hidden="true" src={logoutIcon} />
           로그아웃
         </Button>
-        <p className="profile-demo-note">
-          예시 프로필입니다. 실제 계정 조회·수정·로그아웃은 연결되지 않았습니다.
-        </p>
+        <p className="profile-demo-note">프로필 수정 기능은 아직 연결되지 않았습니다.</p>
       </main>
-      {navigation}
+      <div className="profile-mobile-navigation">{navigation}</div>
       <Dialog
         description={activeNotice?.message}
         footer={

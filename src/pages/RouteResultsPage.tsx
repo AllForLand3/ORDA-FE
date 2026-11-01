@@ -46,7 +46,11 @@ export function RouteResultsPage() {
         header={
           <div className="route-results-header">
             <div className="route-results-header__brand">
-              <Link aria-label="ORDA 홈" className="route-results-header__logo" to="/">
+              <Link
+                aria-label="ORDA 산 탐색으로 이동"
+                className="route-results-header__logo"
+                to="/mountains"
+              >
                 <img alt="" src={logoMark} />
               </Link>
               <Link className="route-results-header__back" to={state.setupHref}>

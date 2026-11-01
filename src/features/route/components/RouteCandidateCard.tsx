@@ -4,9 +4,9 @@ import downloadIcon from '@/assets/route/download.svg';
 import editIcon from '@/assets/route/edit.svg';
 import facilityIcon from '@/assets/route/facility.svg';
 import hikingIcon from '@/assets/route/hiking.svg';
-import selectedIcon from '@/assets/route/selected.svg';
+import selectedIcon from '@/assets/icons/selected.svg';
 import stairsIcon from '@/assets/route/stairs.svg';
-import unselectedIcon from '@/assets/route/unselected.svg';
+import unselectedIcon from '@/assets/icons/unselected.svg';
 import { Badge, Button, Card } from '@/components/ui';
 
 import { getMockRouteMetrics } from '../mocks/route-results';

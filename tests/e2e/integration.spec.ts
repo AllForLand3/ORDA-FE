@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { installAuthenticatedSession, isDomainApiRequest } from '../fixtures/authenticatedTest';
+
 const selectedPlaces =
   'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
 const screens = [
@@ -23,6 +25,7 @@ const screens = [
   { key: 'profile-edit', path: '/my-page/edit' },
   { key: '404', path: '/not-a-real-page' },
 ];
+const publicScreenKeys = new Set(['home', 'login', 'signup', '404']);
 
 for (const viewport of [
   { width: 360, height: 800 },
@@ -37,17 +40,20 @@ for (const viewport of [
     browser,
     baseURL,
   }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(120_000);
     const errors: string[] = [];
     const requests: string[] = [];
     for (const screen of screens) {
       await test.step(screen.key, async () => {
         // 연속 지도·폰트 로딩의 브라우저 자원을 화면마다 해제한다.
         const context = await browser.newContext({ viewport, baseURL });
+        if (!publicScreenKeys.has(screen.key)) {
+          await installAuthenticatedSession(context);
+        }
         const page = await context.newPage();
         page.on('pageerror', (error) => errors.push(error.message));
         page.on('request', (request) => {
-          if (new URL(request.url()).pathname.startsWith('/api/')) requests.push(request.url());
+          if (isDomainApiRequest(request.url())) requests.push(request.url());
         });
         try {
           await page.goto(screen.path);

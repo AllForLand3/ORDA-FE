@@ -1,7 +1,6 @@
 import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
 
 import filterIcon from '@/assets/icons/filter.svg';
-import mailIcon from '@/assets/icons/mail.svg';
 import searchIcon from '@/assets/icons/search.svg';
 
 import { IconButton } from './IconButton';
@@ -52,9 +51,7 @@ export function TextField({
   const icon = startIcon ?? (variant === 'search' ? 'search' : undefined);
   const adornment =
     startAdornment ??
-    (icon === 'mail' ? (
-      <img alt="" aria-hidden="true" className="orda-field__icon" src={mailIcon} />
-    ) : icon === 'search' ? (
+    (icon === 'search' ? (
       <img alt="" aria-hidden="true" className="orda-field__icon" src={searchIcon} />
     ) : null);
   const isInvalid = invalid || Boolean(error);

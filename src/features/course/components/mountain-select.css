@@ -1,13 +1,21 @@
 .mountain-explorer-header {
   display: grid;
-  width: min(100%, 70rem);
-  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  width: 100%;
+  grid-template-columns: 2.75rem 2.75rem;
   align-items: center;
+  justify-content: space-between;
   gap: 0.625rem;
   margin-inline: auto;
 }
 
-.mountain-explorer-header__navigation {
+.mountain-explorer-header__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.mountain-explorer-header__my-courses {
   display: none;
 }
 
@@ -51,12 +59,16 @@
   clip-path: inset(50%);
 }
 
-.mountain-explorer-header .orda-field {
+.mountain-selection__search {
+  margin-block-start: 1.25rem;
+}
+
+.mountain-selection__search .orda-field {
   min-width: 0;
   margin: 0;
 }
 
-.mountain-explorer-header .orda-input-shell {
+.mountain-selection__search .orda-input-shell {
   min-height: 2.75rem;
   border-color: transparent;
   border-radius: 9999px;
@@ -64,23 +76,23 @@
   box-shadow: 0 2px 10px rgb(30 41 37 / 12%);
 }
 
-.mountain-explorer-header .orda-input-shell:focus-within {
+.mountain-selection__search .orda-input-shell:focus-within {
   border-color: var(--color-border-focus);
 }
 
-.mountain-explorer-header .mountain-explorer-header__input {
+.mountain-selection__search .mountain-selection__search-input {
   min-width: 0;
   font-size: 0.875rem;
 }
 
-.mountain-explorer-header .mountain-explorer-header__filter {
+.mountain-selection__search .mountain-selection__search-filter {
   width: 2.25rem;
   height: 2.25rem;
   flex: 0 0 2.25rem;
   border-radius: 9999px;
 }
 
-.mountain-explorer-header__filter img {
+.mountain-selection__search-filter img {
   display: block;
   width: 1.25rem;
   height: 1.25rem;
@@ -427,23 +439,18 @@
 .mountain-bottom-navigation__item {
   display: flex;
   min-width: 0;
-  min-height: 4.125rem;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 0.25rem;
-  color: var(--color-text-tertiary);
-  font-size: 0.6875rem;
+  gap: 0.375rem;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
   font-weight: 600;
-  line-height: 1.2;
   text-decoration: none;
 }
 
 .mountain-bottom-navigation__item img {
   display: block;
-  width: 1.375rem;
-  height: 1.375rem;
-  object-fit: contain;
 }
 
 .mountain-bottom-navigation__item.is-active {
@@ -454,9 +461,34 @@
   opacity: 0.82;
 }
 
+.mountain-selection__sort.orda-select {
+  min-width: 0;
+  width: 5.75rem;
+  font-size: 0.75rem;
+}
+
+.mountain-selection__sort .orda-select__trigger {
+  min-height: 2rem;
+  gap: 0.375rem;
+  border: 0;
+  border-radius: 9999px;
+  padding: 0.375rem 0.75rem;
+  background: var(--color-background-muted);
+}
+
+.mountain-selection__sort .orda-select__chevron {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.mountain-selection__sort .orda-select__option {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.625rem;
+}
+
 @media (max-width: 22.5rem) {
   .mountain-explorer-header {
-    grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+    grid-template-columns: 2.5rem 2.5rem;
     gap: 0.375rem;
   }
 
@@ -484,42 +516,34 @@
 
 @media (min-width: 48rem) {
   .mountain-explorer-header {
-    grid-template-columns: auto minmax(12rem, 1fr) auto;
-    justify-content: space-between;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 1rem;
   }
 
-  .mountain-explorer-header__navigation {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .mountain-explorer-header__navigation a {
+  .mountain-explorer-header__my-courses {
     display: inline-flex;
     min-height: 2.75rem;
     align-items: center;
-    padding-inline: 0.75rem;
+    justify-content: center;
+    padding-inline: 0.875rem;
     border: 1px solid var(--color-border-default);
     border-radius: 9999px;
     background: var(--color-background-surface);
-    color: var(--color-text-link);
+    color: var(--color-text-primary);
     font-size: 0.875rem;
     font-weight: 700;
     text-decoration: none;
     white-space: nowrap;
   }
 
-  .mountain-explorer-header__navigation [aria-current='page'] {
-    border-color: var(--color-border-active);
+  .mountain-explorer-header__my-courses:hover,
+  .mountain-explorer-header__account:hover {
     background: var(--color-primary-50);
   }
 
   .mountain-explorer-header__brand {
     width: auto;
+    justify-self: start;
     justify-content: flex-start;
     gap: 0.625rem;
     border: 0;
@@ -536,8 +560,6 @@
   }
 
   .mountain-explorer-header__account {
-    grid-column: 3;
-    grid-row: 1;
     width: auto;
     padding-inline: 0.875rem;
     border-radius: 9999px;
@@ -582,20 +604,5 @@
 
   .mountain-card__location {
     font-size: 0.6875rem;
-  }
-}
-
-@media (min-width: 64rem) {
-  .mountain-explorer-header {
-    grid-template-columns: auto minmax(10rem, 1fr) auto auto;
-  }
-
-  .mountain-explorer-header__navigation {
-    grid-column: 3;
-    grid-row: 1;
-  }
-
-  .mountain-explorer-header__account {
-    grid-column: 4;
   }
 }

@@ -2,9 +2,11 @@ import { useMemo } from 'react';
 
 import mountainPhoto from '@/assets/home/mountain-background.png';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 
 import { MOUNTAIN_MOCKS } from '../mocks/mountains';
 import type { MountainDifficulty, MountainRegion, MountainSummary } from '../mocks/mountains';
+import { MountainSearchBar } from './MountainSearchBar';
 
 import './mountain-select.css';
 
@@ -13,11 +15,13 @@ export type MountainSort = 'popularity' | 'elevation';
 export interface MountainSelectionPanelProps {
   difficulty: MountainDifficulty | '전체';
   filtersExpanded: boolean;
+  onFilterToggle: () => void;
   onClearFilters: () => void;
   onDifficultyChange: (difficulty: MountainDifficulty | '전체') => void;
   onMountainSelect: (mountainId: string | null) => void;
   onRegionChange: (region: MountainRegion | '전체') => void;
   onSortChange: (sort: MountainSort) => void;
+  onSearchChange: (value: string) => void;
   region: MountainRegion | '전체';
   searchQuery: string;
   selectedMountainId: string | null;
@@ -52,8 +56,10 @@ export function MountainSelectionPanel({
   filtersExpanded,
   onClearFilters,
   onDifficultyChange,
+  onFilterToggle,
   onMountainSelect,
   onRegionChange,
+  onSearchChange,
   onSortChange,
   region,
   searchQuery,
@@ -82,7 +88,11 @@ export function MountainSelectionPanel({
       aria-label="산 선택"
       className="mountain-selection"
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && selectedMountainId) {
+        if (
+          event.key === 'Escape' &&
+          selectedMountainId &&
+          !(event.target instanceof HTMLInputElement)
+        ) {
           onMountainSelect(null);
         }
       }}
@@ -93,6 +103,12 @@ export function MountainSelectionPanel({
         <p className="mountain-selection__description">
           원하는 산을 선택하면 코스를 탐색할 수 있어요.
         </p>
+        <MountainSearchBar
+          filtersExpanded={filtersExpanded}
+          onFilterToggle={onFilterToggle}
+          onSearchChange={onSearchChange}
+          searchQuery={searchQuery}
+        />
       </header>
 
       <div aria-label="지역 필터" className="mountain-selection__filters" role="group">
@@ -116,17 +132,16 @@ export function MountainSelectionPanel({
             )}
           </button>
         ))}
-        <label className="mountain-selection__sort">
-          <span className="sr-only">산 정렬</span>
-          <select
-            aria-label="산 정렬"
-            onChange={(event) => onSortChange(event.currentTarget.value as MountainSort)}
-            value={sort}
-          >
-            <option value="popularity">인기순</option>
-            <option value="elevation">높은 산순</option>
-          </select>
-        </label>
+        <Select
+          ariaLabel="산 정렬"
+          className="mountain-selection__sort"
+          onValueChange={(value: string) => onSortChange(value as MountainSort)}
+          options={[
+            { value: 'popularity', label: '인기순' },
+            { value: 'elevation', label: '높은 산순' },
+          ]}
+          value={sort}
+        />
       </div>
 
       <div

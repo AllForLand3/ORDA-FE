@@ -1,15 +1,21 @@
+
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 
-import type { MapController } from './OpenLayersMap';
-import type { BaseMapType } from './OpenLayersMap';
-import type { LongitudeLatitude } from './OpenLayersMap';
+import type {
+  MapController,
+  BaseMapType,
+  LongitudeLatitude,
+} from './OpenLayersMap';
+
+import gpsIcon from '@/assets/icons/gps.svg';
 
 import './openlayers-map.css';
 
 export interface MapControlsProps {
   controller: MapController | null;
+  mountainName?: string;
 }
 
 function StreetMapIcon() {
@@ -21,7 +27,11 @@ function StreetMapIcon() {
         strokeLinejoin="round"
         strokeWidth="1.7"
       />
-      <path d="M8.5 3v15.5M15.5 5.5V21" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M8.5 3v15.5M15.5 5.5V21"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
     </svg>
   );
 }
@@ -29,7 +39,13 @@ function StreetMapIcon() {
 function SatelliteMapIcon() {
   return (
     <svg aria-hidden="true" fill="none" height="24" viewBox="0 0 24 24" width="24">
-      <circle cx="12" cy="12" r="4.25" stroke="currentColor" strokeWidth="1.7" />
+      <circle
+        cx="12"
+        cy="12"
+        r="4.25"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
       <path
         d="M4.2 15.2c-1.6-1.6.5-6.2 4.7-10.4M19.8 8.8c1.6 1.6-.5 6.2-4.7 10.4M8.8 19.8c-1.6 1.6-6.2-.5-4.6-4.6M15.2 4.2c1.6-1.6 6.2.5 4.6 4.6"
         stroke="currentColor"
@@ -76,11 +92,15 @@ function getGeolocationErrorMessage(error: GeolocationPositionError): string {
   }
 }
 
-export function MapControls({ controller }: MapControlsProps) {
+export function MapControls({
+  controller,
+  mountainName,
+}: MapControlsProps) {
   const [baseMap, setBaseMap] = useState<BaseMapType>('street');
   const [isLocating, setIsLocating] = useState(false);
   const [status, setStatus] = useState('');
   const requestIdRef = useRef(0);
+
   const terrain3DHref = `/terrain-3d?from=${encodeURIComponent(
     `${window.location.pathname}${window.location.search}${window.location.hash}`,
   )}`;
@@ -158,23 +178,43 @@ export function MapControls({ controller }: MapControlsProps) {
 
     setBaseMap(nextBaseMap);
     setStatus(
-      nextBaseMap === 'satellite' ? '위성지도로 전환했습니다.' : '일반지도로 전환했습니다.',
+      nextBaseMap === 'satellite'
+        ? '위성지도로 전환했습니다.'
+        : '일반지도로 전환했습니다.',
     );
   };
 
   return (
     <div className="orda-map-controls">
+      {mountainName && (
+        <div className="orda-map-controls__mountain">
+          <span>선택한 산</span>
+          <span aria-hidden="true" className="orda-map-controls__divider" />
+          <strong>{mountainName}</strong>
+        </div>
+      )}
+
       <Button
-        aria-label="현재 위치로 이동"
+        aria-label={isLocating ? '현재 위치 확인 중' : '현재 위치로 이동'}
+        title={isLocating ? '위치 확인 중' : '현재 위치로 이동'}
         className="orda-map-controls__button"
         disabled={!controller || isLocating}
         onClick={handleLocate}
         size="sm"
         variant="secondary"
       >
-        {isLocating ? '위치 확인 중' : '내 위치'}
+        <span
+          aria-hidden="true"
+          className={`orda-map-controls__icon${isLocating ? ' is-locating' : ''}`}
+          style={{ maskImage: `url("${gpsIcon}")` }}
+        />
       </Button>
-      <div aria-label="배경지도 선택" className="orda-map-controls__map-type-switcher" role="group">
+
+      <div
+        aria-label="배경지도 선택"
+        className="orda-map-controls__map-type-switcher"
+        role="group"
+      >
         <button
           aria-label="일반지도 보기"
           aria-pressed={baseMap === 'street'}
@@ -186,6 +226,7 @@ export function MapControls({ controller }: MapControlsProps) {
         >
           <StreetMapIcon />
         </button>
+
         <button
           aria-label="위성지도 보기"
           aria-pressed={baseMap === 'satellite'}
@@ -202,6 +243,7 @@ export function MapControls({ controller }: MapControlsProps) {
           <SatelliteMapIcon />
         </button>
       </div>
+
       <a
         aria-label="관악산 3D 지도 보기"
         className="orda-map-controls__terrain-link"
@@ -209,7 +251,12 @@ export function MapControls({ controller }: MapControlsProps) {
       >
         3D
       </a>
-      <p aria-live="polite" className="orda-map-controls__status" role="status">
+
+      <p
+        aria-live="polite"
+        className="orda-map-controls__status"
+        role="status"
+      >
         {status}
       </p>
     </div>

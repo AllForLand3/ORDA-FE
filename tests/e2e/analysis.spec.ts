@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest';
 
 test('분석 결측과 독립적인 샘플을 구분하고 축·툴팁·표에 단위를 표시한다', async ({ page }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+    if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/routes/results?tab=terrain');

@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 
-import analysisIcon from '@/assets/course/course-analysis.svg';
 import deleteIcon from '@/assets/course/course-delete.svg';
 import mapIcon from '@/assets/course/course-map.svg';
 import mountainIcon from '@/assets/course/course-mountain.svg';
@@ -18,11 +17,10 @@ import type { MockMyCourse } from '../mocks/my-courses';
 interface MyCourseCardProps {
   course: MockMyCourse;
   detailHref: string;
-  analysisHref: string;
   editHref: string;
 }
 
-export function MyCourseCard({ course, detailHref, analysisHref, editHref }: MyCourseCardProps) {
+export function MyCourseCard({ course, detailHref, editHref }: MyCourseCardProps) {
   return (
     <Card aria-label={course.name} className="my-course-card" padding="none">
       <Link
@@ -69,26 +67,48 @@ export function MyCourseCard({ course, detailHref, analysisHref, editHref }: MyC
         </span>
       </div>
       <div className="my-course-card__links">
-        <Link to={`${detailHref}#course-detail-map`}>
-          <img alt="" aria-hidden="true" src={mapIcon} />
-          지도에서 보기
-        </Link>
-        <Link to={analysisHref}>
-          <img alt="" aria-hidden="true" src={analysisIcon} />
-          상세 분석
-        </Link>
+        <div className="my-course-card__links">
+          <Link to={detailHref}>
+            <span
+              aria-hidden="true"
+              className="my-course-card__link-icon"
+              style={{ maskImage: `url("${mapIcon}")` }}
+            />
+            코스 상세 보기
+          </Link>
+        </div>
       </div>
       <div aria-label="코스 관리" className="my-course-card__actions">
-        <Link to={editHref}>
-          <img alt="" aria-hidden="true" src={editIcon} />
+        <Link className="my-course-card__action my-course-card__action--standard" to={editHref}>
+          <span
+            aria-hidden="true"
+            className="my-course-card__action-icon"
+            style={{ maskImage: `url("${editIcon}")` }}
+          />
           편집
         </Link>
-        <Link to={`${detailHref}&export=1`}>
-          <img alt="" aria-hidden="true" src={downloadIcon} />
+        <Link
+          className="my-course-card__action my-course-card__action--standard"
+          to={`${detailHref}&export=1`}
+        >
+          <span
+            aria-hidden="true"
+            className="my-course-card__action-icon"
+            style={{ maskImage: `url("${downloadIcon}")` }}
+          />
           내보내기
         </Link>
-        <Button disabled size="sm" variant="quiet">
-          <img alt="" aria-hidden="true" src={deleteIcon} />
+        <Button
+          aria-disabled="true"
+          className="my-course-card__action my-course-card__action--danger"
+          size="sm"
+          variant="quiet"
+        >
+          <span
+            aria-hidden="true"
+            className="my-course-card__action-icon"
+            style={{ maskImage: `url("${deleteIcon}")` }}
+          />
           삭제
         </Button>
       </div>

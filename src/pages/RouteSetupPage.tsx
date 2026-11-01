@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
+import { MOUNTAIN_MOCKS, MountainHeader } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
@@ -16,8 +17,10 @@ import '@/features/route/route-setup.css';
 import './route-setup.css';
 
 export function RouteSetupPage() {
-  const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mountainId = searchParams.get('mountainId');
+  const selectedMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const state = useRouteSetupState();
@@ -50,23 +53,18 @@ export function RouteSetupPage() {
           <>
             <div className="route-setup-mobile-header">
               <button
-                aria-label="뒤로가기"
+                aria-label="뒤로 가기"
                 className="route-setup-mobile-back"
                 onClick={goBack}
                 type="button"
               >
                 <img alt="" aria-hidden="true" src={backIcon} />
-                <span>뒤로</span>
               </button>
               <strong>코스 탐색 설정</strong>
             </div>
+
             <div className="route-setup-desktop-header">
-              <Link to="/mountains">← 산 선택</Link>
-              <span aria-hidden="true">/</span>
-              <strong>코스 탐색 설정</strong>
-            </div>
-            <div className="route-setup-map-chip" role="note">
-              예시 장소 · 실제 경로 추천 미연결
+              <MountainHeader />
             </div>
           </>
         }
@@ -74,7 +72,9 @@ export function RouteSetupPage() {
         mapContent={
           <OpenLayersMap
             additionalLayers={layers}
+            initialCenter={selectedMountain?.coordinates}
             onMapClick={(coordinate) => {
+              if (state.step !== 'locations') return;
               if (state.searchRole && state.isMapSelectionMode) {
                 state.setPendingCoordinate(state.searchRole, coordinate);
               }
@@ -83,21 +83,14 @@ export function RouteSetupPage() {
             targetRef={mapContainerRef}
           />
         }
-        mapControls={<MapControls controller={mapController} />}
-        mapLabel="예시 출발지와 도착지를 표시하는 지도"
-        panel={<RouteSetupPanel state={state} />}
-        panelFooter={
-          <>
-            <RouteSetupFooter state={state} />
-            {state.step === 'conditions' ? (
-              <div className="route-setup-demo-entry">
-                <Link to={{ pathname: '/routes/results', search: location.search }}>
-                  예시 코스 비교 보기
-                </Link>
-              </div>
-            ) : null}
-          </>
+        mapControls={
+          <MapControls controller={mapController} mountainName={selectedMountain?.name} />
         }
+        mapLabel="예시 출발지와 도착지를 표시하는 지도"
+        mobilePanelSwipeToClose
+        panel={<RouteSetupPanel state={state} />}
+        panelFooter={<RouteSetupFooter state={state} />}
+        panelCloseText="접기"
         panelLabel="코스 탐색 설정"
         panelSize="content"
       />
