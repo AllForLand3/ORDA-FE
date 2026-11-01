@@ -156,17 +156,18 @@ test('검색 디바운스 전에도 카드 링크에 현재 검색어를 보존�
   }
 });
 
-test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 안내만 제공한다', async ({ page }) => {
+test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 화면으로 이동한다', async ({ page }) => {
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({ json: { items: [], page: 0, size: 100, totalElements: 0, totalPages: 0 } }),
+  );
   await page.goto('/my-courses');
 
   const upload = page.getByRole('button', { name: '코스 업로드', exact: true });
 
   await upload.click();
-  await expect(page.getByRole('dialog', { name: '코스 업로드 준비 중' })).toBeVisible();
-  await expect(page.locator('input[type="file"]')).toHaveCount(0);
-
-  await page.keyboard.press('Escape');
-  await expect(upload).toBeFocused();
+  await expect(page).toHaveURL(/\/my-courses\/import\?/);
+  await expect(page.getByRole('button', { name: '파일 선택', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: '취소', exact: true }).click();
 
   const firstCard = page.getByRole('article').first();
   const edit = firstCard.getByRole('link', { name: '편집', exact: true });
@@ -177,7 +178,10 @@ test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 �
   await expect(edit).toHaveCSS('color', 'rgb(116, 129, 124)');
   await expect(exportCourse).toHaveCSS('color', 'rgb(116, 129, 124)');
 
+  // 새 업로드 화면에서 마우스로 돌아왔으므로 키보드 포커스 모드로 전환한다.
+  await page.keyboard.press('Tab');
   await edit.focus();
+  await expect(edit).toBeFocused();
   await expect(edit).toHaveCSS('color', 'rgb(7, 92, 71)');
 
   await exportCourse.focus();

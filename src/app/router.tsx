@@ -13,6 +13,7 @@ import { RouteResultsPage } from '@/pages/RouteResultsPage';
 import { MyCoursesPage } from '@/pages/MyCoursesPage';
 import { CourseDetailPage } from '@/pages/CourseDetailPage';
 import { CourseEditPage } from '@/pages/CourseEditPage';
+import { CourseImportPage } from '@/pages/CourseImportPage';
 import { MyPage } from '@/pages/MyPage';
 import { ProfileEditPage } from '@/pages/ProfileEditPage';
 
@@ -58,6 +59,10 @@ export const router = createBrowserRouter([
       {
         path: '/my-courses',
         element: <MyCoursesPage />,
+      },
+      {
+        path: '/my-courses/import',
+        element: <CourseImportPage />,
       },
       {
         path: '/my-courses/:courseId',

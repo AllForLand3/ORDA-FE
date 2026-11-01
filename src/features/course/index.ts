@@ -26,3 +26,5 @@ export { SavedCourseEditPanel, SavedCourseEditDialogs } from './components/Saved
 export type { CourseSnapshot } from './types/course';
 export { useCourseDeleteState } from './hooks/useCourseDeleteState';
 export { CourseDeleteDialog } from './components/CourseDeleteDialog';
+export { useCourseImportState } from './hooks/useCourseImportState';
+export { CourseImportPanel, CourseImportExitDialog } from './components/CourseImportPanel';

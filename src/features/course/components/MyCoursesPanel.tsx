@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import addIcon from '@/assets/course/course-add.svg';
-import { Button, Dialog, Tabs, TextField } from '@/components/ui';
+import { Button, Tabs, TextField } from '@/components/ui';
 
 import type { useMyCoursesState } from '../hooks/useMyCoursesState';
 import { MyCourseCard } from './MyCourseCard';
@@ -12,7 +12,7 @@ interface MyCoursesPanelProps {
 }
 
 export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
-  const [uploadNoticeOpen, setUploadNoticeOpen] = useState(false);
+  const navigate = useNavigate();
   const selectedTab = state.tabs.find((item) => item.value === state.tab);
   const content = (
     <>
@@ -86,16 +86,16 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
           </p>
         </div>
         <div className="my-courses-upload">
-          <Button onClick={() => setUploadNoticeOpen(true)} size="sm">
+          <Button onClick={() => navigate(state.getImportHref())} size="sm">
             <img alt="" aria-hidden="true" src={addIcon} />
             코스 업로드
           </Button>
-          <small>(GeoJSON, GPX)</small>
+          <small>(GeoJSON)</small>
         </div>
       </header>
       <p className="my-courses-demo-note">
-        모든 코스·지표는 예시입니다. 편집은 화면 내 임시 입력만 지원하며 서버 저장·파일
-        가져오기·다운로드·삭제는 미연결입니다.
+        이 목록의 코스·지표는 예시입니다. 업로드한 실제 코스는 등록 후 상세 화면에서 확인할 수
+        있습니다.
       </p>
       <div className="my-courses-search">
         <TextField
@@ -136,19 +136,6 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
         onValueChange={state.setTab}
         value={state.tab}
       />
-      <Dialog
-        description="GeoJSON·GPX 파일 업로드 기능은 아직 연결되지 않았습니다."
-        footer={
-          <Button onClick={() => setUploadNoticeOpen(false)} variant="secondary">
-            닫기
-          </Button>
-        }
-        onOpenChange={setUploadNoticeOpen}
-        open={uploadNoticeOpen}
-        title="코스 업로드 준비 중"
-      >
-        <p>현재는 예시 코스 목록과 상세 화면만 확인할 수 있어요.</p>
-      </Dialog>
     </div>
   );
 }

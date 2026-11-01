@@ -119,5 +119,7 @@ export function useMyCoursesState() {
       `/my-courses/${encodeURIComponent(id)}?${new URLSearchParams({ tab: detailTab, list: getCurrentListParams() })}`,
     getEditHref: (id: string) =>
       `/my-courses/${encodeURIComponent(id)}/edit?${new URLSearchParams({ list: getCurrentListParams() })}`,
+    getImportHref: () =>
+      `/my-courses/import?${new URLSearchParams({ list: getCurrentListParams() })}`,
   };
 }
