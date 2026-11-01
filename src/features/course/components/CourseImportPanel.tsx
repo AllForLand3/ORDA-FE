@@ -136,7 +136,9 @@ export function CourseImportPanel({ state }: { state: State }) {
         helperText={`${[...state.memo].length} / 1000자`}
       />
       {state.failure ? <p role="alert">{state.failure}</p> : null}
-      {state.pending ? <p role="status">코스를 등록하는 중입니다.</p> : null}
+      {state.pending ? (
+        <p role="status">코스를 등록하는 중입니다. 완료될 때까지 경로 편집이 잠깁니다.</p>
+      ) : null}
       <p className="course-edit-note">
         미리보기는 파일의 경로입니다. 서비스 영역 포함 여부는 등록할 때 서버에서 확인합니다.
       </p>

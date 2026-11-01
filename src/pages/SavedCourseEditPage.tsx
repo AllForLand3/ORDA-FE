@@ -73,6 +73,7 @@ function SavedCourseEditWorkspace({ initial }: { initial: CourseSnapshot }) {
               targetRef={targetRef}
               additionalLayers={layer.layers}
               editableLayer={layer.editableLayer}
+              editingEnabled={!state.pending}
               onEditableGeometryChange={state.updateGeometry}
               initialCenter={null}
               initialExtent={layer.extent}

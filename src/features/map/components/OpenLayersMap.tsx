@@ -45,6 +45,7 @@ export interface OpenLayersMapProps {
   /** 이미 EPSG:3857로 변환된 경로의 범위. 최초 표시 시 전체 경로를 맞춘다. */
   initialExtent?: Extent;
   editableLayer?: EditableLineLayer | null;
+  editingEnabled?: boolean;
   onEditableGeometryChange?: (coordinates: readonly LongitudeLatitude[]) => boolean | void;
   onMapClick?: (coordinate: LongitudeLatitude) => void;
   onControllerChange?: (controller: MapController | null) => void;
@@ -76,6 +77,7 @@ export function OpenLayersMap({
   initialZoom = INITIAL_ZOOM,
   initialExtent,
   editableLayer,
+  editingEnabled = true,
   onEditableGeometryChange,
   onMapClick,
   onControllerChange,
@@ -84,6 +86,13 @@ export function OpenLayersMap({
   const onControllerChangeRef = useRef(onControllerChange);
   const onMapClickRef = useRef(onMapClick);
   const onEditableGeometryChangeRef = useRef(onEditableGeometryChange);
+  const editingEnabledRef = useRef(editingEnabled);
+  const setEditingEnabledRef = useRef<((enabled: boolean) => void) | null>(null);
+
+  useEffect(() => {
+    editingEnabledRef.current = editingEnabled;
+    setEditingEnabledRef.current?.(editingEnabled);
+  }, [editingEnabled]);
 
   useEffect(() => {
     onControllerChangeRef.current = onControllerChange;
@@ -161,23 +170,40 @@ export function OpenLayersMap({
     };
     const sourceChangeKey = editableSource?.on('changefeature', refreshPreviousCoordinates);
     const modifyStartKey = modifyInteraction?.on('modifystart', () => {
+      refreshPreviousCoordinates();
       isModifying = true;
     });
+    const restoreGeometry = () => {
+      const geometry = editableSource?.getFeatures()[0]?.getGeometry();
+      if (geometry && previousCoordinates) geometry.setCoordinates(previousCoordinates);
+      isModifying = false;
+    };
+    setEditingEnabledRef.current = (enabled) => {
+      if (!enabled && isModifying) restoreGeometry();
+      modifyInteraction?.setActive(enabled);
+    };
+    setEditingEnabledRef.current(editingEnabledRef.current);
     const modifyEndKey = modifyInteraction
       ? modifyInteraction.on('modifyend', () => {
           const feature = editableSource?.getFeatures()[0];
           const geometry = feature?.getGeometry();
-          if (!(geometry instanceof LineString)) return;
+          if (!(geometry instanceof LineString)) {
+            isModifying = false;
+            return;
+          }
+          if (!editingEnabledRef.current) {
+            restoreGeometry();
+            return;
+          }
 
           const projectedCoordinates = geometry.getCoordinates();
-          const coordinates = projectedCoordinates.map(([x, y]) => {
+          const coordinates = projectedCoordinates.map(([x, y]): LongitudeLatitude => {
             const [longitude, latitude] = toLonLat([x, y], 'EPSG:3857');
-            return [longitude, latitude] as LongitudeLatitude;
+            return [longitude, latitude];
           });
           const accepted = onEditableGeometryChangeRef.current?.(coordinates);
           if (accepted === false && previousCoordinates) {
-            geometry.setCoordinates(previousCoordinates);
-            isModifying = false;
+            restoreGeometry();
             return;
           }
           previousCoordinates = projectedCoordinates.map(([x, y]) => [x, y]);
@@ -284,6 +310,8 @@ export function OpenLayersMap({
       if (modifyStartKey) unByKey(modifyStartKey);
       if (sourceChangeKey) unByKey(sourceChangeKey);
       if (modifyInteraction) map.removeInteraction(modifyInteraction);
+      modifyInteraction?.dispose();
+      setEditingEnabledRef.current = null;
       onControllerChangeRef.current?.(null);
       delete target.dataset.mapReady;
       delete target.dataset.mapBaseLayer;

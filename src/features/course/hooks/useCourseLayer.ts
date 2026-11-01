@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Feature from 'ol/Feature.js';
 import type { Extent } from 'ol/extent.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
@@ -61,17 +61,23 @@ export interface EditableCourseLayer {
   editableLayer: EditableLineLayer;
 }
 
-export function useEditableCourseLayer(
-  geometry: CourseGeometry | undefined,
-): EditableCourseLayer | null {
-  return useMemo(() => {
+export function useEditableCourseLayer(geometry: CourseGeometry): EditableCourseLayer | null {
+  const [resource] = useState<EditableCourseLayer | null>(() => {
     const projected = projectGeometry(geometry);
     if (!projected) return null;
     const layer = createLayer(projected);
     return {
-      layers: [layer] as [EditableLineLayer],
+      layers: [layer],
       extent: projected.getExtent(),
       editableLayer: layer,
     };
-  }, [geometry]);
+  });
+
+  useEffect(() => {
+    const projected = projectGeometry(geometry);
+    const current = resource?.editableLayer.getSource()?.getFeatures()[0]?.getGeometry();
+    if (projected && current) current.setCoordinates(projected.getCoordinates());
+  }, [geometry, resource]);
+
+  return resource;
 }

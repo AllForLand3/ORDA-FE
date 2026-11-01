@@ -151,6 +151,7 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
   }
 
   const updateGeometry = useCallback((coordinates: readonly (readonly [number, number])[]) => {
+    if (busy.current) return false;
     try {
       const next = readCourseGeometry({
         type: 'LineString',
@@ -162,7 +163,8 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
       return true;
     } catch (error) {
       setGeometryError(
-        error instanceof Error ? error.message : '肄붿뒪 寃쎈줈??理쒖냼 2媛??먯씠 ?꾩슂?⑸땲??',
+        (error instanceof Error ? error.message : '코스 경로를 수정하지 못했습니다.') +
+          ' 마지막 유효한 경로로 되돌렸습니다.',
       );
       return false;
     }
@@ -197,6 +199,7 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
     save,
     reload,
     reset: () => {
+      if (busy.current) return;
       setDraft({
         name: baseline.course.courseName,
         memo: baseline.course.memo ?? '',
@@ -205,7 +208,7 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
       setGeometryError('');
       setSubmitted(false);
       setResetOpen(false);
-      setMessage('저장된 이름과 메모로 되돌렸습니다.');
+      setMessage('저장된 이름, 메모, 경로로 되돌렸습니다.');
     },
   };
 }

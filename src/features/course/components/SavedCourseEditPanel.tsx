@@ -50,7 +50,7 @@ export function SavedCourseEditPanel({ state, detailHref }: { state: State; deta
       {state.failure ? <p role="alert">{state.failure}</p> : null}
       <p role="status" className="course-edit-status">
         {state.pending
-          ? '처리 중입니다.'
+          ? '처리 중입니다. 완료될 때까지 경로 편집이 잠깁니다.'
           : state.message ||
             (state.isDirty ? '저장하지 않은 변경이 있습니다.' : '저장된 내용입니다.')}
       </p>
@@ -87,7 +87,7 @@ export function SavedCourseEditDialogs({ state }: { state: State }) {
         open={state.resetOpen}
         onOpenChange={state.setResetOpen}
         title="입력을 초기화할까요?"
-        description="편집을 시작했거나 마지막으로 저장한 이름과 메모로 되돌립니다."
+        description="편집을 시작했거나 마지막으로 저장한 이름, 메모, 경로로 되돌립니다."
         footer={
           <>
             <Button variant="secondary" onClick={() => state.setResetOpen(false)}>
@@ -103,7 +103,7 @@ export function SavedCourseEditDialogs({ state }: { state: State }) {
         open={state.reloadOpen}
         onOpenChange={state.setReloadOpen}
         title="최신 코스를 불러올까요?"
-        description="현재 입력을 버리고 서버의 최신 이름과 메모로 다시 시작합니다."
+        description="현재 입력과 경로 변경을 버리고 서버의 최신 이름, 메모, 경로로 다시 시작합니다."
         footer={
           <>
             <Button variant="secondary" onClick={() => state.setReloadOpen(false)}>

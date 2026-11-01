@@ -26,6 +26,7 @@ export function useCourseImportState() {
   const [geometry, setGeometry] = useState<CourseGeometry>();
   const [geometryError, setGeometryError] = useState('');
   const [fileName, setFileName] = useState('');
+  const [fileVersion, setFileVersion] = useState(0);
   const [reading, setReading] = useState(false);
   const [fileError, setFileError] = useState('');
   const [name, setName] = useState('');
@@ -71,6 +72,7 @@ export function useCourseImportState() {
   async function selectFile(file: File | undefined) {
     if (!file || busy.current) return;
     const current = ++sequence.current;
+    setFileVersion(current);
     setFileName(file.name);
     setGeometry(undefined);
     setGeometryError('');
@@ -95,6 +97,7 @@ export function useCourseImportState() {
   }
 
   const updateGeometry = useCallback((coordinates: readonly (readonly [number, number])[]) => {
+    if (busy.current) return false;
     try {
       const next = readCourseGeometry({
         type: 'LineString',
@@ -105,7 +108,8 @@ export function useCourseImportState() {
       return true;
     } catch (error) {
       setGeometryError(
-        error instanceof Error ? error.message : '肄붿뒪 寃쎈줈??理쒖냼 2媛??먯씠 ?꾩슂?⑸땲??',
+        (error instanceof Error ? error.message : '코스 경로를 수정하지 못했습니다.') +
+          ' 마지막 유효한 경로로 되돌렸습니다.',
       );
       return false;
     }
@@ -158,6 +162,7 @@ export function useCourseImportState() {
     geometry,
     geometryError,
     fileName,
+    fileVersion,
     reading,
     fileError,
     name,
