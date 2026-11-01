@@ -88,6 +88,10 @@
   white-space: pre-wrap;
 }
 
+.course-delete-name {
+  overflow-wrap: anywhere;
+}
+
 .course-detail-content .insights-panel:not(.my-course-overview__analysis .insights-panel) {
   padding-inline: 0;
 }

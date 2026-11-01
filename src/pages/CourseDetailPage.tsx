@@ -18,7 +18,11 @@ import { SavedCourseDetailPage } from './SavedCourseDetailPage';
 export function CourseDetailPage() {
   const { courseId = '' } = useParams();
   // 목록 API 연결 전까지 명시적인 예시 ID만 기존 UI 데모로 남긴다.
-  return courseId.startsWith('example-') ? <DemoCourseDetailPage /> : <SavedCourseDetailPage />;
+  return courseId.startsWith('example-') ? (
+    <DemoCourseDetailPage />
+  ) : (
+    <SavedCourseDetailPage key={courseId} />
+  );
 }
 
 function DemoCourseDetailPage() {

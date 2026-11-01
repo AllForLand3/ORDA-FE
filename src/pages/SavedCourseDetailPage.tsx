@@ -8,12 +8,15 @@ import {
   SavedCourseDetailPanel,
   useCourseLayer,
   useSavedCourseDetailState,
+  useCourseDeleteState,
+  CourseDeleteDialog,
 } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 
 export function SavedCourseDetailPage() {
   const state = useSavedCourseDetailState();
+  const deletion = useCourseDeleteState(state.backHref);
   const course = state.snapshot?.course;
   const courseLayer = useCourseLayer(course?.geometry);
   const targetRef = useRef<HTMLDivElement>(null);
@@ -43,6 +46,16 @@ export function SavedCourseDetailPage() {
             )}
             <Button disabled size="sm" variant="quiet">
               내보내기
+            </Button>
+            <Button
+              disabled={state.isUnavailable || !state.snapshot?.etag || deletion.pending}
+              size="sm"
+              variant="danger"
+              onClick={() => {
+                if (state.snapshot) deletion.open(state.snapshot);
+              }}
+            >
+              삭제
             </Button>
           </div>
         </div>
@@ -103,6 +116,7 @@ export function SavedCourseDetailPage() {
         </main>
       )}
       <MyCoursesNavigation />
+      <CourseDeleteDialog state={deletion} />
     </div>
   );
 }
