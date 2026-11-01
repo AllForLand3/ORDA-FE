@@ -3,27 +3,44 @@ import { Link, useLocation } from 'react-router-dom';
 
 import backIcon from '@/assets/course/course-back.svg';
 import { Button } from '@/components/ui';
-import { NearbyFacilitiesPanel, TerrainAnalysisPanel } from '@/features/analysis';
+import { useAuth } from '@/features/auth';
 import { CourseDetailPanel, MyCoursesNavigation, useCourseDetailState } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
-import { CourseExportDialog } from '@/features/route';
+
 import '@/features/analysis/analysis.css';
 import '@/features/course/components/my-courses.css';
 
 import './my-courses.css';
 import './course-detail.css';
 
+function AnalysisUnavailable() {
+  return (
+    <section aria-label="고도 분석 안내" className="terrain-analysis insights-panel">
+      <div className="insights-empty" role="status">
+        <strong>분석 정보 미제공</strong>
+        <p>이 화면에서는 아직 고도 분석 결과를 제공하지 않아요.</p>
+      </div>
+    </section>
+  );
+}
+
 export function CourseDetailPage() {
-  const state = useCourseDetailState();
+  const { currentUser } = useAuth();
+  const state = useCourseDetailState(currentUser?.userId);
   const location = useLocation();
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRegionRef = useRef<HTMLElement>(null);
   const [controller, setController] = useState<MapController | null>(null);
 
+  const course = state.course;
+
   useEffect(() => {
-    if (location.hash === '#course-detail-map') mapRegionRef.current?.focus();
-  }, [location.hash, state.course?.id]);
+    if (location.hash === '#course-detail-map') {
+      mapRegionRef.current?.focus();
+    }
+  }, [location.hash, course?.courseId]);
 
   return (
     <div className="course-detail-page">
@@ -33,41 +50,39 @@ export function CourseDetailPage() {
             <img alt="" aria-hidden="true" src={backIcon} />
             <span>코스 상세 분석</span>
           </Link>
+
           <div aria-label="코스 관리" className="course-detail-actions">
-            {state.course && !state.isError ? (
-              <Link to={state.editHref}>편집</Link>
-            ) : (
-              <Button disabled size="sm" variant="quiet">
-                편집
-              </Button>
-            )}
-            <Button
-              disabled={!state.course || state.isError}
-              onClick={() => state.setExportOpen(true)}
-              size="sm"
-              variant="quiet"
-            >
+            <Button disabled size="sm" variant="quiet">
+              편집
+            </Button>
+
+            <Button disabled size="sm" variant="quiet">
               내보내기
             </Button>
           </div>
         </div>
       </header>
-      {!state.course || state.isError ? (
-        <main className="my-courses-feedback" role={state.isError ? 'alert' : undefined}>
-          <h1>{state.isError ? '코스 상세를 표시하지 못했어요' : '코스를 찾을 수 없어요'}</h1>
-          <p>
-            {state.isError
-              ? '오류 UI 데모입니다. 실제 서버 요청이 실패한 상태는 아닙니다.'
-              : '예시 목록에 없는 코스 ID입니다.'}
-          </p>
-          {state.isError ? (
-            <Button onClick={state.retry} variant="secondary">
-              예시 상세 다시 보기
+
+      {state.isLoading ? (
+        <main className="my-courses-feedback" aria-busy="true">
+          <p role="status">코스 정보를 불러오고 있어요.</p>
+        </main>
+      ) : state.error ? (
+        <main className="my-courses-feedback">
+          <div role="alert">
+            <h1>{state.error.title}</h1>
+            <p>{state.error.message}</p>
+          </div>
+
+          {state.error.canRetry ? (
+            <Button disabled={state.isFetching} onClick={state.retry} variant="secondary">
+              {state.isFetching ? '다시 불러오는 중…' : '다시 시도'}
             </Button>
           ) : null}
+
           <Link to={state.backHref}>내 코스 목록으로 돌아가기</Link>
         </main>
-      ) : (
+      ) : course ? (
         <main className="course-detail-workspace">
           <section
             aria-label="코스 배경 지도, 경로 선형 미제공"
@@ -79,47 +94,41 @@ export function CourseDetailPage() {
             <div className="orda-map-layout__map-surface" ref={mapContainerRef}>
               <OpenLayersMap onControllerChange={setController} targetRef={mapContainerRef} />
             </div>
-            <span className="course-detail-map__note">
-              {state.course.mountainName} · 실제 경로 미제공
-            </span>
+
+            <span className="course-detail-map__note">{course.courseName} · 실제 경로 미제공</span>
+
             <div className="course-detail-map__controls">
               <MapControls controller={controller} />
             </div>
           </section>
+
           <section aria-label="내 코스 상세 내용" className="course-detail-content">
             <CourseDetailPanel
-              course={state.course}
+              course={course}
               onTabChange={state.setTab}
               tab={state.tab}
-              overviewAnalysis={
-                state.tab === 'overview' ? (
-                  <TerrainAnalysisPanel
-                    candidateName={state.course.name}
-                    key={`${state.course.id}-overview`}
-                  />
-                ) : null
-              }
-              terrainContent={
-                state.tab === 'terrain' ? (
-                  <TerrainAnalysisPanel
-                    candidateName={state.course.name}
-                    key={`${state.course.id}-terrain`}
-                  />
-                ) : null
-              }
+              overviewAnalysis={state.tab === 'overview' ? <AnalysisUnavailable /> : null}
+              terrainContent={state.tab === 'terrain' ? <AnalysisUnavailable /> : null}
               facilitiesContent={
                 state.tab === 'facilities' ? (
-                  <NearbyFacilitiesPanel candidateName={state.course.name} key={state.course.id} />
+                  <section aria-label="주변 시설 안내" className="insights-panel">
+                    <div className="insights-empty" role="status">
+                      <strong>주변 시설 정보 미제공</strong>
+                      <p>이 코스의 주변 시설 정보가 아직 연결되지 않았어요.</p>
+                    </div>
+                  </section>
                 ) : null
               }
             />
           </section>
         </main>
+      ) : (
+        <main className="my-courses-feedback">
+          <p role="status">코스 정보를 확인하고 있어요.</p>
+        </main>
       )}
+
       <MyCoursesNavigation />
-      {state.course && !state.isError && state.isExportOpen ? (
-        <CourseExportDialog courseName={state.course.name} onOpenChange={state.setExportOpen} />
-      ) : null}
     </div>
   );
 }
