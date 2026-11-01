@@ -176,15 +176,40 @@ test('OSM 지도는 EPSG:3857에서 확대·이동되고 컨테이너 크기 변
   }
 });
 
+test('오른쪽 위 배경지도 아이콘은 일반지도와 위성지도 상태를 전환한다', async ({ page }) => {
+  const mapSurface = page.locator('.orda-map-layout__map-surface');
+  const streetMapButton = page.getByRole('button', { name: '일반지도 보기' });
+  const satelliteMapButton = page.getByRole('button', { name: '위성지도 보기' });
+
+  await expect(mapSurface).toHaveAttribute('data-map-base-layer', 'street');
+  await expect(streetMapButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(satelliteMapButton).toHaveAttribute('aria-pressed', 'false');
+  await expect(streetMapButton.locator('svg')).toBeVisible();
+  await expect(satelliteMapButton.locator('svg')).toBeVisible();
+
+  await satelliteMapButton.click();
+
+  if ((await satelliteMapButton.getAttribute('title')) === 'VWorld API 키가 필요합니다') {
+    await expect(page.getByRole('status')).toHaveText(
+      '위성지도를 사용하려면 VWorld API 키를 설정해주세요.',
+    );
+    await expect(mapSurface).toHaveAttribute('data-map-base-layer', 'street');
+  } else {
+    await expect(mapSurface).toHaveAttribute('data-map-base-layer', 'satellite');
+    await expect(satelliteMapButton).toHaveAttribute('aria-pressed', 'true');
+    await streetMapButton.click();
+    await expect(mapSurface).toHaveAttribute('data-map-base-layer', 'street');
+  }
+});
+
 test('현재 위치는 클릭할 때만 요청하고 성공·좌표 누락·권한 거부를 처리한다', async ({ page }) => {
   const locationButton = page.getByRole('button', { name: '현재 위치로 이동' });
   const status = page.locator('.orda-map-controls__status');
   const mapSurface = page.locator('.orda-map-layout__map-surface');
 
   await expect(locationButton).toBeEnabled();
-  await expect(
-    page.getByRole('button', { name: '지도 레이어 선택 (준비되지 않음)' }),
-  ).toBeDisabled();
+  await expect(page.getByRole('button', { name: '일반지도 보기' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '위성지도 보기' })).toBeEnabled();
   await expect(status).toHaveText('');
   await page.context().grantPermissions(['geolocation']);
   await page.context().setGeolocation({ latitude: 37.5, longitude: 127.0 });
