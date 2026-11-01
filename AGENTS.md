@@ -106,6 +106,7 @@ pnpm test:e2e        # Playwright (API 모킹)
 - 구조와 흐름: `docs/architecture.md`
 - React 구현: `docs/frontend-convention.md`
 - HTTP 계약: `docs/api-convention.md`
+- 코스 가져오기·편집 연동 현황: `docs/course-integration.md`
 - 좌표·지도 표현: `docs/gis-convention.md`
 - 테스트: `docs/testing-convention.md`
 - Git: `docs/git-convention.md`

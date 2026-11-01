@@ -79,6 +79,15 @@
   background: var(--color-background-surface);
 }
 
+.course-detail-panel h1,
+.course-detail-memo {
+  overflow-wrap: anywhere;
+}
+
+.course-detail-memo {
+  white-space: pre-wrap;
+}
+
 .course-detail-content .insights-panel:not(.my-course-overview__analysis .insights-panel) {
   padding-inline: 0;
 }

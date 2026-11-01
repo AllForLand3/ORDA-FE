@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import backIcon from '@/assets/course/course-back.svg';
 import { Button } from '@/components/ui';
@@ -13,8 +13,15 @@ import '@/features/course/components/my-courses.css';
 
 import './my-courses.css';
 import './course-detail.css';
+import { SavedCourseDetailPage } from './SavedCourseDetailPage';
 
 export function CourseDetailPage() {
+  const { courseId = '' } = useParams();
+  // 목록 API 연결 전까지 명시적인 예시 ID만 기존 UI 데모로 남긴다.
+  return courseId.startsWith('example-') ? <DemoCourseDetailPage /> : <SavedCourseDetailPage />;
+}
+
+function DemoCourseDetailPage() {
   const state = useCourseDetailState();
   const location = useLocation();
   const mapContainerRef = useRef<HTMLDivElement>(null);

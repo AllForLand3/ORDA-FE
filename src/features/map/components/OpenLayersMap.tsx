@@ -13,6 +13,7 @@ import View from 'ol/View.js';
 import { fromLonLat, toLonLat } from 'ol/proj.js';
 import { unByKey } from 'ol/Observable.js';
 import type { EventsKey } from 'ol/events.js';
+import type { Extent } from 'ol/extent.js';
 
 import { GWANAKSAN_SUMMIT } from '../constants';
 
@@ -33,6 +34,8 @@ export interface OpenLayersMapProps {
   additionalLayers?: BaseLayer[];
   initialCenter?: LongitudeLatitude | null;
   initialZoom?: number;
+  /** 이미 EPSG:3857로 변환된 경로의 범위. 최초 표시 시 전체 경로를 맞춘다. */
+  initialExtent?: Extent;
   onMapClick?: (coordinate: LongitudeLatitude) => void;
   onControllerChange?: (controller: MapController | null) => void;
   targetRef: RefObject<HTMLDivElement | null>;
@@ -61,6 +64,7 @@ export function OpenLayersMap({
   additionalLayers = EMPTY_LAYERS,
   initialCenter = GWANAKSAN_SUMMIT,
   initialZoom = INITIAL_ZOOM,
+  initialExtent,
   onMapClick,
   onControllerChange,
   targetRef,
@@ -165,7 +169,13 @@ export function OpenLayersMap({
     resizeObserver?.observe(target);
     window.addEventListener('resize', updateSize);
 
-    const initialSizeFrame = window.requestAnimationFrame(updateSize);
+    const initialSizeFrame = window.requestAnimationFrame(() => {
+      updateSize();
+      if (initialExtent) {
+        view.fit(initialExtent, { padding: [32, 32, 32, 32], maxZoom: MAX_ZOOM });
+        refreshMapState();
+      }
+    });
     const controller: MapController = {
       centerOn: (coordinate, zoom = INITIAL_ZOOM + 1) => {
         if (!isActive || !isValidCoordinate(coordinate)) {
@@ -217,7 +227,7 @@ export function OpenLayersMap({
       map.setTarget(undefined);
       map.dispose();
     };
-  }, [additionalLayers, initialCenter, initialZoom, targetRef]);
+  }, [additionalLayers, initialCenter, initialExtent, initialZoom, targetRef]);
 
   return null;
 }
