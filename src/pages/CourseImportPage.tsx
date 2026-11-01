@@ -7,7 +7,7 @@ import {
   CourseImportPanel,
   CourseImportExitDialog,
   useCourseImportState,
-  useCourseLayer,
+  useEditableCourseLayer,
 } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
@@ -15,7 +15,7 @@ import './course-edit.css';
 
 export function CourseImportPage() {
   const state = useCourseImportState();
-  const layer = useCourseLayer(state.geometry);
+  const layer = useEditableCourseLayer(state.geometry);
   const targetRef = useRef<HTMLDivElement>(null);
   const [controller, setController] = useState<MapController | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -44,6 +44,8 @@ export function CourseImportPage() {
             <OpenLayersMap
               targetRef={targetRef}
               additionalLayers={layer.layers}
+              editableLayer={layer.editableLayer}
+              onEditableGeometryChange={state.updateGeometry}
               initialCenter={null}
               initialExtent={layer.extent}
               onControllerChange={setController}

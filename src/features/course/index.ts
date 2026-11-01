@@ -19,6 +19,7 @@ export { CourseEditDialogs, CourseEditPanel } from './components/CourseEditPanel
 export { useCourseEditState } from './hooks/useCourseEditState';
 export { useCourseQuery } from './hooks/useCourseQuery';
 export { useCourseLayer } from './hooks/useCourseLayer';
+export { useEditableCourseLayer } from './hooks/useCourseLayer';
 export { SavedCourseDetailPanel } from './components/SavedCourseDetailPanel';
 export { useSavedCourseDetailState } from './hooks/useSavedCourseDetailState';
 export { useSavedCourseEditState } from './hooks/useSavedCourseEditState';

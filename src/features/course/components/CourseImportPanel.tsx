@@ -24,6 +24,11 @@ export function CourseImportPanel({ state }: { state: State }) {
         );
       }}
     >
+      <p className="course-edit-note">
+        지도에서 꼭짓점을 드래그해 이동하고, 선을 클릭해 꼭짓점을 추가할 수 있습니다. Alt+클릭으로
+        꼭짓점을 삭제합니다.
+      </p>
+      {state.geometryError ? <p role="alert">{state.geometryError}</p> : null}
       <div className="orda-field">
         <label className="orda-field__label" htmlFor="course-import-file">
           GeoJSON 파일

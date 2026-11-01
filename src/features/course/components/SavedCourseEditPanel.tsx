@@ -40,7 +40,12 @@ export function SavedCourseEditPanel({ state, detailHref }: { state: State; deta
         onChange={(event) => state.setMemo(event.target.value)}
       />
       <p className="course-edit-note">
-        이름과 메모를 수정할 수 있습니다. 경로 편집은 준비 중입니다.
+        지도에서 꼭짓점을 드래그해 이동하고, 선을 클릭해 꼭짓점을 추가할 수 있습니다. Alt+클릭으로
+        꼭짓점을 삭제합니다.
+      </p>
+      {state.geometryError ? <p role="alert">{state.geometryError}</p> : null}
+      <p className="course-edit-note">
+        이름, 메모, 지도 경로를 수정할 수 있습니다. 변경 사항은 저장 버튼으로 반영합니다.
       </p>
       {state.failure ? <p role="alert">{state.failure}</p> : null}
       <p role="status" className="course-edit-status">

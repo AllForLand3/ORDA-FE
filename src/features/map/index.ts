@@ -2,6 +2,7 @@ export { GWANAKSAN_SUMMIT } from './constants';
 export { OpenLayersMap } from './components/OpenLayersMap';
 export type {
   BaseMapType,
+  EditableLineLayer,
   LongitudeLatitude,
   MapController,
   OpenLayersMapProps,
