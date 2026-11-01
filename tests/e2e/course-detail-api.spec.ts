@@ -43,7 +43,7 @@ test('조회 중 상태를 표시하고 문자열 ID·인증·서버 값과 투�
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(course.courseName);
   await expect(page.getByLabel('코스 요약')).toContainText('180.4 m');
   await expect(page.getByLabel('코스 메모')).toContainText('물을 준비하세요.');
-  await expect(page.getByRole('button', { name: '편집', exact: true })).toBeDisabled();
+  await expect(page.getByRole('link', { name: '편집', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '내보내기', exact: true })).toBeDisabled();
 
   const map = page.locator('.course-detail-map .orda-map-layout__map-surface');

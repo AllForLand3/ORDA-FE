@@ -34,9 +34,13 @@ export function SavedCourseDetailPage() {
             <span>코스 상세</span>
           </Link>
           <div aria-label="코스 관리" className="course-detail-actions">
-            <Button disabled size="sm" variant="quiet">
-              편집
-            </Button>
+            {course && !state.isUnavailable && state.snapshot?.etag ? (
+              <Link to={state.editHref}>편집</Link>
+            ) : (
+              <Button disabled size="sm" variant="quiet">
+                편집
+              </Button>
+            )}
             <Button disabled size="sm" variant="quiet">
               내보내기
             </Button>
@@ -86,7 +90,7 @@ export function SavedCourseDetailPage() {
           </section>
           <section aria-label="내 코스 상세 내용" className="course-detail-content">
             <SavedCourseDetailPanel course={course} tab={state.tab} onTabChange={state.setTab} />
-            <p className="my-courses-demo-note">편집·내보내기는 아직 제공하지 않습니다.</p>
+            <p className="my-courses-demo-note">내보내기는 아직 제공하지 않습니다.</p>
             {state.snapshot?.etag === null ? (
               <div role="status">
                 <p>편집에 필요한 버전 정보를 받지 못했습니다. 상세 정보를 다시 조회해주세요.</p>

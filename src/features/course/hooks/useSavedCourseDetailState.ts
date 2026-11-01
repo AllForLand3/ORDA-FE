@@ -5,10 +5,10 @@ import type { ApiErrorResponse } from '@/shared/types/api';
 
 import { useCourseQuery } from './useCourseQuery';
 
-export function useSavedCourseDetailState() {
+export function useSavedCourseDetailState(editing = false) {
   const { courseId = '' } = useParams();
   const [params, setParams] = useSearchParams();
-  const query = useCourseQuery(courseId);
+  const query = useCourseQuery(courseId, editing);
   const code = axios.isAxiosError<ApiErrorResponse>(query.error)
     ? query.error.response?.data?.code
     : undefined;
@@ -43,5 +43,6 @@ export function useSavedCourseDetailState() {
       });
     },
     backHref: `/my-courses${listParams.size ? `?${listParams}` : ''}`,
+    editHref: `/my-courses/${encodeURIComponent(courseId)}/edit?${new URLSearchParams({ list: params.get('list') ?? '', tab })}`,
   };
 }

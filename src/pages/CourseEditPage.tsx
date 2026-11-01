@@ -9,10 +9,15 @@ import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 
 import './course-edit.css';
+import { SavedCourseEditPage } from './SavedCourseEditPage';
 
 export function CourseEditPage() {
   const { courseId } = useParams();
-  return <CourseEditWorkspace courseId={courseId} key={courseId} />;
+  return courseId?.startsWith('example-') ? (
+    <CourseEditWorkspace courseId={courseId} key={courseId} />
+  ) : (
+    <SavedCourseEditPage />
+  );
 }
 
 function CourseEditWorkspace({ courseId }: { courseId: string | undefined }) {
