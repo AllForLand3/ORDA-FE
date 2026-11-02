@@ -259,6 +259,7 @@ test('산 카드는 키보드 선택과 Escape·버튼 선택 취소를 지원�
 
   const gwanaksan = page.locator('.mountain-card').filter({ hasText: '관악산' });
   const bukhansan = page.locator('.mountain-card').filter({ hasText: '북한산' });
+  const mapSurface = page.locator('.orda-map-layout__map-surface');
 
   await expect(gwanaksan).toHaveAttribute('aria-pressed', 'false');
   await bukhansan.focus();
@@ -266,6 +267,7 @@ test('산 카드는 키보드 선택과 Escape·버튼 선택 취소를 지원�
   await expect(bukhansan).toHaveAttribute('aria-pressed', 'true');
   await expect(gwanaksan).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByText('선택한 산: 북한산')).toBeVisible();
+  await expect.poll(() => mapSurface.getAttribute('data-map-center')).toBe('126.978000,37.658630');
 
   await page.keyboard.press('Escape');
   await expect(bukhansan).toHaveAttribute('aria-pressed', 'false');

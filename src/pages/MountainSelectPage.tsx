@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
@@ -9,6 +9,7 @@ import {
   MountainBottomNavigation,
   MountainHeader,
   MountainSelectionPanel,
+  useMountainMarkerLayer,
   useMountainsQuery,
 } from '@/features/course';
 import type { MountainListItem } from '@/features/course';
@@ -32,6 +33,8 @@ export function MountainSelectPage() {
     size: MOUNTAINS_PAGE_SIZE,
   });
   const mountains = mountainsQuery.data?.items ?? EMPTY_MOUNTAINS;
+  const markerLayer = useMountainMarkerLayer(mountains, selectedMountain?.mountainId ?? null);
+  const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setKeyword(searchQuery.trim()), 300);
@@ -52,6 +55,14 @@ export function MountainSelectPage() {
     setSelectedMountain(null);
   };
 
+  const handleMountainSelect = (mountain: MountainListItem | null) => {
+    setSelectedMountain(mountain);
+
+    if (mountain?.geometry) {
+      mapController?.centerOn(mountain.geometry.coordinates, 14);
+    }
+  };
+
   return (
     <MapPageLayout
       bottomNavigation={<MountainBottomNavigation />}
@@ -60,6 +71,7 @@ export function MountainSelectPage() {
       mapContainerRef={mapContainerRef}
       mapContent={
         <OpenLayersMap
+          additionalLayers={additionalLayers}
           initialZoom={10}
           onControllerChange={setMapController}
           targetRef={mapContainerRef}
@@ -73,7 +85,7 @@ export function MountainSelectPage() {
           isLoading={mountainsQuery.isPending}
           mountains={mountains}
           onClearSearch={clearSearch}
-          onMountainSelect={setSelectedMountain}
+          onMountainSelect={handleMountainSelect}
           onPageChange={setPage}
           onRetry={() => {
             void mountainsQuery.refetch();
