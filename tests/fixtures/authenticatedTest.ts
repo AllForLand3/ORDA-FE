@@ -1,4 +1,5 @@
 import { expect, test as base, type BrowserContext, type Page } from '@playwright/test';
+import { mockCourseList } from './courseList';
 
 const ACCESS_TOKEN_KEY = 'orda.accessToken';
 
@@ -30,6 +31,7 @@ export async function installAuthenticatedSession(target: BrowserContext | Page)
     },
   );
   await installCurrentUserRoute(target);
+  await mockCourseList(target);
 }
 
 export function isDomainApiRequest(url: string): boolean {
@@ -40,6 +42,7 @@ export function isDomainApiRequest(url: string): boolean {
 export const test = base.extend({
   page: async ({ page }, provide) => {
     await installCurrentUserRoute(page);
+    await mockCourseList(page);
     await page.goto('/');
     await page.evaluate(({ key, token }) => localStorage.setItem(key, token), {
       key: ACCESS_TOKEN_KEY,

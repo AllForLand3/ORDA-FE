@@ -22,9 +22,28 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://*.tile.openstreetmap.org/**', (route) => route.abort());
 });
 
-test('삭제 확인 취소·Escape는 요청하지 않고 성공 시 목록 조건을 보존한다', async ({ page }) => {
+test('삭제 확인 취소·Escape는 요청하지 않고 성공 시 갱신된 목록으로 돌아간다', async ({ page }) => {
   let deleted = false;
   let deletes = 0;
+  await page.route('**/api/courses', (route) => {
+    expect(route.request().method()).toBe('GET');
+    return route.fulfill({
+      json: deleted
+        ? []
+        : [
+            {
+              courseId: course.courseId,
+              mountainId: course.mountainId,
+              mountainName: '관악산',
+              courseName: course.courseName,
+              memo: null,
+              createType: 'IMPORT',
+              lengthM: 180.4,
+              estTimeMin: null,
+            },
+          ],
+    });
+  });
   await page.route(`**/api/courses/${course.courseId}`, async (route) => {
     if (route.request().method() === 'DELETE') {
       deletes++;
@@ -54,7 +73,9 @@ test('삭제 확인 취소·Escape는 요청하지 않고 성공 시 목록 조�
   await remove.click();
   await dialog.getByRole('button', { name: '삭제하기', exact: true }).click();
   await expect(page).toHaveURL(/\/my-courses\?/);
-  await expect(page.getByRole('textbox', { name: '내 코스 검색' })).toHaveValue('주말');
+  await expect(page.getByRole('heading', { name: '저장한 코스가 없어요' })).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get('q')).toBe('주말');
   expect(new URL(page.url()).searchParams.get('tab')).toBe('imported');
   expect(new URL(page.url()).searchParams.get('sort')).toBe('name');
   expect(deletes).toBe(1);

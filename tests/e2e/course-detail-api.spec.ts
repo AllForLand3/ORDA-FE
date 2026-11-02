@@ -99,7 +99,10 @@ test('서버 실패 후 수동 재시도로 복구하고 목록 검색 조건을
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(course.courseName);
   expect(requests).toBe(2);
   await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: '내 코스 검색' })).toHaveValue('주말');
+  await expect(page.getByRole('article')).toHaveCount(2);
+  expect(new URL(page.url()).searchParams.get('q')).toBe('주말');
+  expect(new URL(page.url()).searchParams.get('tab')).toBe('imported');
+  expect(new URL(page.url()).searchParams.get('sort')).toBe('name');
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(course.courseName);
   expect(requests).toBe(3);

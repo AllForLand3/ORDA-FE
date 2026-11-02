@@ -6,7 +6,7 @@ test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화�
     if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
-  await page.goto('/my-courses?tab=saved&q=예시+2&sort=oldest');
+  await page.goto('/my-courses/example-ridge-2');
   await page.getByRole('link', { name: '편집', exact: true }).click();
   await expect(page).toHaveURL(/example-ridge-2\/edit/);
   const name = page.getByRole('textbox', { name: '코스 이름' });
@@ -43,11 +43,10 @@ test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화�
   await page.getByRole('link', { name: '취소', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('능선 조망 코스 · 예시 2');
   await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: '내 코스 검색' })).toHaveValue('예시 2');
-  await expect(page.getByRole('button', { name: '코스 정렬' })).toContainText('오래된순');
+  await expect(page.getByRole('article')).toHaveCount(2);
   await page.goto('/my-courses/example-ridge-2/edit');
   await expect(name).toHaveValue('능선 조망 코스 · 예시 2');
-  expect(apiRequests).toEqual([]);
+  expect(apiRequests.map((url) => new URL(url).pathname)).toEqual(['/api/courses']);
 });
 
 test('변경 중 취소·브라우저 뒤로가기·새로고침은 유실 확인을 제공한다', async ({ page }) => {
@@ -96,12 +95,8 @@ test('내보내기는 형식 선택과 완료 디자인 미리보기만 제공�
     if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
-  await page.goto('/my-courses');
-  await page
-    .getByRole('article')
-    .first()
-    .getByRole('link', { name: '내보내기', exact: true })
-    .click();
+  await page.goto('/my-courses/example-ridge-1');
+  await page.getByRole('banner').getByRole('button', { name: '내보내기', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: '코스 내보내기', exact: true });
   await expect(sheet).toBeVisible();
   const gpx = sheet.getByRole('radio', { name: /^GPX/ });

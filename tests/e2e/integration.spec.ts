@@ -51,14 +51,27 @@ for (const viewport of [
           await installAuthenticatedSession(context);
         }
         const page = await context.newPage();
+        const listRequests: string[] = [];
         page.on('pageerror', (error) => errors.push(error.message));
         page.on('request', (request) => {
-          if (isDomainApiRequest(request.url())) requests.push(request.url());
+          if (!isDomainApiRequest(request.url())) return;
+          if (
+            screen.key === 'my-courses' &&
+            request.method() === 'GET' &&
+            new URL(request.url()).pathname === '/api/courses'
+          ) {
+            listRequests.push(request.url());
+            expect(request.headers().authorization).toBe('Bearer e2e-access-token');
+          } else requests.push(request.url());
         });
         try {
           await page.goto(screen.path);
           await page.reload();
           await expect(page.getByRole('main')).toBeVisible();
+          if (screen.key === 'my-courses') {
+            await expect(page.getByRole('article')).toHaveCount(2);
+            expect(listRequests.length).toBeGreaterThan(0);
+          }
           await page.evaluate(() => document.fonts.ready);
           expect(
             await page.locator('body').evaluate((element) => getComputedStyle(element).fontFamily),

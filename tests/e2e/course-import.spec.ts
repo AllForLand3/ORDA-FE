@@ -108,6 +108,25 @@ for (const [kind, value] of [
   test(`${kind}를 미리보고 원래 좌표 순서와 실제 산 ID로 등록한다`, async ({ page }) => {
     let posts = 0;
     await page.route('**/api/courses', async (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({
+          json:
+            posts === 0
+              ? []
+              : [
+                  {
+                    courseId: course.courseId,
+                    mountainId: course.mountainId,
+                    mountainName: '관악산',
+                    courseName: '내 코스',
+                    memo: '내 메모',
+                    createType: 'IMPORT',
+                    lengthM: course.lengthM,
+                    estTimeMin: null,
+                  },
+                ],
+        });
+      }
       posts++;
       expect(route.request().method()).toBe('POST');
       expect(route.request().headers().authorization).toBe('Bearer e2e-access-token');
@@ -123,7 +142,7 @@ for (const [kind, value] of [
     await page.route(`**/api/courses/${course.courseId}`, (route) =>
       route.fulfill({ json: course, headers: { ETag: '"v1"' } }),
     );
-    await page.goto('/my-courses?tab=imported&q=주말&sort=name');
+    await page.goto('/my-courses');
     await page.getByRole('button', { name: '코스 업로드' }).click();
     await expect(page.getByRole('button', { name: '등록', exact: true })).toBeDisabled();
     await upload(page, value);
@@ -137,10 +156,10 @@ for (const [kind, value] of [
     await page.getByRole('button', { name: '등록', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('내 코스');
     await expect(page).toHaveURL(new RegExp(`/my-courses/${course.courseId}`));
-    expect(new URLSearchParams(new URL(page.url()).searchParams.get('list') ?? '').get('q')).toBe(
-      '주말',
-    );
     expect(posts).toBe(1);
+    await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
+    await expect(page).toHaveURL('/my-courses');
+    await expect(page.getByRole('article', { name: '내 코스', exact: true })).toBeVisible();
   });
 }
 
