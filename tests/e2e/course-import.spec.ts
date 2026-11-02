@@ -45,6 +45,51 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+test('가져오기 지도에서 선을 클릭해도 파일 원본 좌표로 등록한다', async ({ page }) => {
+  let body: unknown;
+  await page.setViewportSize({ width: 1512, height: 900 });
+  const original = {
+    type: 'LineString',
+    coordinates: [
+      [126.974, 37.475],
+      [126.975, 37.475],
+      [126.976, 37.475],
+    ],
+  };
+  await page.route('**/api/courses', (route) => {
+    body = route.request().postDataJSON();
+    return route.fulfill({
+      status: 201,
+      json: { ...course, geometry: original },
+      headers: { ETag: '"v1"' },
+    });
+  });
+  await page.route(`**/api/courses/${course.courseId}`, (route) =>
+    route.fulfill({ json: { ...course, geometry: original }, headers: { ETag: '"v1"' } }),
+  );
+  await page.goto('/my-courses/import');
+  await upload(page, original);
+  const map = page.locator('.orda-map-layout__map-surface');
+  await expect(map).toHaveAttribute('data-map-center', '126.975000,37.475000');
+  const box = await map.boundingBox();
+  if (!box) throw new Error('지도가 표시되지 않았습니다.');
+  await page.mouse.click(box.x + box.width / 2 + 70, box.y + box.height / 2);
+  await page.keyboard.down('Alt');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.keyboard.up('Alt');
+  await selectMountain(page);
+  await page.getByRole('textbox', { name: '코스 이름', exact: true }).fill(course.courseName);
+  await page.getByRole('button', { name: '등록', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/my-courses/${course.courseId}`));
+  expect(body).toEqual({
+    mountainId: mountain.mountainId,
+    courseName: course.courseName,
+    memo: null,
+    createType: 'IMPORT',
+    geometry: original,
+  });
+});
+
 for (const [kind, value] of [
   ['LineString', geometry],
   [

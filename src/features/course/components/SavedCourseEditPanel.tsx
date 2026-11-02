@@ -40,17 +40,12 @@ export function SavedCourseEditPanel({ state, detailHref }: { state: State; deta
         onChange={(event) => state.setMemo(event.target.value)}
       />
       <p className="course-edit-note">
-        지도에서 꼭짓점을 드래그해 이동하고, 선을 클릭해 꼭짓점을 추가할 수 있습니다. Alt+클릭으로
-        꼭짓점을 삭제합니다.
-      </p>
-      {state.geometryError ? <p role="alert">{state.geometryError}</p> : null}
-      <p className="course-edit-note">
-        이름, 메모, 지도 경로를 수정할 수 있습니다. 변경 사항은 저장 버튼으로 반영합니다.
+        이름과 메모만 수정할 수 있습니다. 지도는 저장된 경로를 보여줍니다.
       </p>
       {state.failure ? <p role="alert">{state.failure}</p> : null}
       <p role="status" className="course-edit-status">
         {state.pending
-          ? '처리 중입니다. 완료될 때까지 경로 편집이 잠깁니다.'
+          ? '처리 중입니다.'
           : state.message ||
             (state.isDirty ? '저장하지 않은 변경이 있습니다.' : '저장된 내용입니다.')}
       </p>
@@ -87,7 +82,7 @@ export function SavedCourseEditDialogs({ state }: { state: State }) {
         open={state.resetOpen}
         onOpenChange={state.setResetOpen}
         title="입력을 초기화할까요?"
-        description="편집을 시작했거나 마지막으로 저장한 이름, 메모, 경로로 되돌립니다."
+        description="편집을 시작했거나 마지막으로 저장한 이름과 메모로 되돌립니다."
         footer={
           <>
             <Button variant="secondary" onClick={() => state.setResetOpen(false)}>
@@ -103,7 +98,7 @@ export function SavedCourseEditDialogs({ state }: { state: State }) {
         open={state.reloadOpen}
         onOpenChange={state.setReloadOpen}
         title="최신 코스를 불러올까요?"
-        description="현재 입력과 경로 변경을 버리고 서버의 최신 이름, 메모, 경로로 다시 시작합니다."
+        description="현재 입력을 버리고 서버의 최신 이름과 메모로 다시 시작합니다."
         footer={
           <>
             <Button variant="secondary" onClick={() => state.setReloadOpen(false)}>

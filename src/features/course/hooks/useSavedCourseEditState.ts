@@ -7,22 +7,11 @@ import { getAccessToken } from '@/lib/accessToken';
 import type { ApiErrorResponse } from '@/shared/types/api';
 
 import { getCourse, updateCourse } from '../api/course';
-import type { CourseGeometry, CourseSnapshot, UpdateCourseRequest } from '../types/course';
-import { readCourseGeometry } from '../utils/courseGeometry';
+import type { CourseSnapshot, UpdateCourseRequest } from '../types/course';
 import { courseQueryKeys } from './useCourseQuery';
 
 function errorCode(error: unknown) {
   return axios.isAxiosError<ApiErrorResponse>(error) ? error.response?.data?.code : undefined;
-}
-
-function geometryEqual(left: CourseGeometry, right: CourseGeometry) {
-  return (
-    left.coordinates.length === right.coordinates.length &&
-    left.coordinates.every(
-      ([longitude, latitude], index) =>
-        longitude === right.coordinates[index]?.[0] && latitude === right.coordinates[index]?.[1],
-    )
-  );
 }
 
 export function useSavedCourseEditState(initial: CourseSnapshot) {
@@ -33,9 +22,7 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
   const [draft, setDraft] = useState({
     name: initial.course.courseName,
     memo: initial.course.memo ?? '',
-    geometry: initial.course.geometry,
   });
-  const [geometryError, setGeometryError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState('');
   const [failure, setFailure] = useState('');
@@ -54,9 +41,7 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
   });
   const pending = saveMutation.isPending || reloadMutation.isPending;
   const isDirty =
-    draft.name !== baseline.course.courseName ||
-    draft.memo !== (baseline.course.memo ?? '') ||
-    !geometryEqual(draft.geometry, baseline.course.geometry);
+    draft.name !== baseline.course.courseName || draft.memo !== (baseline.course.memo ?? '');
   const nameError = !draft.name.trim()
     ? '코스 이름을 입력해주세요.'
     : [...draft.name.trim()].length > 100
@@ -79,12 +64,7 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
 
   function adopt(snapshot: CourseSnapshot) {
     setBaseline(snapshot);
-    setDraft({
-      name: snapshot.course.courseName,
-      memo: snapshot.course.memo ?? '',
-      geometry: snapshot.course.geometry,
-    });
-    setGeometryError('');
+    setDraft({ name: snapshot.course.courseName, memo: snapshot.course.memo ?? '' });
     setSubmitted(false);
     setNeedsReload(false);
     setFailure('');
@@ -97,10 +77,9 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
     busy.current = true;
     setFailure('');
     setMessage('');
-    const request: UpdateCourseRequest = {};
+    const request: Pick<UpdateCourseRequest, 'courseName' | 'memo'> = {};
     if (draft.name.trim() !== baseline.course.courseName) request.courseName = draft.name.trim();
     if (draft.memo !== (baseline.course.memo ?? '')) request.memo = draft.memo || null;
-    if (!geometryEqual(draft.geometry, baseline.course.geometry)) request.geometry = draft.geometry;
     // 빈 PATCH는 보내지 않는다. 이름 앞뒤 공백만 바뀐 경우 로컬 입력만 정리한다.
     if (Object.keys(request).length === 0) {
       setDraft((current) => ({ ...current, name: baseline.course.courseName }));
@@ -150,26 +129,6 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
     }
   }
 
-  const updateGeometry = useCallback((coordinates: readonly (readonly [number, number])[]) => {
-    if (busy.current) return false;
-    try {
-      const next = readCourseGeometry({
-        type: 'LineString',
-        coordinates: coordinates.map(([longitude, latitude]) => [longitude, latitude]),
-      });
-      setDraft((current) => ({ ...current, geometry: next }));
-      setGeometryError('');
-      setMessage('');
-      return true;
-    } catch (error) {
-      setGeometryError(
-        (error instanceof Error ? error.message : '코스 경로를 수정하지 못했습니다.') +
-          ' 마지막 유효한 경로로 되돌렸습니다.',
-      );
-      return false;
-    }
-  }, []);
-
   return {
     course: baseline.course,
     draft,
@@ -178,7 +137,6 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
     blocker,
     nameError: submitted ? nameError : undefined,
     memoError: submitted ? memoError : undefined,
-    geometryError,
     canSave: isDirty && !pending && !needsReload && baseline.etag !== null,
     needsReload: needsReload || baseline.etag === null,
     message,
@@ -195,20 +153,13 @@ export function useSavedCourseEditState(initial: CourseSnapshot) {
       setDraft((current) => ({ ...current, memo }));
       setMessage('');
     },
-    updateGeometry,
     save,
     reload,
     reset: () => {
-      if (busy.current) return;
-      setDraft({
-        name: baseline.course.courseName,
-        memo: baseline.course.memo ?? '',
-        geometry: baseline.course.geometry,
-      });
-      setGeometryError('');
+      setDraft({ name: baseline.course.courseName, memo: baseline.course.memo ?? '' });
       setSubmitted(false);
       setResetOpen(false);
-      setMessage('저장된 이름, 메모, 경로로 되돌렸습니다.');
+      setMessage('저장된 이름과 메모로 되돌렸습니다.');
     },
   };
 }

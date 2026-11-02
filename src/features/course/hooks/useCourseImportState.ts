@@ -6,7 +6,7 @@ import { getAccessToken } from '@/lib/accessToken';
 import type { ApiErrorResponse } from '@/shared/types/api';
 import { createCourse } from '../api/course';
 import type { CourseGeometry } from '../types/course';
-import { parseCourseFile, readCourseGeometry } from '../utils/courseGeometry';
+import { parseCourseFile } from '../utils/courseGeometry';
 import { courseQueryKeys } from './useCourseQuery';
 import { useImportMountainsQuery } from './useImportMountainsQuery';
 
@@ -24,9 +24,7 @@ export function useCourseImportState() {
     ).values(),
   );
   const [geometry, setGeometry] = useState<CourseGeometry>();
-  const [geometryError, setGeometryError] = useState('');
   const [fileName, setFileName] = useState('');
-  const [fileVersion, setFileVersion] = useState(0);
   const [reading, setReading] = useState(false);
   const [fileError, setFileError] = useState('');
   const [name, setName] = useState('');
@@ -72,10 +70,8 @@ export function useCourseImportState() {
   async function selectFile(file: File | undefined) {
     if (!file || busy.current) return;
     const current = ++sequence.current;
-    setFileVersion(current);
     setFileName(file.name);
     setGeometry(undefined);
-    setGeometryError('');
     setFileError('');
     setFailure('');
     setReading(true);
@@ -95,25 +91,6 @@ export function useCourseImportState() {
       if (current === sequence.current) setReading(false);
     }
   }
-
-  const updateGeometry = useCallback((coordinates: readonly (readonly [number, number])[]) => {
-    if (busy.current) return false;
-    try {
-      const next = readCourseGeometry({
-        type: 'LineString',
-        coordinates: coordinates.map(([longitude, latitude]) => [longitude, latitude]),
-      });
-      setGeometry(next);
-      setGeometryError('');
-      return true;
-    } catch (error) {
-      setGeometryError(
-        (error instanceof Error ? error.message : '코스 경로를 수정하지 못했습니다.') +
-          ' 마지막 유효한 경로로 되돌렸습니다.',
-      );
-      return false;
-    }
-  }, []);
 
   async function save() {
     setSubmitted(true);
@@ -160,9 +137,7 @@ export function useCourseImportState() {
   const listParams = new URLSearchParams(params.get('list') ?? '');
   return {
     geometry,
-    geometryError,
     fileName,
-    fileVersion,
     reading,
     fileError,
     name,
@@ -183,7 +158,6 @@ export function useCourseImportState() {
     setName,
     setMemo,
     setMountainId,
-    updateGeometry,
     backHref: `/my-courses${listParams.size ? `?${listParams}` : ''}`,
   };
 }

@@ -21,6 +21,56 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://*.tile.openstreetmap.org/**', (route) => route.abort());
 });
 
+test('지도 조작은 수정 상태를 만들지 않고 이름·메모만 PATCH한다', async ({ page }) => {
+  const patches: unknown[] = [];
+  const value = {
+    ...course,
+    geometry: {
+      type: 'LineString',
+      coordinates: [
+        [126.974, 37.475],
+        [126.975, 37.475],
+        [126.976, 37.475],
+      ],
+    },
+  };
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await page.route('**/api/courses/101', (route) => {
+    if (route.request().method() === 'PATCH') {
+      const body = route.request().postDataJSON();
+      patches.push(body);
+      return route.fulfill({ json: { ...value, ...body }, headers: { ETag: '"v2"' } });
+    }
+    return route.fulfill({ json: value, headers: { ETag: '"v1"' } });
+  });
+  await page.goto('/my-courses/101/edit');
+  const map = page.locator('.orda-map-layout__map-surface');
+  await expect(map).toHaveAttribute('data-map-center', '126.975000,37.475000');
+  const box = await map.boundingBox();
+  if (!box) throw new Error('지도가 표시되지 않았습니다.');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.click(x + 70, y);
+  await page.keyboard.down('Alt');
+  await page.mouse.click(x, y);
+  await page.keyboard.up('Alt');
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 30, y - 40, { steps: 8 });
+  await page.mouse.up();
+  const save = page.getByRole('button', { name: '저장', exact: true });
+  await expect(save).toBeDisabled();
+  await expect(page.getByRole('status')).toHaveText('저장된 내용입니다.');
+  await expect(
+    page.getByText('이름과 메모만 수정할 수 있습니다. 지도는 저장된 경로를 보여줍니다.'),
+  ).toBeVisible();
+  await page.getByRole('textbox', { name: '코스 이름', exact: true }).fill('수정한 이름');
+  await page.getByRole('textbox', { name: '메모', exact: true }).fill('수정한 메모');
+  await save.click();
+  await expect(page.getByRole('status')).toHaveText('코스를 저장했습니다.');
+  expect(patches).toEqual([{ courseName: '수정한 이름', memo: '수정한 메모' }]);
+});
+
 test('상세에서 편집하고 변경한 속성만 저장하며 다음 저장에 새 ETag를 쓴다', async ({ page }) => {
   let saved = course;
   let version = 1;

@@ -8,7 +8,7 @@ import {
   SavedCourseEditDialogs,
   useSavedCourseDetailState,
   useSavedCourseEditState,
-  useEditableCourseLayer,
+  useCourseLayer,
 } from '@/features/course';
 import type { CourseSnapshot } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
@@ -39,7 +39,7 @@ export function SavedCourseEditPage() {
 
 function SavedCourseEditWorkspace({ initial }: { initial: CourseSnapshot }) {
   const state = useSavedCourseEditState(initial);
-  const layer = useEditableCourseLayer(state.draft.geometry);
+  const layer = useCourseLayer(state.course.geometry);
   const targetRef = useRef<HTMLDivElement>(null);
   const [controller, setController] = useState<MapController | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -72,9 +72,6 @@ function SavedCourseEditWorkspace({ initial }: { initial: CourseSnapshot }) {
             <OpenLayersMap
               targetRef={targetRef}
               additionalLayers={layer.layers}
-              editableLayer={layer.editableLayer}
-              editingEnabled={!state.pending}
-              onEditableGeometryChange={state.updateGeometry}
               initialCenter={null}
               initialExtent={layer.extent}
               onControllerChange={setController}
