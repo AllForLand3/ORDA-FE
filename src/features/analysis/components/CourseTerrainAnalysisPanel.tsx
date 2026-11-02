@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { Button } from '@/components/ui';
 
 import type { TerrainAnalysisPhase } from '../types/terrainAnalysis';
@@ -6,14 +8,27 @@ interface CourseTerrainAnalysisPanelProps {
   courseName: string;
   phase: TerrainAnalysisPhase;
   configured: boolean;
+  message: string | null;
+
   canStart: boolean;
+  canRetry: boolean;
+  canCheck: boolean;
+
   onStart: () => void;
+  onRetry: () => void;
+  onCheck: () => void;
+  onRefreshCourse: () => void;
 }
 
 const messages: Record<TerrainAnalysisPhase, { title: string; description: string }> = {
   idle: {
     title: '고도 분석',
     description: '이 코스의 고도를 분석할 수 있어요.',
+  },
+
+  checking: {
+    title: '분석 결과를 확인하고 있어요',
+    description: '현재 조건의 분석 상태를 확인하고 있어요.',
   },
 
   requesting: {
@@ -33,12 +48,27 @@ const messages: Record<TerrainAnalysisPhase, { title: string; description: strin
 
   failed: {
     title: '고도 분석에 실패했어요',
-    description: '서버에서 분석 실패가 확인됐어요.',
+    description: '다시 시도할 수 있어요.',
   },
 
   unknown: {
     title: '분석 결과를 확인하지 못했어요',
     description: '서버에서 분석이 계속되고 있을 수 있어요.',
+  },
+
+  blocked: {
+    title: '분석을 사용할 수 없어요',
+    description: '코스 접근 권한과 분석 조건을 확인해주세요.',
+  },
+
+  conflict: {
+    title: '코스가 변경됐어요',
+    description: '최신 코스 정보를 다시 불러와주세요.',
+  },
+
+  auth: {
+    title: '로그인이 필요해요',
+    description: '다시 로그인한 뒤 이용해주세요.',
   },
 };
 
@@ -46,12 +76,25 @@ export function CourseTerrainAnalysisPanel({
   courseName,
   phase,
   configured,
+  message,
   canStart,
+  canRetry,
+  canCheck,
   onStart,
+  onRetry,
+  onCheck,
+  onRefreshCourse,
 }: CourseTerrainAnalysisPanelProps) {
-  const message = messages[phase];
-  const isBusy = phase === 'requesting' || phase === 'running';
-  const isError = phase === 'failed' || phase === 'unknown';
+  const text = messages[phase];
+
+  const isBusy = phase === 'checking' || phase === 'requesting' || phase === 'running';
+
+  const isError =
+    phase === 'failed' ||
+    phase === 'unknown' ||
+    phase === 'blocked' ||
+    phase === 'conflict' ||
+    phase === 'auth';
 
   return (
     <section
@@ -68,20 +111,44 @@ export function CourseTerrainAnalysisPanel({
 
       <div className="insights-empty">
         <div role={isError ? 'alert' : 'status'}>
-          <strong>{configured ? message.title : '분석을 사용할 수 없어요'}</strong>
+          <strong>{configured ? text.title : '분석을 사용할 수 없어요'}</strong>
 
-          <p>{configured ? message.description : '분석 설정을 확인한 뒤 다시 이용해주세요.'}</p>
+          <p>
+            {configured
+              ? (message ?? text.description)
+              : '분석 설정을 확인한 뒤 다시 이용해주세요.'}
+          </p>
         </div>
 
-        {phase === 'idle' ? (
-          <Button disabled={!configured || !canStart} onClick={onStart} variant="primary">
+        {configured && phase === 'idle' ? (
+          <Button disabled={!canStart} onClick={onStart}>
             고도 분석하기
           </Button>
-        ) : isBusy ? (
-          <Button disabled variant="primary">
-            분석 중…
+        ) : null}
+
+        {configured && isBusy ? (
+          <Button disabled>{phase === 'checking' ? '확인 중…' : '분석 중…'}</Button>
+        ) : null}
+
+        {configured && phase === 'failed' ? (
+          <Button disabled={!canRetry} onClick={onRetry}>
+            다시 시도
           </Button>
         ) : null}
+
+        {configured && phase === 'unknown' ? (
+          <Button disabled={!canCheck} onClick={onCheck} variant="secondary">
+            결과 다시 확인
+          </Button>
+        ) : null}
+
+        {configured && phase === 'conflict' ? (
+          <Button onClick={onRefreshCourse} variant="secondary">
+            최신 코스 불러오기
+          </Button>
+        ) : null}
+
+        {phase === 'auth' ? <Link to="/login">로그인하기</Link> : null}
       </div>
     </section>
   );

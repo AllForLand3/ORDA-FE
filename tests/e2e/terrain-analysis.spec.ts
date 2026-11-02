@@ -64,6 +64,21 @@ test.beforeEach(async ({ page }) => {
 
 test('완료 응답을 보관하고 탭 전환 후에도 POST를 다시 실행하지 않는다', async ({ page }) => {
   let posts = 0;
+  await page.route('**/api/courses/6/elevation-profile?*', async (route) => {
+    if (posts === 0) {
+      await route.fulfill({
+        status: 404,
+        json: {
+          status: 404,
+          code: 'RESOURCE_NOT_FOUND',
+          message: '현재 조건의 분석 결과가 없습니다.',
+        },
+      });
+      return;
+    }
+
+    await route.fulfill({ json: result });
+  });
   await page.route('**/api/courses/6/terrain-analyses', async (route) => {
     posts++;
     expect(route.request().postDataJSON()).toEqual({ demId: '1', revNo: 1, sampleIntervalM: 25 });
@@ -150,4 +165,17 @@ test('POST 응답 대기 중에는 중복 클릭을 막고 늦은 응답은 다�
     'false',
   );
   expect(posts).toBe(1);
+});
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/courses/*/elevation-profile?*', async (route) => {
+    await route.fulfill({
+      status: 404,
+      json: {
+        status: 404,
+        code: 'RESOURCE_NOT_FOUND',
+        message: '현재 조건의 분석 결과가 없습니다.',
+      },
+    });
+  });
 });

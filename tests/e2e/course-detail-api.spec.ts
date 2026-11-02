@@ -101,3 +101,16 @@ test('예시 ID를 실제 상세 API에 전송하지 않는다', async ({ page }
   ).toBeVisible();
   expect(requests).toEqual([]);
 });
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/courses/*/elevation-profile?*', async (route) => {
+    await route.fulfill({
+      status: 404,
+      json: {
+        status: 404,
+        code: 'RESOURCE_NOT_FOUND',
+        message: '현재 조건의 분석 결과가 없습니다.',
+      },
+    });
+  });
+});

@@ -47,7 +47,6 @@ export function CourseDetailPage() {
         }
       : null;
 
-  // 탭 내부가 아니라 페이지에서 한 번만 실행한다.
   const analysis = useTerrainAnalysis(currentUser?.userId, conditions);
 
   useEffect(() => {
@@ -61,10 +60,20 @@ export function CourseDetailPage() {
       courseName={course.courseName}
       phase={analysis.phase}
       configured={terrainAnalysisConfig !== null}
+      message={analysis.message}
       canStart={analysis.canStart}
+      canRetry={analysis.canRetry}
+      canCheck={analysis.canCheck}
       onStart={() => {
         void analysis.start();
       }}
+      onRetry={() => {
+        void analysis.retry();
+      }}
+      onCheck={() => {
+        void analysis.check();
+      }}
+      onRefreshCourse={state.retry}
     />
   ) : null;
 
@@ -140,7 +149,6 @@ export function CourseDetailPage() {
                   <section aria-label="주변 시설 안내" className="insights-panel">
                     <div className="insights-empty" role="status">
                       <strong>주변 시설 정보 미제공</strong>
-
                       <p>이 코스의 주변 시설 정보가 아직 연결되지 않았어요.</p>
                     </div>
                   </section>

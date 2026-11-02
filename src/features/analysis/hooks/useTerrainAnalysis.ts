@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getTerrainAnalysis, requestTerrainAnalysis } from '../api/terrainAnalysis';
+import {
+  getCurrentTerrainProfile,
+  getFailureAnalysisId,
+  getTerrainAnalysis,
+  getTerrainApiProblem,
+  requestTerrainAnalysis,
+} from '../api/terrainAnalysis';
 
 import type {
   TerrainAnalysisConditions,
@@ -9,15 +16,17 @@ import type {
   TerrainAnalysisResponse,
 } from '../types/terrainAnalysis';
 
-// 프론트 대기 정책이다. 실제 분석 시간에 맞춰 조정할 수 있다.
 const POLL_INTERVAL_MS = 2_000;
-const POST_WAIT_MS = 120_000;
+const REQUEST_WAIT_MS = 120_000;
 const POLL_WAIT_MS = 120_000;
+
+type Operation = 'initial' | 'start' | 'retry' | 'check';
 
 interface AnalysisUiState {
   scope: string;
   phase: TerrainAnalysisPhase;
   analysisId: string | null;
+  message: string | null;
 }
 
 interface AnalysisRun {
@@ -27,6 +36,11 @@ interface AnalysisRun {
 interface MutationInput {
   conditions: TerrainAnalysisConditions;
   signal: AbortSignal;
+}
+
+interface BlockingProblem {
+  phase: 'auth' | 'blocked' | 'conflict';
+  message: string;
 }
 
 export const terrainAnalysisKeys = {
@@ -41,6 +55,53 @@ export const terrainAnalysisKeys = {
       conditions?.sampleIntervalM,
     ] as const,
 };
+
+function getBlockingProblem(error: unknown): BlockingProblem | null {
+  const { code, status } = getTerrainApiProblem(error);
+
+  if (code === 'UNAUTHORIZED' || status === 401) {
+    return {
+      phase: 'auth',
+      message: '로그인이 만료됐어요. 다시 로그인해주세요.',
+    };
+  }
+
+  if (code === 'CONFLICT') {
+    return {
+      phase: 'conflict',
+      message: '코스가 변경됐어요. 최신 코스 정보를 불러와주세요.',
+    };
+  }
+
+  if (code === 'COURSE_NOT_FOUND') {
+    return {
+      phase: 'blocked',
+      message: '삭제되었거나 접근할 수 없는 코스입니다.',
+    };
+  }
+
+  if (code === 'FORBIDDEN' || status === 403) {
+    return {
+      phase: 'blocked',
+      message: '이 코스에 접근할 수 없어요. 권한과 접속 환경을 확인해주세요.',
+    };
+  }
+
+  if (
+    code === 'DEM_NOT_FOUND' ||
+    code === 'DEM_UNAVAILABLE' ||
+    code === 'INVALID_REQUEST' ||
+    code === 'ANALYSIS_INVALID_SAMPLE_INTERVAL' ||
+    code === 'ANALYSIS_SAMPLE_LIMIT_EXCEEDED'
+  ) {
+    return {
+      phase: 'blocked',
+      message: '분석 조건을 사용할 수 없어요. 코스와 고도 데이터 설정을 확인해주세요.',
+    };
+  }
+
+  return null;
+}
 
 function waitForNextPoll(milliseconds: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -68,6 +129,7 @@ function waitForNextPoll(milliseconds: number, signal: AbortSignal): Promise<voi
 function assertMatchingResponse(
   response: TerrainAnalysisResponse,
   conditions: TerrainAnalysisConditions,
+  expectedAnalysisId?: string,
 ): void {
   if (
     response.courseId !== conditions.courseId ||
@@ -82,6 +144,10 @@ function assertMatchingResponse(
     throw new Error('분석 ID를 확인할 수 없습니다.');
   }
 
+  if (expectedAnalysisId !== undefined && response.analysisId !== expectedAnalysisId) {
+    throw new Error('다른 분석 ID의 응답입니다.');
+  }
+
   if (
     response.status !== 'REQUESTED' &&
     response.status !== 'RUNNING' &&
@@ -93,9 +159,7 @@ function assertMatchingResponse(
 
   if (
     response.status === 'DONE' &&
-    (response.analysis === null ||
-      response.completedAt === null ||
-      !Array.isArray(response.samples))
+    (response.analysis == null || response.completedAt == null || !Array.isArray(response.samples))
   ) {
     throw new Error('완료 결과를 확인할 수 없습니다.');
   }
@@ -107,19 +171,42 @@ export function useTerrainAnalysis(
 ) {
   const queryClient = useQueryClient();
 
-  const resultKey = terrainAnalysisKeys.result(userId, conditions);
-  const scope = JSON.stringify(resultKey);
+  const courseId = conditions?.courseId;
+  const revNo = conditions?.revNo;
+  const demId = conditions?.demId;
+  const sampleIntervalM = conditions?.sampleIntervalM;
 
+  // 페이지가 매번 새 객체를 만들어도 값이 같으면 동일한 조건을 유지한다.
+  const target = useMemo<TerrainAnalysisConditions | null>(() => {
+    if (
+      courseId === undefined ||
+      revNo === undefined ||
+      demId === undefined ||
+      sampleIntervalM === undefined
+    ) {
+      return null;
+    }
+
+    return {
+      courseId,
+      revNo,
+      demId,
+      sampleIntervalM,
+    };
+  }, [courseId, revNo, demId, sampleIntervalM]);
+
+  const resultKey = useMemo(() => terrainAnalysisKeys.result(userId, target), [userId, target]);
+
+  const scope = JSON.stringify(resultKey);
   const activeRunRef = useRef<AnalysisRun | null>(null);
 
   const [ui, setUi] = useState<AnalysisUiState>({
     scope: '',
     phase: 'idle',
     analysisId: null,
+    message: null,
   });
 
-  // 자동 GET은 하지 않는다.
-  // POST와 진행 조회에서 저장한 응답을 구독한다.
   const resultQuery = useQuery<TerrainAnalysisResponse>({
     queryKey: resultKey,
     enabled: false,
@@ -129,138 +216,73 @@ export function useTerrainAnalysis(
   });
 
   const { mutateAsync } = useMutation({
-    mutationFn: ({ conditions: target, signal }: MutationInput) =>
+    mutationFn: ({ conditions: requestTarget, signal }: MutationInput) =>
       requestTerrainAnalysis(
-        target.courseId,
+        requestTarget.courseId,
         {
-          demId: target.demId,
-          revNo: target.revNo,
-          sampleIntervalM: target.sampleIntervalM,
+          demId: requestTarget.demId,
+          revNo: requestTarget.revNo,
+          sampleIntervalM: requestTarget.sampleIntervalM,
         },
         signal,
       ),
-
-    // POST는 자동 재시도하거나 오프라인 큐에 보관하지 않는다.
     retry: false,
     networkMode: 'always',
     gcTime: 0,
   });
 
-  useEffect(() => {
-    return () => {
-      const run = activeRunRef.current;
-
-      // 먼저 무효화해야 취소된 응답이 화면 상태를 바꾸지 않는다.
-      activeRunRef.current = null;
-      run?.controller.abort();
-    };
-  }, [scope]);
-
-  const savedResult = resultQuery.data;
-
-  // 중단한 분석은 조회가 끝났으므로 진행 중으로 복원하지 않는다.
-  const restoredPhase: TerrainAnalysisPhase =
-    savedResult?.status === 'REQUESTED' || savedResult?.status === 'RUNNING'
-      ? 'unknown'
-      : savedResult?.status === 'FAILED'
-        ? 'failed'
-        : 'idle';
-
-  const currentUi: AnalysisUiState =
-    ui.scope === scope
-      ? ui
-      : {
-          scope,
-          phase: restoredPhase,
-          analysisId: savedResult?.analysisId ?? null,
-        };
-
-  // 조건 변경을 state에도 기록해 A → B → A에서 과거 ui가 재사용되지 않게 한다.
-  // 조건부 갱신이므로 새 scope당 한 번만 실행된다.
-  if (ui.scope !== scope) {
-    setUi(currentUi);
-  }
-
-  const completedResult = savedResult?.status === 'DONE' ? savedResult : null;
-
-  const phase: TerrainAnalysisPhase = completedResult ? 'done' : currentUi.phase;
-
-  const isBusy = phase === 'requesting' || phase === 'running';
-
-  async function start(): Promise<void> {
-    if (!userId || !conditions || activeRunRef.current !== null || phase !== 'idle') {
-      return;
-    }
-
-    const target = { ...conditions };
-    const targetKey = terrainAnalysisKeys.result(userId, target);
-    const targetScope = JSON.stringify(targetKey);
-
-    const run: AnalysisRun = {
-      controller: new AbortController(),
-    };
-
-    // React 재렌더링 전에도 연속 클릭을 막도록 동기적으로 잠근다.
-    activeRunRef.current = run;
-
-    let analysisId: string | null = null;
-
-    const isCurrentRun = () => activeRunRef.current === run;
-
-    const updatePhase = (nextPhase: TerrainAnalysisPhase) => {
-      if (!isCurrentRun()) {
+  const runOperation = useCallback(
+    async (operation: Operation, knownAnalysisId: string | null = null): Promise<void> => {
+      if (!userId || !target || activeRunRef.current !== null) {
         return;
       }
 
-      setUi({
-        scope: targetScope,
-        phase: nextPhase,
-        analysisId,
-      });
-    };
+      const run: AnalysisRun = {
+        controller: new AbortController(),
+      };
 
-    let timeoutId = window.setTimeout(() => {
-      run.controller.abort();
-    }, POST_WAIT_MS);
+      activeRunRef.current = run;
 
-    updatePhase('requesting');
+      let analysisId = knownAnalysisId;
+      let readingProfile = false;
+      let timeoutId: number | undefined;
 
-    try {
-      let response = await mutateAsync({
-        conditions: target,
-        signal: run.controller.signal,
-      });
+      const previousResult = queryClient.getQueryData<TerrainAnalysisResponse>(resultKey);
 
-      if (!isCurrentRun() || run.controller.signal.aborted) {
-        return;
-      }
+      // 이전 요청 이력이 있으면 404라도 미분석으로 단정하지 않는다.
+      const canShowInitialIdle = operation === 'initial' && previousResult === undefined;
 
-      assertMatchingResponse(response, target);
-      analysisId = response.analysisId;
+      const isCurrentRun = () => activeRunRef.current === run;
 
-      queryClient.setQueryData<TerrainAnalysisResponse>(targetKey, response);
-
-      window.clearTimeout(timeoutId);
-
-      // POST 대기와 별도로 진행 조회의 최대 대기 시간을 시작한다.
-      timeoutId = window.setTimeout(() => {
-        run.controller.abort();
-      }, POLL_WAIT_MS);
-
-      while (response.status === 'REQUESTED' || response.status === 'RUNNING') {
-        updatePhase('running');
-
-        // 이전 요청이 완료된 뒤 다음 요청을 예약한다.
-        await waitForNextPoll(POLL_INTERVAL_MS, run.controller.signal);
-
+      const updateUi = (phase: TerrainAnalysisPhase, message: string | null = null) => {
         if (!isCurrentRun()) {
           return;
         }
 
-        const expectedAnalysisId = analysisId;
+        setUi({
+          scope,
+          phase,
+          analysisId,
+          message,
+        });
+      };
 
-        response = await queryClient.fetchQuery({
-          queryKey: targetKey,
+      const startDeadline = (milliseconds: number) => {
+        window.clearTimeout(timeoutId);
+
+        // 이전 단계가 시간 초과여도 결과 확인을 위한 새 대기를 시작한다.
+        run.controller = new AbortController();
+
+        timeoutId = window.setTimeout(() => {
+          run.controller.abort();
+        }, milliseconds);
+      };
+
+      const readResult = async (id: string | null): Promise<TerrainAnalysisResponse> => {
+        readingProfile = id === null;
+
+        return queryClient.fetchQuery({
+          queryKey: resultKey,
           staleTime: 0,
           retry: false,
           networkMode: 'always',
@@ -268,56 +290,211 @@ export function useTerrainAnalysis(
           queryFn: async ({ signal }) => {
             const combinedSignal = AbortSignal.any([signal, run.controller.signal]);
 
-            const next = await getTerrainAnalysis(expectedAnalysisId, combinedSignal);
+            const response = id
+              ? await getTerrainAnalysis(id, combinedSignal)
+              : await getCurrentTerrainProfile(target, combinedSignal);
 
             if (!isCurrentRun() || combinedSignal.aborted) {
               throw new DOMException('이전 요청입니다.', 'AbortError');
             }
 
-            assertMatchingResponse(next, target);
+            assertMatchingResponse(response, target, id ?? undefined);
 
-            if (next.analysisId !== expectedAnalysisId) {
-              throw new Error('다른 분석 ID의 응답입니다.');
-            }
-
-            return next;
+            return response;
           },
         });
-      }
+      };
 
-      if (!isCurrentRun() || run.controller.signal.aborted) {
-        return;
-      }
+      try {
+        startDeadline(REQUEST_WAIT_MS);
 
-      if (response.status === 'DONE') {
-        updatePhase('done');
-      } else {
-        updatePhase('failed');
-      }
-    } catch {
-      // 조건 변경·화면 이탈로 취소된 요청은 새 화면에 반영하지 않는다.
-      if (!isCurrentRun()) {
-        return;
-      }
+        let response: TerrainAnalysisResponse;
 
-      // 통신 실패나 시간 초과를 서버의 분석 실패로 단정하지 않는다.
-      updatePhase('unknown');
-    } finally {
-      window.clearTimeout(timeoutId);
+        if (operation === 'start' || operation === 'retry') {
+          updateUi('requesting');
 
-      if (isCurrentRun()) {
-        activeRunRef.current = null;
+          try {
+            response = await mutateAsync({
+              conditions: target,
+              signal: run.controller.signal,
+            });
+          } catch (error) {
+            if (!isCurrentRun()) {
+              return;
+            }
+
+            // 인증·접근·입력·버전 문제는 분석 실패로 표시하지 않는다.
+            if (getBlockingProblem(error)) {
+              throw error;
+            }
+
+            // Location은 ID만 추출한다. URL 자체를 따라가지 않는다.
+            analysisId = getFailureAnalysisId(error) ?? analysisId;
+
+            // 응답 유실·시간 초과 후 POST를 반복하지 않고 GET으로 확인한다.
+            startDeadline(REQUEST_WAIT_MS);
+            updateUi('checking');
+
+            response = await readResult(analysisId);
+          }
+
+          if (!isCurrentRun() || run.controller.signal.aborted) {
+            return;
+          }
+
+          assertMatchingResponse(response, target);
+          queryClient.setQueryData(resultKey, response);
+        } else {
+          updateUi('checking');
+          response = await readResult(analysisId);
+        }
+
+        if (!isCurrentRun() || run.controller.signal.aborted) {
+          return;
+        }
+
+        analysisId = response.analysisId;
+
+        startDeadline(POLL_WAIT_MS);
+
+        while (response.status === 'REQUESTED' || response.status === 'RUNNING') {
+          updateUi('running');
+
+          await waitForNextPoll(POLL_INTERVAL_MS, run.controller.signal);
+
+          if (!isCurrentRun()) {
+            return;
+          }
+
+          response = await readResult(analysisId);
+        }
+
+        if (!isCurrentRun() || run.controller.signal.aborted) {
+          return;
+        }
+
+        if (response.status === 'DONE') {
+          updateUi('done');
+        } else {
+          updateUi(
+            'failed',
+            response.failure?.message ?? '고도 분석에 실패했어요. 다시 시도할 수 있어요.',
+          );
+        }
+      } catch (error) {
+        if (!isCurrentRun()) {
+          return;
+        }
+
+        const blocking = getBlockingProblem(error);
+
+        if (blocking) {
+          updateUi(blocking.phase, blocking.message);
+          return;
+        }
+
+        const problem = getTerrainApiProblem(error);
+
+        if (canShowInitialIdle && readingProfile && problem.code === 'RESOURCE_NOT_FOUND') {
+          updateUi('idle');
+          return;
+        }
+
+        updateUi(
+          'unknown',
+          problem.code === 'RESOURCE_NOT_FOUND'
+            ? '해당 조건의 결과를 찾지 못했어요. 분석 완료 여부를 확인할 수 없어요.'
+            : '결과를 확인하지 못했어요. 서버에서 분석이 계속되고 있을 수 있어요.',
+        );
+      } finally {
+        window.clearTimeout(timeoutId);
+
+        if (isCurrentRun()) {
+          activeRunRef.current = null;
+        }
       }
+    },
+    [userId, target, resultKey, scope, queryClient, mutateAsync],
+  );
+
+  // 최초 진입·조건 변경 시에는 GET만 실행한다.
+  // POST는 사용자 동작으로만 실행한다.
+  useEffect(() => {
+    if (!userId || !target) {
+      return;
     }
+
+    void runOperation('initial');
+
+    return () => {
+      const run = activeRunRef.current;
+      activeRunRef.current = null;
+      run?.controller.abort();
+
+      // 이전 fetchQuery가 같은 조건의 새 조회에 섞이지 않게 한다.
+      void queryClient.cancelQueries({
+        queryKey: resultKey,
+        exact: true,
+      });
+    };
+  }, [userId, target, runOperation, queryClient, resultKey]);
+
+  const currentUi: AnalysisUiState =
+    ui.scope === scope
+      ? ui
+      : {
+          scope,
+          phase: userId && target ? 'checking' : 'idle',
+          analysisId: null,
+          message: null,
+        };
+
+  if (ui.scope !== scope) {
+    setUi(currentUi);
   }
+
+  const phase = currentUi.phase;
+
+  const isBusy = phase === 'checking' || phase === 'requesting' || phase === 'running';
+
+  const configured = Boolean(userId && target);
+
+  const completedResult =
+    phase === 'done' && resultQuery.data?.status === 'DONE' ? resultQuery.data : null;
 
   return {
     phase,
     isBusy,
-    canStart: Boolean(userId && conditions) && phase === 'idle',
+    message: currentUi.message,
     result: completedResult,
-    analysisId: savedResult?.analysisId ?? currentUi.analysisId,
-    failure: savedResult?.status === 'FAILED' ? savedResult.failure : null,
-    start,
+    analysisId: currentUi.analysisId,
+
+    canStart: configured && phase === 'idle',
+    canRetry: configured && phase === 'failed',
+    canCheck: configured && phase === 'unknown',
+
+    start: () => {
+      if (phase === 'idle') {
+        return runOperation('start');
+      }
+
+      return Promise.resolve();
+    },
+
+    retry: () => {
+      if (phase === 'failed') {
+        return runOperation('retry', currentUi.analysisId);
+      }
+
+      return Promise.resolve();
+    },
+
+    check: () => {
+      if (phase === 'unknown') {
+        return runOperation('check', currentUi.analysisId);
+      }
+
+      return Promise.resolve();
+    },
   };
 }

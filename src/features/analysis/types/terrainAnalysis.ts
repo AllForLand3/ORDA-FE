@@ -1,7 +1,16 @@
 export type TerrainAnalysisStatus = 'REQUESTED' | 'RUNNING' | 'DONE' | 'FAILED';
 
 export type TerrainAnalysisPhase =
-  'idle' | 'requesting' | 'running' | 'done' | 'failed' | 'unknown';
+  | 'idle'
+  | 'checking'
+  | 'requesting'
+  | 'running'
+  | 'done'
+  | 'failed'
+  | 'unknown'
+  | 'blocked'
+  | 'conflict'
+  | 'auth';
 
 export interface TerrainAnalysisConditions {
   courseId: string;
@@ -36,7 +45,7 @@ export interface TerrainAnalysisFailure {
   message: string;
 }
 
-// POST와 분석 ID 조회처럼 전체 샘플을 반환하는 응답용 타입이다.
+// 전체 샘플을 제공하는 POST·분석 ID 조회·프로파일 조회용이다.
 export interface TerrainAnalysisResponse {
   analysisId: string;
   courseId: string;
