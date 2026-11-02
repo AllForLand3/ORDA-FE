@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 
 import addIcon from '@/assets/course/course-add.svg';
-import { Button, Tabs, TextField } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 import type { useMyCoursesState } from '../hooks/useMyCoursesState';
 import { MyCourseCard } from './MyCourseCard';
-import { Select } from '@/components/ui/Select';
 
 interface MyCoursesPanelProps {
   state: ReturnType<typeof useMyCoursesState>;
@@ -13,77 +12,13 @@ interface MyCoursesPanelProps {
 
 export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
   const navigate = useNavigate();
-  const selectedTab = state.tabs.find((item) => item.value === state.tab);
-  const content = (
-    <>
-      <div className="my-courses-toolbar">
-        <p>
-          {selectedTab?.label}{' '}
-          <strong>{state.preview === 'error' ? '—' : state.filteredCourses.length}</strong>
-        </p>
-        <Select
-          ariaLabel="코스 정렬"
-          className="my-courses-sort"
-          onValueChange={state.setSort}
-          options={[
-            { value: 'latest', label: '최신순' },
-            { value: 'oldest', label: '오래된순' },
-            { value: 'name', label: '이름순' },
-          ]}
-          value={state.sort}
-        />
-      </div>
-      {state.preview === 'error' ? (
-        <div className="my-courses-feedback" role="alert">
-          <h2>코스 목록을 표시하지 못했어요</h2>
-          <p>오류 UI 데모입니다. 실제 서버 요청이 실패한 상태는 아닙니다.</p>
-          <Button onClick={() => state.setPreview('ready')} variant="secondary">
-            예시 목록 다시 보기
-          </Button>
-        </div>
-      ) : state.filteredCourses.length ? (
-        <div className="my-courses-grid">
-          {state.filteredCourses.map((course) => (
-            <MyCourseCard
-              course={course}
-              detailHref={state.getDetailHref(course.id)}
-              editHref={state.getEditHref(course.id)}
-              key={course.id}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="my-courses-feedback" role="status">
-          <h2>{state.query.trim() ? '검색 결과가 없어요' : '표시할 코스가 없어요'}</h2>
-          <p>
-            {state.query.trim()
-              ? '다른 코스 이름이나 산 이름으로 검색해보세요.'
-              : '빈 목록 UI 데모입니다. 아직 서버에 저장된 코스는 조회하지 않습니다.'}
-          </p>
-          {state.query.trim() ? (
-            <Button onClick={state.resetSearch} variant="secondary">
-              검색 초기화
-            </Button>
-          ) : (
-            <Button onClick={() => state.setPreview('ready')} variant="secondary">
-              예시 목록 보기
-            </Button>
-          )}
-        </div>
-      )}
-    </>
-  );
 
   return (
     <div className="my-courses-panel">
       <header className="my-courses-intro">
         <div>
           <h1>내 코스</h1>
-          <p>
-            저장하거나 직접 만든 코스를
-            <br />
-            관리하고 다시 분석해보세요
-          </p>
+          <p>저장하거나 직접 만든 코스를 관리하고 다시 분석해보세요.</p>
         </div>
         <div className="my-courses-upload">
           <Button onClick={() => navigate(state.getImportHref())} size="sm">
@@ -93,49 +28,43 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
           <small>(GeoJSON)</small>
         </div>
       </header>
-      <p className="my-courses-demo-note">
-        이 목록의 코스·지표는 예시입니다. 업로드한 실제 코스는 등록 후 상세 화면에서 확인할 수
-        있습니다.
-      </p>
-      <div className="my-courses-search">
-        <TextField
-          hideLabel
-          label="내 코스 검색"
-          onChange={(event) => state.setQuery(event.target.value)}
-          placeholder="코스 이름이나 산 이름 검색"
-          type="text"
-          value={state.query}
-          variant="search"
-        />
-        <Select
-          ariaLabel="내 코스 목록 상태"
-          className="my-courses-preview-select"
-          onValueChange={state.setPreview}
-          options={[
-            { value: 'ready', label: '예시 목록' },
-            { value: 'empty', label: '빈 목록 데모' },
-            { value: 'error', label: '오류 데모' },
-          ]}
-          value={state.preview}
-        />
-      </div>
-      <Tabs
-        ariaLabel="내 코스 분류"
-        items={state.tabs.map((item) => ({
-          value: item.value,
-          label: (
-            <>
-              {item.label}
-              <span className="my-courses-tab-count">
-                {state.preview === 'error' ? '—' : item.count}
-              </span>
-            </>
-          ),
-          content: state.tab === item.value ? content : null,
-        }))}
-        onValueChange={state.setTab}
-        value={state.tab}
-      />
+      {state.loading ? (
+        <div className="my-courses-feedback" role="status" aria-busy="true">
+          코스 목록을 불러오는 중입니다.
+        </div>
+      ) : state.failed ? (
+        <div className="my-courses-feedback" role="alert">
+          <h2>코스 목록을 불러오지 못했어요</h2>
+          <Button onClick={state.retry} variant="secondary">
+            다시 시도
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="my-courses-toolbar">
+            <p>
+              전체 <strong>{state.courses.length}</strong>
+            </p>
+          </div>
+          {state.courses.length ? (
+            <div className="my-courses-grid">
+              {state.courses.map((course) => (
+                <MyCourseCard
+                  course={course}
+                  detailHref={state.getDetailHref(course.courseId)}
+                  editHref={state.getEditHref(course.courseId)}
+                  key={course.courseId}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="my-courses-feedback" role="status">
+              <h2>저장한 코스가 없어요</h2>
+              <p>코스를 업로드하면 이곳에서 확인할 수 있습니다.</p>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
