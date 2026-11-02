@@ -3,7 +3,11 @@ import { defineConfig, devices } from '@playwright/test';
 // 개인 환경 변수·기존 개발 서버에 영향받지 않고 API 모킹으로 검증한다.
 export default defineConfig({
   testDir: './tests/e2e',
-  testMatch: ['**/terrain-analysis.spec.ts', '**/course-detail-api.spec.ts'],
+  testMatch: [
+    '**/terrain-analysis.spec.ts',
+    '**/terrain-analysis-recovery.spec.ts',
+    '**/course-detail-api.spec.ts',
+  ],
   fullyParallel: true,
   workers: 2,
   forbidOnly: Boolean(process.env.CI),

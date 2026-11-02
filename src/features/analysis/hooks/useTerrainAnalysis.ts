@@ -323,13 +323,24 @@ export function useTerrainAnalysis(
               return;
             }
 
-            // 인증·접근·입력·버전 문제는 분석 실패로 표시하지 않는다.
-            if (getBlockingProblem(error)) {
+            const failureAnalysisId = getFailureAnalysisId(error);
+            const blocking = getBlockingProblem(error);
+            const problem = getTerrainApiProblem(error);
+            const accessOrVersionProblem =
+              blocking?.phase === 'auth' ||
+              blocking?.phase === 'conflict' ||
+              problem.code === 'COURSE_NOT_FOUND' ||
+              problem.code === 'FORBIDDEN' ||
+              problem.status === 403;
+
+            // 인증·소유권·버전 오류는 Location이 있어도 조회로 우회하지 않는다.
+            // 그 외 오류는 실행 실패 Location이 있으면 실제 저장 상태를 먼저 확인한다.
+            if (blocking && (failureAnalysisId === null || accessOrVersionProblem)) {
               throw error;
             }
 
             // Location은 ID만 추출한다. URL 자체를 따라가지 않는다.
-            analysisId = getFailureAnalysisId(error) ?? analysisId;
+            analysisId = failureAnalysisId ?? analysisId;
 
             // 응답 유실·시간 초과 후 POST를 반복하지 않고 GET으로 확인한다.
             startDeadline(REQUEST_WAIT_MS);
