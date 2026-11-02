@@ -13,7 +13,7 @@ test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화�
   const memo = page.getByRole('textbox', { name: '메모', exact: true });
   await expect(name).toHaveValue('능선 조망 코스 · 예시 2');
   await expect(memo).toHaveValue('주말 아침을 위한 산책 코스');
-  await expect(page.getByText('경로 편집 도구 준비 중', { exact: true })).toBeVisible();
+  await expect(page.getByText('이름과 메모만 수정할 수 있습니다.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '코스 이름 지우기' }).click();
   await page.getByRole('button', { name: '저장', exact: true }).click();
   await expect(name).toHaveAttribute('aria-invalid', 'true');
@@ -43,8 +43,8 @@ test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화�
   await page.getByRole('link', { name: '취소', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('능선 조망 코스 · 예시 2');
   await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
-  await expect(page.getByRole('searchbox', { name: '내 코스 검색' })).toHaveValue('예시 2');
-  await expect(page.getByRole('combobox', { name: '코스 정렬' })).toHaveValue('oldest');
+  await expect(page.getByRole('textbox', { name: '내 코스 검색' })).toHaveValue('예시 2');
+  await expect(page.getByRole('button', { name: '코스 정렬' })).toContainText('오래된순');
   await page.goto('/my-courses/example-ridge-2/edit');
   await expect(name).toHaveValue('능선 조망 코스 · 예시 2');
   expect(apiRequests).toEqual([]);
@@ -203,6 +203,6 @@ test('편집과 내보내기 패널은 360~1512px에서 스크롤·접기·포�
     await expect(sheet).not.toBeVisible();
   }
   await page.goto('/my-courses/unknown/edit');
-  await expect(page.getByRole('heading', { name: '편집할 코스를 찾을 수 없어요' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '코스를 찾을 수 없어요' })).toBeVisible();
   await expect(page.locator('.ol-viewport')).toHaveCount(0);
 });

@@ -58,14 +58,7 @@ export function CourseEditPanel({ state }: CourseEditPanelProps) {
           <span aria-hidden="true">×</span>
         </Button>
       </div>
-      <section aria-labelledby="course-edit-tools-title" className="course-edit-tools">
-        <h2 id="course-edit-tools-title">편집 도구</h2>
-        <div>
-          <p>경로 편집 도구 준비 중</p>
-          <small>지점 이동·추가·삭제는 제공하지 않습니다.</small>
-        </div>
-      </section>
-      <p className="course-edit-warning">경로를 수정하면 기존 분석 결과가 무효화됩니다.</p>
+      <p className="course-edit-note">이름과 메모만 수정할 수 있습니다.</p>
       <p className="course-edit-note">
         예시 입력을 편집하는 화면입니다. 저장은 현재 화면에만 적용되며, 실제 경로·분석 자료와 서버
         저장은 연결되지 않았습니다.
