@@ -9,10 +9,12 @@ import {
   MountainBottomNavigation,
   MountainHeader,
   MountainSelectionPanel,
+  useMountainDetailQuery,
   useMountainMarkerLayer,
   useMountainsQuery,
 } from '@/features/course';
 import type { MountainListItem } from '@/features/course';
+import { getApiErrorCode } from '@/lib/apiError';
 
 import './MountainSelectPage.css';
 
@@ -35,12 +37,26 @@ export function MountainSelectPage() {
   const mountains = mountainsQuery.data?.items ?? EMPTY_MOUNTAINS;
   const markerLayer = useMountainMarkerLayer(mountains, selectedMountain?.mountainId ?? null);
   const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
+  const mountainDetailQuery = useMountainDetailQuery(selectedMountain?.mountainId ?? null);
+  const mountainDetail = mountainDetailQuery.data ?? null;
+  const mountainDetailErrorCode = getApiErrorCode(mountainDetailQuery.error);
+  const mountainDetailError = mountainDetailQuery.isError
+    ? mountainDetailErrorCode === 'MOUNTAIN_NOT_FOUND'
+      ? '선택한 산 정보를 찾을 수 없어요.'
+      : '산 상세 정보를 불러오지 못했어요.'
+    : null;
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setKeyword(searchQuery.trim()), 300);
 
     return () => window.clearTimeout(timeoutId);
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (mountainDetail?.geometry) {
+      mapController?.centerOn(mountainDetail.geometry.coordinates, 14);
+    }
+  }, [mapController, mountainDetail]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -77,7 +93,12 @@ export function MountainSelectPage() {
           targetRef={mapContainerRef}
         />
       }
-      mapControls={<MapControls controller={mapController} />}
+      mapControls={
+        <MapControls
+          controller={mapController}
+          mountainName={mountainDetail?.mountainName ?? selectedMountain?.mountainName}
+        />
+      }
       mapLabel="산 선택 지도"
       panel={
         <MountainSelectionPanel
@@ -93,6 +114,7 @@ export function MountainSelectPage() {
           onSearchChange={handleSearchChange}
           page={mountainsQuery.data?.page ?? page}
           searchQuery={searchQuery}
+          selectionError={mountainDetailError}
           selectedMountain={selectedMountain}
           totalElements={mountainsQuery.data?.totalElements ?? 0}
           totalPages={mountainsQuery.data?.totalPages ?? 0}
@@ -100,7 +122,7 @@ export function MountainSelectPage() {
       }
       panelFooter={
         <Button
-          disabled={!selectedMountain}
+          disabled={!selectedMountain || !mountainDetail?.serviceAvailable}
           fullWidth
           onClick={() =>
             navigate(`/routes/setup?mountainId=${encodeURIComponent(selectedMountain!.mountainId)}`)

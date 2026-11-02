@@ -7,5 +7,6 @@ export function useMountainDetailQuery(mountainId: string | null) {
   return useQuery({
     queryKey: mountainQueryKeys.detail(mountainId),
     queryFn: mountainId ? () => getMountain(mountainId) : skipToken,
+    retry: false,
   });
 }

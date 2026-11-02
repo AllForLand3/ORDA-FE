@@ -17,6 +17,7 @@ export interface MountainSelectionPanelProps {
   onSearchChange: (value: string) => void;
   page: number;
   searchQuery: string;
+  selectionError: string | null;
   selectedMountain: MountainListItem | null;
   totalElements: number;
   totalPages: number;
@@ -43,6 +44,7 @@ export function MountainSelectionPanel({
   onSearchChange,
   page,
   searchQuery,
+  selectionError,
   selectedMountain,
   totalElements,
   totalPages,
@@ -157,8 +159,19 @@ export function MountainSelectionPanel({
         </nav>
       ) : null}
 
-      <div aria-live="polite" className="mountain-selection__selection-status" role="status">
-        {selectedMountain ? (
+      <div
+        aria-live="polite"
+        className="mountain-selection__selection-status"
+        role={selectionError ? 'alert' : 'status'}
+      >
+        {selectionError ? (
+          <>
+            <span>{selectionError}</span>
+            <button onClick={() => onMountainSelect(null)} type="button">
+              선택 취소
+            </button>
+          </>
+        ) : selectedMountain ? (
           <>
             <span>선택한 산: {selectedMountain.mountainName}</span>
             <button onClick={() => onMountainSelect(null)} type="button">

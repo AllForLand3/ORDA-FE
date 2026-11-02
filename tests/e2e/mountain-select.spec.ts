@@ -32,6 +32,27 @@ const MOUNTAINS = [
   },
 ];
 
+const MOUNTAIN_DETAILS = {
+  '1': {
+    ...MOUNTAINS[0],
+    sourceMountainCode: 'MNT-001',
+    sourceOldMountainCode: 'OLD-001',
+    serviceAvailable: true,
+  },
+  '2': {
+    ...MOUNTAINS[1],
+    sourceMountainCode: 'MNT-002',
+    sourceOldMountainCode: null,
+    serviceAvailable: true,
+  },
+  '3': {
+    ...MOUNTAINS[2],
+    sourceMountainCode: 'MNT-003',
+    sourceOldMountainCode: null,
+    serviceAvailable: false,
+  },
+};
+
 function getMountainPage(url: URL) {
   const keyword = url.searchParams.get('keyword')?.trim() ?? '';
   const page = Number(url.searchParams.get('page') ?? 0);
@@ -52,6 +73,16 @@ function getMountainPage(url: URL) {
 async function installMountainRoute(page: Page) {
   await page.route('**/api/mountains?*', async (route) => {
     await route.fulfill({ json: getMountainPage(new URL(route.request().url())) });
+  });
+  await page.route('**/api/mountains/*', async (route) => {
+    const mountainId = new URL(route.request().url()).pathname.split('/').at(-1) ?? '';
+    const detail = MOUNTAIN_DETAILS[mountainId as keyof typeof MOUNTAIN_DETAILS];
+
+    await route.fulfill(
+      detail
+        ? { json: detail }
+        : { status: 404, json: { code: 'MOUNTAIN_NOT_FOUND', message: '산을 찾을 수 없습니다.' } },
+    );
   });
 }
 
@@ -98,23 +129,24 @@ test('모바일 하단 내비게이션은 내 코스와 같은 아이콘·글자
   await installMountainRoute(page);
   await page.setViewportSize({ width: 440, height: 956 });
 
-  const readNavigationMetrics = async (navigationName: string) =>
-    page
-      .getByRole('navigation', { name: navigationName })
-      .getByRole('link')
-      .evaluateAll((links) =>
-        links.map((link) => {
-          const image = link.querySelector('img');
-          const label = link.querySelector('span');
-          const imageBox = image?.getBoundingClientRect();
+  const readNavigationMetrics = async (navigationName: string) => {
+    const links = page.getByRole('navigation', { name: navigationName }).getByRole('link');
+    await expect(links).toHaveCount(3);
 
-          return {
-            fontSize: label ? getComputedStyle(label).fontSize : null,
-            imageHeight: imageBox?.height ?? null,
-            imageWidth: imageBox?.width ?? null,
-          };
-        }),
-      );
+    return links.evaluateAll((items) =>
+      items.map((link) => {
+        const image = link.querySelector('img');
+        const label = link.querySelector('span');
+        const imageBox = image?.getBoundingClientRect();
+
+        return {
+          fontSize: label ? getComputedStyle(label).fontSize : null,
+          imageHeight: imageBox?.height ?? null,
+          imageWidth: imageBox?.width ?? null,
+        };
+      }),
+    );
+  };
 
   await page.goto('/my-courses');
   const myCoursesMetrics = await readNavigationMetrics('내 코스 내비게이션');
@@ -191,6 +223,43 @@ test('키워드 검색은 인증된 산 목록 API 요청을 사용한다', asyn
   await expect(page.getByText('검색 결과가 없어요.')).toBeVisible();
   await page.getByRole('button', { name: '검색 초기화' }).click();
   await expect(page.locator('.mountain-card')).toHaveCount(3);
+});
+
+test('산 선택 시 상세 조회 결과로 서비스 가능 여부를 처리한다', async ({ page }) => {
+  await installMountainRoute(page);
+  await page.goto('/mountains');
+
+  const gwanaksanDetailRequest = page.waitForRequest((request) =>
+    request.url().endsWith('/api/mountains/1'),
+  );
+  await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
+
+  await gwanaksanDetailRequest;
+  await expect(page.getByRole('region', { name: '선택한 산 상세' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
+
+  const cheonggyesanDetailRequest = page.waitForRequest((request) =>
+    request.url().endsWith('/api/mountains/3'),
+  );
+  await page.locator('.mountain-card').filter({ hasText: '청계산' }).click();
+  await cheonggyesanDetailRequest;
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+});
+
+test('산 상세 조회에서 산 미존재 오류를 안내한다', async ({ page }) => {
+  await installMountainRoute(page);
+  await page.route('**/api/mountains/1', async (route) => {
+    await route.fulfill({
+      status: 404,
+      json: { code: 'MOUNTAIN_NOT_FOUND', message: '사용 가능한 산을 찾을 수 없습니다.' },
+    });
+  });
+  await page.goto('/mountains');
+
+  await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('선택한 산 정보를 찾을 수 없어요.');
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
 });
 
 test('산 목록은 이전·다음 페이지를 이동한다', async ({ page }) => {
