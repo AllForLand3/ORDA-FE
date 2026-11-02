@@ -1,6 +1,38 @@
+import type { Page } from '@playwright/test';
+
 import { expect, test } from '../fixtures/authenticatedTest';
 
-test('산 선택 화면은 440px에서 지도와 산 선택 패널을 표시한다', async ({ page }) => {
+const MOUNTAINS = [
+  { mountainId: 'gwanaksan', mountainName: '관악산' },
+  { mountainId: 'bukhansan', mountainName: '북한산' },
+  { mountainId: 'cheonggyesan', mountainName: '청계산' },
+];
+
+function getMountainPage(url: URL) {
+  const keyword = url.searchParams.get('keyword')?.trim() ?? '';
+  const page = Number(url.searchParams.get('page') ?? 0);
+  const size = Number(url.searchParams.get('size') ?? 10);
+  const filtered = keyword
+    ? MOUNTAINS.filter((mountain) => mountain.mountainName.includes(keyword))
+    : MOUNTAINS;
+
+  return {
+    items: filtered.slice(page * size, (page + 1) * size),
+    page,
+    size,
+    totalElements: filtered.length,
+    totalPages: filtered.length === 0 ? 0 : Math.ceil(filtered.length / size),
+  };
+}
+
+async function installMountainRoute(page: Page) {
+  await page.route('**/api/mountains?*', async (route) => {
+    await route.fulfill({ json: getMountainPage(new URL(route.request().url())) });
+  });
+}
+
+test('산 선택 화면은 API 목록과 지도 패널을 표시한다', async ({ page }) => {
+  await installMountainRoute(page);
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/mountains');
 
@@ -9,7 +41,10 @@ test('산 선택 화면은 440px에서 지도와 산 선택 패널을 표시한�
   await expect(panel.getByRole('searchbox', { name: '산 이름 검색' })).toBeVisible();
   await expect(page.locator('.orda-map-layout__header').getByRole('searchbox')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' })).toBeVisible();
-  await expect(page.getByText('화면 확인용 예시 데이터')).toBeVisible();
+  await expect(page.getByText('산 목록 3')).toBeVisible();
+  await expect(page.locator('.mountain-card')).toHaveCount(3);
+  await expect(page.getByText('서비스 대상 산')).toHaveCount(0);
+  await expect(page.getByText('상세 정보 확인 가능')).toHaveCount(0);
   await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
     'data-map-ready',
     'true',
@@ -33,6 +68,7 @@ test('산 선택 화면은 440px에서 지도와 산 선택 패널을 표시한�
 });
 
 test('모바일 하단 내비게이션은 내 코스와 같은 아이콘·글자 크기를 사용한다', async ({ page }) => {
+  await installMountainRoute(page);
   await page.setViewportSize({ width: 440, height: 956 });
 
   const readNavigationMetrics = async (navigationName: string) =>
@@ -65,6 +101,8 @@ test('모바일 하단 내비게이션은 내 코스와 같은 아이콘·글자
 test('산 선택 레이아웃은 360·768·1024px에서 넘치지 않고 패널과 지도를 분리한다', async ({
   page,
 }) => {
+  await installMountainRoute(page);
+
   for (const viewport of [
     { width: 360, height: 800 },
     { width: 768, height: 1024 },
@@ -99,42 +137,108 @@ test('산 선택 레이아웃은 360·768·1024px에서 넘치지 않고 패널�
   }
 });
 
-test('검색·필터는 빈 결과와 초기화를 처리한다', async ({ page }) => {
+test('키워드 검색은 인증된 산 목록 API 요청을 사용한다', async ({ page }) => {
+  const requests: Array<{ authorization?: string; url: URL }> = [];
+
+  await page.route('**/api/mountains?*', async (route) => {
+    requests.push({
+      authorization: route.request().headers().authorization,
+      url: new URL(route.request().url()),
+    });
+    await route.fulfill({ json: getMountainPage(new URL(route.request().url())) });
+  });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/mountains');
 
+  await expect(page.locator('.mountain-card')).toHaveCount(3);
+  expect(requests.at(-1)?.url.searchParams.get('page')).toBe('0');
+  expect(requests.at(-1)?.url.searchParams.get('size')).toBe('10');
+  expect(requests.at(-1)?.authorization).toBe('Bearer e2e-access-token');
+
+  await page.getByRole('searchbox', { name: '산 이름 검색' }).fill('관악산');
+  await expect(page.locator('.mountain-card')).toHaveCount(1);
+  await expect(page.locator('.mountain-card')).toContainText('관악산');
+  expect(requests.at(-1)?.url.searchParams.get('keyword')).toBe('관악산');
+
   await page.getByRole('searchbox', { name: '산 이름 검색' }).fill('없는 산 이름');
   await expect(page.getByText('검색 결과가 없어요.')).toBeVisible();
-  await page.getByRole('button', { name: '검색과 필터 초기화' }).click();
+  await page.getByRole('button', { name: '검색 초기화' }).click();
   await expect(page.locator('.mountain-card')).toHaveCount(3);
+});
 
-  await page.getByRole('button', { name: '경기', exact: true }).click();
+test('산 목록은 이전·다음 페이지를 이동한다', async ({ page }) => {
+  await page.route('**/api/mountains?*', async (route) => {
+    const url = new URL(route.request().url());
+    const pageNumber = Number(url.searchParams.get('page') ?? 0);
+    const items = pageNumber === 0 ? MOUNTAINS.slice(0, 2) : MOUNTAINS.slice(2);
+
+    await route.fulfill({
+      json: {
+        items,
+        page: pageNumber,
+        size: 2,
+        totalElements: 3,
+        totalPages: 2,
+      },
+    });
+  });
+  await page.goto('/mountains');
+
+  const pagination = page.getByRole('navigation', { name: '산 목록 페이지' });
+  await expect(pagination.getByText('1 / 2')).toBeVisible();
+  await expect(pagination.getByRole('button', { name: '이전' })).toBeDisabled();
+  await pagination.getByRole('button', { name: '다음' }).click();
   await expect(page.locator('.mountain-card')).toHaveCount(1);
   await expect(page.locator('.mountain-card')).toContainText('청계산');
+  await expect(pagination.getByText('2 / 2')).toBeVisible();
+  await expect(pagination.getByRole('button', { name: '다음' })).toBeDisabled();
 
-  await page.getByRole('button', { name: '추가 필터 열기' }).click();
-  await page.getByRole('button', { name: '중급', exact: true }).click();
-  await expect(page.getByText('검색 결과가 없어요.')).toBeVisible();
+  await pagination.getByRole('button', { name: '이전' }).click();
+  await expect(page.locator('.mountain-card')).toHaveCount(2);
+});
+
+test('산 목록 로딩과 조회 실패 상태에서 안내와 재시도를 제공한다', async ({ page }) => {
+  let shouldFail = true;
+  let releaseLoading: (() => void) | undefined;
+  const loading = new Promise<void>((resolve) => {
+    releaseLoading = resolve;
+  });
+
+  await page.route('**/api/mountains?*', async (route) => {
+    await loading;
+
+    if (shouldFail) {
+      await route.fulfill({ status: 500, json: { code: 'INTERNAL_SERVER_ERROR' } });
+      return;
+    }
+
+    await route.fulfill({ json: getMountainPage(new URL(route.request().url())) });
+  });
+  await page.goto('/mountains');
+
+  await expect(page.getByText('산 목록을 불러오는 중이에요.')).toBeVisible();
+  releaseLoading?.();
+  await expect(page.getByRole('alert')).toContainText('산 목록을 불러오지 못했어요.');
+
+  shouldFail = false;
+  await page.getByRole('button', { name: '다시 시도' }).click();
+  await expect(page.locator('.mountain-card')).toHaveCount(3);
 });
 
 test('산 카드는 키보드 선택과 Escape·버튼 선택 취소를 지원한다', async ({ page }) => {
+  await installMountainRoute(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/mountains');
 
   const gwanaksan = page.locator('.mountain-card').filter({ hasText: '관악산' });
   const bukhansan = page.locator('.mountain-card').filter({ hasText: '북한산' });
-  const mapSurface = page.locator('.orda-map-layout__map-surface');
-  const initialMapRevision = await mapSurface.getAttribute('data-map-view-revision');
 
-  await expect(gwanaksan).toHaveAttribute('aria-pressed', 'true');
+  await expect(gwanaksan).toHaveAttribute('aria-pressed', 'false');
   await bukhansan.focus();
   await page.keyboard.press('Enter');
   await expect(bukhansan).toHaveAttribute('aria-pressed', 'true');
   await expect(gwanaksan).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByText('선택한 산: 북한산')).toBeVisible();
-  await expect
-    .poll(() => mapSurface.getAttribute('data-map-view-revision'))
-    .not.toBe(initialMapRevision);
 
   await page.keyboard.press('Escape');
   await expect(bukhansan).toHaveAttribute('aria-pressed', 'false');

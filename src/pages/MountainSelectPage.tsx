@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
@@ -6,47 +6,50 @@ import { Button } from '@/components/ui/Button';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
-  DEFAULT_MOUNTAIN_ID,
-  MOUNTAIN_MOCKS,
   MountainBottomNavigation,
   MountainHeader,
   MountainSelectionPanel,
-  useMountainMarkerLayer,
+  useMountainsQuery,
 } from '@/features/course';
-import type { MountainDifficulty, MountainRegion, MountainSort } from '@/features/course';
+import type { MountainListItem } from '@/features/course';
 
 import './MountainSelectPage.css';
+
+const EMPTY_MOUNTAINS: MountainListItem[] = [];
+const MOUNTAINS_PAGE_SIZE = 10;
 
 export function MountainSelectPage() {
   const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
-  const [selectedMountainId, setSelectedMountainId] = useState<string | null>(null);
+  const [selectedMountain, setSelectedMountain] = useState<MountainListItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [region, setRegion] = useState<MountainRegion | '전체'>('전체');
-  const [difficulty, setDifficulty] = useState<MountainDifficulty | '전체'>('전체');
-  const [sort, setSort] = useState<MountainSort>('popularity');
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const markerLayer = useMountainMarkerLayer(selectedMountainId);
-  const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
-  const initialMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === DEFAULT_MOUNTAIN_ID);
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(0);
+  const mountainsQuery = useMountainsQuery({
+    keyword: keyword || undefined,
+    page,
+    size: MOUNTAINS_PAGE_SIZE,
+  });
+  const mountains = mountainsQuery.data?.items ?? EMPTY_MOUNTAINS;
 
-  const handleMountainSelect = (mountainId: string | null) => {
-    const nextMountainId = mountainId === selectedMountainId ? null : mountainId;
-    setSelectedMountainId(nextMountainId);
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setKeyword(searchQuery.trim()), 300);
 
-    const mountain = MOUNTAIN_MOCKS.find((item) => item.id === nextMountainId);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
 
-    if (mountain) {
-      mapController?.centerOn(mountain.coordinates, 10);
-    }
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(0);
+    setSelectedMountain(null);
   };
 
-  const clearFilters = () => {
+  const clearSearch = () => {
     setSearchQuery('');
-    setRegion('전체');
-    setDifficulty('전체');
-    setSort('popularity');
+    setKeyword('');
+    setPage(0);
+    setSelectedMountain(null);
   };
 
   return (
@@ -57,8 +60,6 @@ export function MountainSelectPage() {
       mapContainerRef={mapContainerRef}
       mapContent={
         <OpenLayersMap
-          additionalLayers={additionalLayers}
-          initialCenter={initialMountain?.coordinates ?? null}
           initialZoom={10}
           onControllerChange={setMapController}
           targetRef={mapContainerRef}
@@ -68,27 +69,29 @@ export function MountainSelectPage() {
       mapLabel="산 선택 지도"
       panel={
         <MountainSelectionPanel
-          difficulty={difficulty}
-          filtersExpanded={filtersExpanded}
-          onClearFilters={clearFilters}
-          onDifficultyChange={setDifficulty}
-          onFilterToggle={() => setFiltersExpanded((expanded) => !expanded)}
-          onMountainSelect={handleMountainSelect}
-          onRegionChange={setRegion}
-          onSearchChange={setSearchQuery}
-          onSortChange={setSort}
-          region={region}
+          hasError={mountainsQuery.isError}
+          isLoading={mountainsQuery.isPending}
+          mountains={mountains}
+          onClearSearch={clearSearch}
+          onMountainSelect={setSelectedMountain}
+          onPageChange={setPage}
+          onRetry={() => {
+            void mountainsQuery.refetch();
+          }}
+          onSearchChange={handleSearchChange}
+          page={mountainsQuery.data?.page ?? page}
           searchQuery={searchQuery}
-          selectedMountainId={selectedMountainId}
-          sort={sort}
+          selectedMountain={selectedMountain}
+          totalElements={mountainsQuery.data?.totalElements ?? 0}
+          totalPages={mountainsQuery.data?.totalPages ?? 0}
         />
       }
       panelFooter={
         <Button
-          disabled={!selectedMountainId}
+          disabled={!selectedMountain}
           fullWidth
           onClick={() =>
-            navigate(`/routes/setup?mountainId=${encodeURIComponent(selectedMountainId!)}`)
+            navigate(`/routes/setup?mountainId=${encodeURIComponent(selectedMountain!.mountainId)}`)
           }
           size="lg"
         >

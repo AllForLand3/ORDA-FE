@@ -11,6 +11,11 @@ export interface MountainSearchParams {
 export interface MountainListItem {
   mountainId: string;
   mountainName: string;
+  addressLabel: string | null;
+  provinceName: string | null;
+  districtName: string | null;
+  elevationMeters: number | null;
+  geometry: PointGeometry | null;
 }
 
 export interface MountainDetail {
@@ -19,6 +24,11 @@ export interface MountainDetail {
   sourceMountainCode: string | null;
   sourceOldMountainCode: string | null;
   serviceAvailable: boolean;
+  addressLabel: string | null;
+  provinceName: string | null;
+  districtName: string | null;
+  elevationMeters: number | null;
+  geometry: PointGeometry | null;
 }
 
 export interface PageResponse<T> {
@@ -31,6 +41,11 @@ export interface PageResponse<T> {
 
 /** API 공간 좌표는 EPSG:4326의 [경도, 위도] 순서를 사용한다. */
 export type LongitudeLatitude = [longitude: number, latitude: number];
+
+export interface PointGeometry {
+  type: 'Point';
+  coordinates: LongitudeLatitude;
+}
 
 export interface ServiceAreaGeometry {
   type: 'MultiPolygon';

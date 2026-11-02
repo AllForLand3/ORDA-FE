@@ -8,5 +8,6 @@ export function useMountainsQuery(params: MountainSearchParams = {}) {
   return useQuery({
     queryKey: mountainQueryKeys.list(params),
     queryFn: () => getMountains(params),
+    retry: false,
   });
 }

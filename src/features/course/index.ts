@@ -3,10 +3,7 @@ export { MountainHeader } from './components/MountainHeader';
 export { MountainSearchBar } from './components/MountainSearchBar';
 export type { MountainSearchBarProps } from './components/MountainSearchBar';
 export { MountainSelectionPanel } from './components/MountainSelectionPanel';
-export type {
-  MountainSelectionPanelProps,
-  MountainSort,
-} from './components/MountainSelectionPanel';
+export type { MountainSelectionPanelProps } from './components/MountainSelectionPanel';
 export { useMountainMarkerLayer } from './hooks/useMountainMarkerLayer';
 export { useMountainDetailQuery } from './hooks/useMountainDetailQuery';
 export { useMountainsQuery } from './hooks/useMountainsQuery';
