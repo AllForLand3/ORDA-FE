@@ -3,9 +3,33 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/authenticatedTest';
 
 const MOUNTAINS = [
-  { mountainId: 'gwanaksan', mountainName: '관악산' },
-  { mountainId: 'bukhansan', mountainName: '북한산' },
-  { mountainId: 'cheonggyesan', mountainName: '청계산' },
+  {
+    mountainId: '1',
+    mountainName: '관악산',
+    addressLabel: '서울특별시 관악구',
+    provinceName: '서울특별시',
+    districtName: '관악구',
+    elevationMeters: 629,
+    geometry: { type: 'Point', coordinates: [126.96444, 37.44472] },
+  },
+  {
+    mountainId: '2',
+    mountainName: '북한산',
+    addressLabel: '서울특별시 강북구',
+    provinceName: '서울특별시',
+    districtName: '강북구',
+    elevationMeters: 836,
+    geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
+  },
+  {
+    mountainId: '3',
+    mountainName: '청계산',
+    addressLabel: '경기도 과천시',
+    provinceName: '경기도',
+    districtName: '과천시',
+    elevationMeters: 618,
+    geometry: { type: 'Point', coordinates: [127.0543676446, 37.4416867721] },
+  },
 ];
 
 function getMountainPage(url: URL) {
@@ -43,6 +67,9 @@ test('산 선택 화면은 API 목록과 지도 패널을 표시한다', async (
   await expect(page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' })).toBeVisible();
   await expect(page.getByText('산 목록 3')).toBeVisible();
   await expect(page.locator('.mountain-card')).toHaveCount(3);
+  await expect(page.locator('.mountain-card').filter({ hasText: '관악산' })).toContainText(
+    '서울특별시 관악구 · 629m',
+  );
   await expect(page.getByText('서비스 대상 산')).toHaveCount(0);
   await expect(page.getByText('상세 정보 확인 가능')).toHaveCount(0);
   await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(

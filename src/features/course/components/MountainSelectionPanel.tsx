@@ -22,6 +22,16 @@ export interface MountainSelectionPanelProps {
   totalPages: number;
 }
 
+function getMountainLocation(mountain: MountainListItem) {
+  const address =
+    mountain.addressLabel?.trim() ||
+    [mountain.provinceName, mountain.districtName].filter(Boolean).join(' ');
+  const elevation =
+    mountain.elevationMeters === null ? '' : `${mountain.elevationMeters.toLocaleString('ko-KR')}m`;
+
+  return [address, elevation].filter(Boolean).join(' · ');
+}
+
 export function MountainSelectionPanel({
   hasError,
   isLoading,
@@ -85,6 +95,7 @@ export function MountainSelectionPanel({
         <div aria-label="산 목록" className="mountain-selection__list">
           {mountains.map((mountain) => {
             const isSelected = selectedMountain?.mountainId === mountain.mountainId;
+            const location = getMountainLocation(mountain);
 
             return (
               <button
@@ -109,6 +120,7 @@ export function MountainSelectionPanel({
                       </Badge>
                     ) : null}
                   </span>
+                  {location ? <span className="mountain-card__location">{location}</span> : null}
                 </span>
                 <span aria-hidden="true" className="mountain-card__selection">
                   {isSelected ? '✓' : ''}
