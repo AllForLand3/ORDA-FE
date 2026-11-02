@@ -47,7 +47,12 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await expect(next).toBeEnabled();
   await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
-  await expect(page.getByText('예시 장소 · 실제 경로 추천 미연결')).toBeVisible();
+  await expect(page.getByText('지도에서 위치를 선택하거나 검색해보세요.')).toBeVisible();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get('origin') === 'seoul-national-university-research-center' &&
+      url.searchParams.get('destination') === 'gwanaksan-yeonjudae',
+  );
 
   await next.click();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
@@ -300,8 +305,12 @@ test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다
 test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/mountains');
-  await page.getByRole('button', { name: '코스 탐색 설정' }).click();
-  await expect(page).toHaveURL(/\/routes\/setup/);
+  const explore = page.getByRole('button', { name: '코스 탐색 설정' });
+  await expect(explore).toBeDisabled();
+  await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
+  await expect(explore).toBeEnabled();
+  await explore.click();
+  await expect(page).toHaveURL('/routes/setup?mountainId=gwanaksan');
   await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
 });
 

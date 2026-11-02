@@ -77,17 +77,25 @@ for (const viewport of [
               `${screen.key}: panel overflow`,
             ).toBe(true);
           }
-          const imageIssues = await page
-            .locator('img:visible')
-            .evaluateAll((images) =>
-              images
-                .filter(
-                  (image) =>
-                    image instanceof HTMLImageElement && (!image.complete || !image.naturalWidth),
-                )
-                .map((image) => image.getAttribute('src')),
-            );
-          expect(imageIssues, `${screen.key}: assets`).toEqual([]);
+          await expect
+            .poll(
+              () =>
+                page
+                  .locator('img:visible')
+                  .evaluateAll((images) =>
+                    images
+                      .filter(
+                        (image) =>
+                          image instanceof HTMLImageElement &&
+                          (!image.complete || !image.naturalWidth),
+                      )
+                      .map((image) =>
+                        image instanceof HTMLImageElement ? image.currentSrc || image.src : null,
+                      ),
+                  ),
+              { message: `${screen.key}: assets`, timeout: 15_000 },
+            )
+            .toEqual([]);
           if (viewport.width === 440 || viewport.width === 1512) {
             await page.screenshot({
               path: `test-results/integration/${screen.key}-${viewport.width}.png`,
