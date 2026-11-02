@@ -3,8 +3,19 @@ import { Link, useLocation } from 'react-router-dom';
 
 import backIcon from '@/assets/course/course-back.svg';
 import { Button } from '@/components/ui';
+
+import {
+  CourseTerrainAnalysisPanel,
+  terrainAnalysisConfig,
+  useTerrainAnalysis,
+} from '@/features/analysis';
+
+import type { TerrainAnalysisConditions } from '@/features/analysis';
+
 import { useAuth } from '@/features/auth';
+
 import { CourseDetailPanel, MyCoursesNavigation, useCourseDetailState } from '@/features/course';
+
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 
@@ -14,17 +25,6 @@ import '@/features/course/components/my-courses.css';
 import './my-courses.css';
 import './course-detail.css';
 
-function AnalysisUnavailable() {
-  return (
-    <section aria-label="고도 분석 안내" className="terrain-analysis insights-panel">
-      <div className="insights-empty" role="status">
-        <strong>분석 정보 미제공</strong>
-        <p>이 화면에서는 아직 고도 분석 결과를 제공하지 않아요.</p>
-      </div>
-    </section>
-  );
-}
-
 export function CourseDetailPage() {
   const { currentUser } = useAuth();
   const state = useCourseDetailState(currentUser?.userId);
@@ -32,15 +32,41 @@ export function CourseDetailPage() {
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRegionRef = useRef<HTMLElement>(null);
+
   const [controller, setController] = useState<MapController | null>(null);
 
   const course = state.course;
+
+  const conditions: TerrainAnalysisConditions | null =
+    course && terrainAnalysisConfig
+      ? {
+          courseId: course.courseId,
+          revNo: course.revNo,
+          demId: terrainAnalysisConfig.demId,
+          sampleIntervalM: terrainAnalysisConfig.sampleIntervalM,
+        }
+      : null;
+
+  // 탭 내부가 아니라 페이지에서 한 번만 실행한다.
+  const analysis = useTerrainAnalysis(currentUser?.userId, conditions);
 
   useEffect(() => {
     if (location.hash === '#course-detail-map') {
       mapRegionRef.current?.focus();
     }
   }, [location.hash, course?.courseId]);
+
+  const analysisPanel = course ? (
+    <CourseTerrainAnalysisPanel
+      courseName={course.courseName}
+      phase={analysis.phase}
+      configured={terrainAnalysisConfig !== null}
+      canStart={analysis.canStart}
+      onStart={() => {
+        void analysis.start();
+      }}
+    />
+  ) : null;
 
   return (
     <div className="course-detail-page">
@@ -107,13 +133,14 @@ export function CourseDetailPage() {
               course={course}
               onTabChange={state.setTab}
               tab={state.tab}
-              overviewAnalysis={state.tab === 'overview' ? <AnalysisUnavailable /> : null}
-              terrainContent={state.tab === 'terrain' ? <AnalysisUnavailable /> : null}
+              overviewAnalysis={state.tab === 'overview' ? analysisPanel : null}
+              terrainContent={state.tab === 'terrain' ? analysisPanel : null}
               facilitiesContent={
                 state.tab === 'facilities' ? (
                   <section aria-label="주변 시설 안내" className="insights-panel">
                     <div className="insights-empty" role="status">
                       <strong>주변 시설 정보 미제공</strong>
+
                       <p>이 코스의 주변 시설 정보가 아직 연결되지 않았어요.</p>
                     </div>
                   </section>

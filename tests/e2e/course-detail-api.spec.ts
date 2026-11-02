@@ -29,7 +29,7 @@ test('인증된 상세 조회 결과를 표시하고 새로고침·탭·목록 �
   await expect(page.getByText('1.07 km', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '편집', exact: true })).toBeDisabled();
   await page.getByRole('tab', { name: '지형 분석' }).click();
-  await expect(page.getByText('분석 정보 미제공', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '코스 고도 분석', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('tab', { name: '지형 분석' })).toHaveAttribute(
     'aria-selected',
