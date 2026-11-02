@@ -33,6 +33,32 @@ test('인증된 목록 응답의 순서·문자열 ID·실제 값과 결측값�
   );
 });
 
+for (const width of [360, 390, 1512]) {
+  test(`긴 코스명과 메모를 ${width}px 카드 안에서 잘라내지 않고 줄바꿈한다`, async ({ page }) => {
+    const courseName = 'A'.repeat(100);
+    const memo = 'M'.repeat(1000);
+    await page.route('**/api/courses', (route) =>
+      route.fulfill({ json: [{ ...courseListItems[0], courseName, memo }] }),
+    );
+    await page.setViewportSize({ width, height: 982 });
+    await page.goto('/my-courses');
+    const card = page.getByRole('article');
+    const heading = card.getByRole('heading', { name: courseName, exact: true });
+    const memoText = card.getByText(memo, { exact: true });
+    await expect(heading).toHaveText(courseName);
+    await expect(memoText).toHaveText(memo);
+    await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    for (const content of [card, heading, memoText]) {
+      expect(await content.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+        true,
+      );
+    }
+  });
+}
+
 test('응답 전에는 로딩을 표시하고 예시 코스를 대신 표시하지 않는다', async ({ page }) => {
   let release = () => {};
   const pending = new Promise<void>((resolve) => {

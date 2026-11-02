@@ -141,6 +141,7 @@
 
 .my-course-card.orda-card {
   min-width: 0;
+  overflow-wrap: anywhere;
   padding: 0.5rem 0.625rem;
   border: 0;
   border-radius: var(--radius-input);
