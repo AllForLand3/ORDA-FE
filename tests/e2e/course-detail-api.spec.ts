@@ -78,7 +78,7 @@ test('조회 중 상태를 표시하고 문자열 ID·인증·서버 값과 투�
   await expect(page.getByText('이 코스의 주변 시설 정보는 아직 제공하지 않습니다.')).toBeVisible();
 });
 
-test('서버 실패 후 수동 재시도로 복구하고 목록 검색 조건을 유지한다', async ({ page }) => {
+test('서버 실패 후 수동 재시도로 복구하고 목록과 상세 사이를 이동한다', async ({ page }) => {
   let requests = 0;
   await page.route('**/api/courses/101', async (route) => {
     requests++;
@@ -91,8 +91,7 @@ test('서버 실패 후 수동 재시도로 복구하고 목록 검색 조건을
         : { json: { ...course, courseId: '101' }, headers: { ETag: '"v1"' } },
     );
   });
-  const list = 'q=주말&tab=imported&sort=name';
-  await page.goto(`/my-courses/101?${new URLSearchParams({ list })}`);
+  await page.goto('/my-courses/101');
   await expect(page.getByRole('alert')).toContainText('코스 데이터 상태를 확인할 수 없습니다.');
   expect(requests).toBe(1);
   await page.getByRole('button', { name: '다시 시도', exact: true }).click();
@@ -100,9 +99,7 @@ test('서버 실패 후 수동 재시도로 복구하고 목록 검색 조건을
   expect(requests).toBe(2);
   await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
   await expect(page.getByRole('article')).toHaveCount(2);
-  expect(new URL(page.url()).searchParams.get('q')).toBe('주말');
-  expect(new URL(page.url()).searchParams.get('tab')).toBe('imported');
-  expect(new URL(page.url()).searchParams.get('sort')).toBe('name');
+  await expect(page).toHaveURL('/my-courses');
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(course.courseName);
   expect(requests).toBe(3);
@@ -130,17 +127,37 @@ test('코스 없음은 code로 구분하며 다른 404는 일반 조회 실패�
   await expect(page.getByRole('button', { name: '다시 시도' })).toBeVisible();
 });
 
-test('유효하지 않은 ID는 API를 호출하지 않는다', async ({ page }) => {
-  const requests: string[] = [];
-  page.on('request', (request) => {
-    if (request.url().includes('/api/courses/')) requests.push(request.url());
+for (const suffix of ['', '/edit']) {
+  test(`권한 오류는 FORBIDDEN 코드로 안내하고 재시도를 제공하지 않는다 (${suffix || '상세'})`, async ({
+    page,
+  }) => {
+    let requests = 0;
+    await page.route('**/api/courses/101', (route) => {
+      requests++;
+      return route.fulfill({
+        status: 403,
+        json: { status: 403, code: 'FORBIDDEN', message: '접근 권한이 없습니다.' },
+      });
+    });
+    await page.goto(`/my-courses/101${suffix}`);
+    await expect(page.getByRole('alert')).toContainText('이 코스를 조회할 권한이 없습니다.');
+    await expect(page.getByRole('button', { name: '다시 시도' })).toHaveCount(0);
+    await expect(page.locator('.ol-viewport')).toHaveCount(0);
+    expect(requests).toBe(1);
   });
-  for (const id of ['unknown-example', '0', '-1', '9223372036854775808']) {
+}
+
+for (const id of ['unknown-example', 'example-ridge-1', '0', '-1', '9223372036854775808']) {
+  test(`유효하지 않은 ID ${id}는 API를 호출하지 않는다`, async ({ page }) => {
+    const requests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/courses/')) requests.push(request.url());
+    });
     await page.goto(`/my-courses/${id}`);
     await expect(page.getByRole('heading', { name: '코스를 찾을 수 없어요' })).toBeVisible();
-  }
-  expect(requests).toEqual([]);
-});
+    expect(requests).toEqual([]);
+  });
+}
 
 test('ETag 누락 시 상세 본문은 유지하고 재조회로 버전 정보를 복구한다', async ({ page }) => {
   let requests = 0;

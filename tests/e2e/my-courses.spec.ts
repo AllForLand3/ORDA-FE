@@ -178,14 +178,14 @@ test('목록 인증이 만료되면 로그인 화면으로 이동한다', async 
   await expect(page.getByRole('heading', { name: '로그인', exact: true })).toBeVisible();
 });
 
-test('잘못된 상세 ID와 예시 상세 오류를 구분하고 예시 화면을 재시도한다', async ({ page }) => {
+test('잘못된 상세 ID는 예시 화면으로 대체하지 않고 코스 없음으로 표시한다', async ({ page }) => {
   await page.goto('/my-courses/unknown-example');
   await expect(page.getByRole('heading', { name: '코스를 찾을 수 없어요' })).toBeVisible();
   await expect(page.locator('.ol-viewport')).toHaveCount(0);
   await page.goto('/my-courses/example-ridge-1?preview=error');
-  await expect(page.getByRole('alert')).toContainText('코스 상세를 표시하지 못했어요');
-  await page.getByRole('button', { name: '예시 상세 다시 보기' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('능선 조망 코스');
+  await expect(page.getByRole('alert')).toContainText('코스를 찾을 수 없어요');
+  await expect(page.getByRole('button', { name: '다시 시도' })).toHaveCount(0);
+  await expect(page.locator('.ol-viewport')).toHaveCount(0);
 });
 
 test('목록과 실제 상세는 360~1512px에서 이미지·지도·내비게이션을 표시한다', async ({ page }) => {

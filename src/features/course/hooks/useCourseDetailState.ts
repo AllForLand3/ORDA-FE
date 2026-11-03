@@ -1,38 +1,45 @@
+import axios from 'axios';
 import { useParams, useSearchParams } from 'react-router-dom';
 
-import { MOCK_MY_COURSES } from '../mocks/my-courses';
+import type { ApiErrorResponse } from '@/shared/types/api';
 
-type CourseDetailTab = 'overview' | 'terrain' | 'facilities';
+import { useCourseQuery } from './useCourseQuery';
 
-export function useCourseDetailState() {
-  const { courseId } = useParams();
+export function useCourseDetailState(editing = false) {
+  const { courseId = '' } = useParams();
   const [params, setParams] = useSearchParams();
-  // 향후 상세 조회 연결 지점. 현재 URL의 ID로 UI Mock만 찾는다.
-  const course = MOCK_MY_COURSES.find((item) => item.id === courseId);
+  const query = useCourseQuery(courseId, editing);
+  const code = axios.isAxiosError<ApiErrorResponse>(query.error)
+    ? query.error.response?.data?.code
+    : undefined;
+  const missing = !query.isValidId || code === 'COURSE_NOT_FOUND';
+  const forbidden = code === 'FORBIDDEN';
   const tabParam = params.get('tab');
-  const tab: CourseDetailTab =
-    tabParam === 'terrain' || tabParam === 'facilities' ? tabParam : 'overview';
-  const listParams = new URLSearchParams(params.get('list') ?? '');
-  const backHref = `/my-courses${listParams.size ? `?${listParams}` : ''}`;
+  const tab = tabParam === 'terrain' || tabParam === 'facilities' ? tabParam : 'overview';
 
   return {
-    course,
-    tab,
-    backHref,
-    isError: params.get('preview') === 'error',
-    editHref: `/my-courses/${encodeURIComponent(courseId ?? '')}/edit?${new URLSearchParams({ list: params.get('list') ?? '', tab })}`,
-    isExportOpen: params.get('export') === '1',
-    setExportOpen: (open: boolean) => {
-      setParams(
-        (current) => {
-          const next = new URLSearchParams(current);
-          if (open) next.set('export', '1');
-          else next.delete('export');
-          return next;
-        },
-        { replace: true },
-      );
+    snapshot: query.data,
+    isLoading: query.isValidId && query.isPending,
+    isUnavailable: missing || query.isError,
+    errorTitle: missing
+      ? '코스를 찾을 수 없어요'
+      : forbidden
+        ? '코스에 접근할 수 없어요'
+        : '코스 상세를 불러오지 못했어요',
+    errorMessage: missing
+      ? '코스가 없거나 접근할 수 없습니다.'
+      : forbidden
+        ? '이 코스를 조회할 권한이 없습니다.'
+        : code === 'UNAUTHORIZED'
+          ? '로그인이 필요합니다. 다시 로그인해주세요.'
+          : code === 'COURSE_STATE_UNAVAILABLE'
+            ? '코스 데이터 상태를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.'
+            : '연결 상태를 확인한 뒤 다시 시도해주세요.',
+    canRetry: query.isValidId && !missing && !forbidden && code !== 'UNAUTHORIZED',
+    retry: () => {
+      void query.refetch();
     },
+    tab,
     setTab: (value: string) => {
       if (value !== 'overview' && value !== 'terrain' && value !== 'facilities') return;
       setParams((current) => {
@@ -41,14 +48,7 @@ export function useCourseDetailState() {
         return next;
       });
     },
-    retry: () =>
-      setParams(
-        (current) => {
-          const next = new URLSearchParams(current);
-          next.delete('preview');
-          return next;
-        },
-        { replace: true },
-      ),
+    backHref: '/my-courses',
+    editHref: `/my-courses/${encodeURIComponent(courseId)}/edit?${new URLSearchParams({ tab })}`,
   };
 }
