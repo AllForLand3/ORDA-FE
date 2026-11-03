@@ -28,8 +28,19 @@ function isValidCoordinate(coordinate: readonly number[]) {
 
 export function useMountainMarkerLayer(
   mountains: MountainListItem[],
-  selectedMountainId: string | null,
+  selectedMountain: MountainListItem | null,
 ) {
+  const markerMountains = useMemo(() => {
+    if (
+      !selectedMountain ||
+      mountains.some((mountain) => mountain.mountainId === selectedMountain.mountainId)
+    ) {
+      return mountains;
+    }
+
+    return [...mountains, selectedMountain];
+  }, [mountains, selectedMountain]);
+
   const layer = useMemo(() => {
     const styles = new Map<string, Style>();
 
@@ -100,7 +111,7 @@ export function useMountainMarkerLayer(
 
   useEffect(() => {
     const source = layer.getSource();
-    const features = mountains.flatMap((mountain) => {
+    const features = markerMountains.flatMap((mountain) => {
       const coordinate = mountain.geometry?.coordinates;
 
       if (!coordinate || !isValidCoordinate(coordinate)) {
@@ -112,7 +123,7 @@ export function useMountainMarkerLayer(
         mountainId: mountain.mountainId,
         mountainName: mountain.mountainName,
         elevationMeters: mountain.elevationMeters,
-        isSelected: mountain.mountainId === selectedMountainId,
+        isSelected: mountain.mountainId === selectedMountain?.mountainId,
       });
       feature.setId(mountain.mountainId);
 
@@ -122,7 +133,7 @@ export function useMountainMarkerLayer(
     source?.clear();
     source?.addFeatures(features);
     layer.changed();
-  }, [layer, mountains, selectedMountainId]);
+  }, [layer, markerMountains, selectedMountain]);
 
   return layer;
 }

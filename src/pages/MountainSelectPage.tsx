@@ -35,7 +35,7 @@ export function MountainSelectPage() {
     size: MOUNTAINS_PAGE_SIZE,
   });
   const mountains = mountainsQuery.data?.items ?? EMPTY_MOUNTAINS;
-  const markerLayer = useMountainMarkerLayer(mountains, selectedMountain?.mountainId ?? null);
+  const markerLayer = useMountainMarkerLayer(mountains, selectedMountain);
   const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
   const mountainDetailQuery = useMountainDetailQuery(selectedMountain?.mountainId ?? null);
   const mountainDetail = mountainDetailQuery.data ?? null;
@@ -47,10 +47,18 @@ export function MountainSelectPage() {
     : null;
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setKeyword(searchQuery.trim()), 300);
+    const nextKeyword = searchQuery.trim();
+    const timeoutId = window.setTimeout(() => {
+      if (nextKeyword === keyword) {
+        return;
+      }
+
+      setKeyword(nextKeyword);
+      setPage(0);
+    }, 300);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchQuery]);
+  }, [keyword, searchQuery]);
 
   useEffect(() => {
     if (mountainDetail?.geometry) {
@@ -60,15 +68,12 @@ export function MountainSelectPage() {
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setPage(0);
-    setSelectedMountain(null);
   };
 
   const clearSearch = () => {
     setSearchQuery('');
     setKeyword('');
     setPage(0);
-    setSelectedMountain(null);
   };
 
   const handleMountainSelect = (mountain: MountainListItem | null) => {

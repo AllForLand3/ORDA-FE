@@ -225,6 +225,26 @@ test('키워드 검색은 인증된 산 목록 API 요청을 사용한다', asyn
   await expect(page.locator('.mountain-card')).toHaveCount(3);
 });
 
+test('검색 결과가 바뀌어도 기존 산 선택을 유지한다', async ({ page }) => {
+  await page.clock.install();
+  await installMountainRoute(page);
+  await page.goto('/mountains');
+
+  const bukhansan = page.locator('.mountain-card').filter({ hasText: '북한산' });
+  await bukhansan.click();
+  await page.clock.fastForward(300);
+  await expect(bukhansan).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
+
+  await page.getByRole('searchbox', { name: '산 이름 검색' }).fill('관악산');
+  await page.clock.fastForward(300);
+
+  await expect(page.locator('.mountain-card')).toHaveCount(1);
+  await expect(page.locator('.mountain-card')).toContainText('관악산');
+  await expect(page.getByText('선택한 산: 북한산')).toBeVisible();
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
+});
+
 test('산 선택 시 상세 조회 결과로 서비스 가능 여부를 처리한다', async ({ page }) => {
   await installMountainRoute(page);
   await page.goto('/mountains');
@@ -263,6 +283,7 @@ test('산 상세 조회에서 산 미존재 오류를 안내한다', async ({ pa
 });
 
 test('산 목록은 이전·다음 페이지를 이동한다', async ({ page }) => {
+  await installMountainRoute(page);
   await page.route('**/api/mountains?*', async (route) => {
     const url = new URL(route.request().url());
     const pageNumber = Number(url.searchParams.get('page') ?? 0);
@@ -283,9 +304,13 @@ test('산 목록은 이전·다음 페이지를 이동한다', async ({ page }) 
   const pagination = page.getByRole('navigation', { name: '산 목록 페이지' });
   await expect(pagination.getByText('1 / 2')).toBeVisible();
   await expect(pagination.getByRole('button', { name: '이전' })).toBeDisabled();
+  await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
   await pagination.getByRole('button', { name: '다음' }).click();
   await expect(page.locator('.mountain-card')).toHaveCount(1);
   await expect(page.locator('.mountain-card')).toContainText('청계산');
+  await expect(page.getByText('선택한 산: 관악산')).toBeVisible();
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
   await expect(pagination.getByText('2 / 2')).toBeVisible();
   await expect(pagination.getByRole('button', { name: '다음' })).toBeDisabled();
 
