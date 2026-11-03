@@ -20,7 +20,8 @@ export function useCourseLayer(geometry: CourseGeometry | undefined) {
           Number.isFinite(point[0]) &&
           Number.isFinite(point[1]) &&
           Math.abs(point[0]) <= 180 &&
-          Math.abs(point[1]) <= 90,
+          // EPSG:3857의 세계 범위. 입력 검증의 WGS84 ±90° 범위는 유지한다.
+          Math.abs(point[1]) <= 85.0511287798066,
       )
     )
       return null;

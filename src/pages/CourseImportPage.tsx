@@ -17,6 +17,7 @@ export function CourseImportPage() {
   const state = useCourseImportState();
   const layer = useCourseLayer(state.geometry);
   const targetRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const [controller, setController] = useState<MapController | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
   return (
@@ -39,6 +40,7 @@ export function CourseImportPage() {
           </div>
         }
         mapContainerRef={targetRef}
+        panelSurfaceRef={panelRef}
         mapContent={
           layer ? (
             <OpenLayersMap
@@ -46,11 +48,14 @@ export function CourseImportPage() {
               additionalLayers={layer.layers}
               initialCenter={null}
               initialExtent={layer.extent}
+              fitObstructionRef={panelRef}
               onControllerChange={setController}
             />
           ) : (
-            <p className="course-edit-map-note">
-              GeoJSON 파일을 선택하면 경로를 미리 볼 수 있습니다.
+            <p className="course-edit-map-note" role="status">
+              {state.geometry
+                ? '지도 표시 범위를 벗어나 미리보기를 지원하지 않습니다. 원본 좌표로 등록할 수 있습니다.'
+                : 'GeoJSON 파일을 선택하면 경로를 미리 볼 수 있습니다.'}
             </p>
           )
         }
