@@ -2,14 +2,30 @@ import { useState } from 'react';
 
 import { Badge, Card } from '@/components/ui';
 
+import { isServerCourseId } from '../hooks/useCourseNearby';
 import { FACILITY_PREVIEW_STATES, SAMPLE_FACILITIES } from '../mocks/facilities';
+
+import { CourseNearbyFacilities } from './CourseNearbyFacilities';
 
 interface NearbyFacilitiesPanelProps {
   candidateName: string | null;
+  /** 저장된 코스의 BE ID. 있으면 실제 조회 결과를, 없거나 예시 ID면 기존 예시 화면을 보여 준다. */
+  courseId?: string;
+  revNo?: number;
 }
 
-export function NearbyFacilitiesPanel({ candidateName }: NearbyFacilitiesPanelProps) {
+export function NearbyFacilitiesPanel({
+  candidateName,
+  courseId,
+  revNo,
+}: NearbyFacilitiesPanelProps) {
   const [preview, setPreview] = useState('sample');
+
+  if (isServerCourseId(courseId)) {
+    return (
+      <CourseNearbyFacilities candidateName={candidateName} courseId={courseId} revNo={revNo} />
+    );
+  }
 
   return (
     <section aria-label="주변 시설 정보" className="nearby-facilities insights-panel">

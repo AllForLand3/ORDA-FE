@@ -209,6 +209,11 @@
   line-height: 1.125rem;
 }
 
+/* 검색 기준 문구는 한 줄로 두고, 패널이 좁으면 제목 아래로 내려간다. */
+.nearby-facilities .insights-panel__heading > .insights-note {
+  white-space: nowrap;
+}
+
 .nearby-facilities__toolbar {
   display: flex;
   align-items: center;
