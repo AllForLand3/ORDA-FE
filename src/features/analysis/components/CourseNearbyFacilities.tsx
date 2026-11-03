@@ -4,7 +4,7 @@ import { Button, Card } from '@/components/ui';
 import type { ApiErrorResponse } from '@/shared/types/api';
 
 import { useCourseNearby } from '../hooks/useCourseNearby';
-import type { NearbyPlaceKind } from '../hooks/useCourseNearby';
+import type { CourseNearbySummary, NearbyPlaceKind } from '../hooks/useCourseNearby';
 
 import { NearbyPlaceDetails } from './NearbyPlaceDetails';
 
@@ -68,6 +68,30 @@ function errorMessage(error: unknown): { title: string; description: string } {
   }
 }
 
+/** 결과가 없을 때, 확인한 자료와 확인하지 못한 자료를 구분해 안내한다. */
+function emptyMessage(summary: CourseNearbySummary): { title: string; description: string } {
+  const radius = `코스 경로 반경 ${summary.radiusM}m 안에`;
+  if (summary.facilityDataAvailable && summary.spotDataAvailable) {
+    return { title: '표시할 시설이 없어요', description: `${radius} 화장실·주차장·쉼터가 없어요.` };
+  }
+  if (summary.facilityDataAvailable) {
+    return {
+      title: '표시할 시설이 없어요',
+      description: `${radius} 화장실·주차장이 없어요. 쉼터 자료는 확인할 수 없어요.`,
+    };
+  }
+  if (summary.spotDataAvailable) {
+    return {
+      title: '표시할 시설이 없어요',
+      description: `${radius} 쉼터가 없어요. 화장실·주차장 자료는 확인할 수 없어요.`,
+    };
+  }
+  return {
+    title: '시설 자료가 아직 없어요',
+    description: '이 산의 시설 자료가 준비되지 않아 주변 시설을 확인할 수 없어요.',
+  };
+}
+
 /** 실제 코스의 주변 화장실·주차장·쉼터를 BE 조회 결과(I-01·I-02)로 표시한다. */
 export function CourseNearbyFacilities({
   candidateName,
@@ -103,31 +127,22 @@ export function CourseNearbyFacilities({
   }
 
   const summary = query.data;
-  const hasData = summary.facilityDataAvailable || summary.spotDataAvailable;
+  const empty = emptyMessage(summary);
 
   return (
     <section aria-label="주변 시설 정보" className="nearby-facilities insights-panel">
       {/* 피그마 '코스 탐색 결과 - 주변 시설': 제목 왼쪽, 검색 기준 오른쪽 */}
       <header className="insights-panel__heading">
         <div>
-          <h2>{`${title} ${summary.facilities}곳`}</h2>
+          <h2>{summary.facilities === null ? title : `${title} ${summary.facilities}곳`}</h2>
         </div>
         <p className="insights-note">{`경로 반경 ${summary.radiusM}m · 거리순`}</p>
       </header>
 
       {summary.places.length === 0 ? (
         <div className="insights-empty" role="status">
-          {hasData ? (
-            <>
-              <strong>표시할 시설이 없어요</strong>
-              <p>{`코스 경로 반경 ${summary.radiusM}m 안에 화장실·주차장·쉼터가 없어요.`}</p>
-            </>
-          ) : (
-            <>
-              <strong>시설 자료가 아직 없어요</strong>
-              <p>이 산의 시설 자료가 준비되지 않아 주변 시설을 확인할 수 없어요.</p>
-            </>
-          )}
+          <strong>{empty.title}</strong>
+          <p>{empty.description}</p>
         </div>
       ) : (
         <ul aria-label="코스 주변 시설" className="nearby-facilities__list">

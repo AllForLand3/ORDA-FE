@@ -23,14 +23,15 @@ export interface NearbyPlace {
   distanceM: number;
 }
 
+/** 개수는 해당 자료가 없으면(dataAvailable=false) 0이 아니라 null이다. */
 export interface CourseNearbySummary {
   radiusM: number;
-  stairs: number;
-  toilet: number;
-  parking: number;
-  shelter: number;
-  /** 피그마 기준 주변 시설 수 = 화장실 + 주차장 + 쉼터 */
-  facilities: number;
+  stairs: number | null;
+  toilet: number | null;
+  parking: number | null;
+  shelter: number | null;
+  /** 피그마 기준 주변 시설 수 = 화장실 + 주차장 + 쉼터. 하나라도 자료가 없으면 null */
+  facilities: number | null;
   facilityDataAvailable: boolean;
   spotDataAvailable: boolean;
   places: NearbyPlace[];
@@ -50,9 +51,10 @@ function toSummary(
   spots: NearbySpotsResponse,
   facilities: NearbyFacilitiesResponse,
 ): CourseNearbySummary {
-  const toilet = facilities.counts.TOILET ?? 0;
-  const parking = facilities.counts.PARKING ?? 0;
-  const shelter = spots.counts.REST ?? 0;
+  // 자료가 있는데 키가 없으면 0곳, 자료 자체가 없으면 결측(null)으로 둔다.
+  const toilet = facilities.dataAvailable ? (facilities.counts.TOILET ?? 0) : null;
+  const parking = facilities.dataAvailable ? (facilities.counts.PARKING ?? 0) : null;
+  const shelter = spots.dataAvailable ? (spots.counts.REST ?? 0) : null;
 
   const places: NearbyPlace[] = [
     ...facilities.items.map((item) => ({
@@ -80,11 +82,12 @@ function toSummary(
 
   return {
     radiusM: facilities.radiusM,
-    stairs: spots.counts.STAIR ?? 0,
+    stairs: spots.dataAvailable ? (spots.counts.STAIR ?? 0) : null,
     toilet,
     parking,
     shelter,
-    facilities: toilet + parking + shelter,
+    facilities:
+      toilet === null || parking === null || shelter === null ? null : toilet + parking + shelter,
     facilityDataAvailable: facilities.dataAvailable,
     spotDataAvailable: spots.dataAvailable,
     places,

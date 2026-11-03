@@ -16,11 +16,11 @@ import type { MockMyCourse } from '../mocks/my-courses';
 
 /** 코스 주변 시설·계단 수. 3조 주변 시설 조회 결과를 페이지에서 넘겨받는다. */
 export interface CourseNearbyCounts {
-  stairs: number;
-  facilities: number;
-  toilet: number;
-  parking: number;
-  shelter: number;
+  stairs: number | null;
+  facilities: number | null;
+  toilet: number | null;
+  parking: number | null;
+  shelter: number | null;
 }
 
 interface CourseDetailPanelProps {
@@ -43,8 +43,13 @@ export function CourseDetailPanel({
   facilitiesContent,
   nearbyCounts,
 }: CourseDetailPanelProps) {
-  const countText = (count: number | undefined, fallback: string) =>
-    nearbyCounts === undefined ? fallback : count === undefined ? '—' : `${count}곳`;
+  // 자료가 없어 값이 없으면(null) 0곳이 아니라 '—'로 표시한다.
+  const countText = (count: number | null | undefined, fallback: string) =>
+    nearbyCounts === undefined
+      ? fallback
+      : count === undefined || count === null
+        ? '—'
+        : `${count}곳`;
 
   const overview = (
     <div className="my-course-overview">
