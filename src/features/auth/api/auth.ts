@@ -20,8 +20,8 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
   return response.data;
 }
 
-export async function getCurrentUser(): Promise<CurrentUserResponse> {
-  const response = await apiClient.get<CurrentUserResponse>('/auth/me');
+export async function getCurrentUser(signal?: AbortSignal): Promise<CurrentUserResponse> {
+  const response = await apiClient.get<CurrentUserResponse>('/auth/me', { signal });
 
   return response.data;
 }

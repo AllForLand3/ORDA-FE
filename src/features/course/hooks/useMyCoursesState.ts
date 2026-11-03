@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 
 import { getMyCourses } from '../api/courseList';
 
 export function useMyCoursesState() {
+  const accessToken = useAccessToken();
   const query = useQuery({
-    queryKey: ['courses', 'list'],
+    queryKey: ['courses', 'list', accessToken],
     queryFn: ({ signal }) => getMyCourses(signal),
     retry: false,
     staleTime: 0,
