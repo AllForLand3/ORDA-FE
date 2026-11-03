@@ -1,3 +1,4 @@
+import { courseListPage } from '../fixtures/courseList';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/authenticatedTest';
 
@@ -83,7 +84,7 @@ test('가져오기 지도에서 선을 클릭해도 파일 원본 좌표로 등�
       [126.976, 37.475],
     ],
   };
-  await page.route('**/api/courses', (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
     body = route.request().postDataJSON();
     return route.fulfill({
       status: 201,
@@ -134,10 +135,10 @@ for (const [kind, value] of [
 ] as const) {
   test(`${kind}를 미리보고 원래 좌표 순서와 실제 산 ID로 등록한다`, async ({ page }) => {
     let posts = 0;
-    await page.route('**/api/courses', async (route) => {
+    await page.route(/\/api\/courses(?:\?.*)?$/, async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          json:
+          json: courseListPage(
             posts === 0
               ? []
               : [
@@ -152,6 +153,7 @@ for (const [kind, value] of [
                     estTimeMin: null,
                   },
                 ],
+          ),
         });
       }
       posts++;
@@ -305,7 +307,7 @@ test('영역·크기 오류 뒤 입력과 파일을 유지하며 수동 재시�
   let posts = 0;
   let submittedName: unknown;
   const saved = { ...course, courseName: '보존할 코스' };
-  await page.route('**/api/courses', (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
     posts++;
     submittedName = route.request().postDataJSON()?.courseName;
     return route.fulfill(
@@ -402,7 +404,7 @@ test('등록 중 중복 제출을 막고 모바일·PC에서 미리보기와 입
     complete = resolve;
   });
   let posts = 0;
-  await page.route('**/api/courses', async (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, async (route) => {
     posts++;
     await pending;
     return route.fulfill({ status: 201, json: course, headers: { ETag: '"v1"' } });
@@ -446,7 +448,7 @@ test('EPSG:3857 범위를 넘는 위도는 미리보기만 제한하고 원본 �
     ],
   };
   let submittedGeometry: unknown;
-  await page.route('**/api/courses', (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
     submittedGeometry = route.request().postDataJSON()?.geometry;
     return route.fulfill({ status: 201, json: { ...course, geometry: polarGeometry } });
   });

@@ -1,5 +1,5 @@
 import { authenticatedUser, expect, test } from '../fixtures/authenticatedTest';
-import { courseListDetail, courseListItems } from '../fixtures/courseList';
+import { courseListDetail, courseListItems, courseListPage } from '../fixtures/courseList';
 
 for (const screen of ['list', 'detail', 'edit'] as const) {
   test(`다른 탭에서 계정이 바뀌면 ${screen}의 이전 계정 자료를 숨기고 새 토큰으로 조회한다`, async ({
@@ -22,13 +22,13 @@ for (const screen of ['list', 'detail', 'edit'] as const) {
           : authenticatedUser,
       });
     });
-    await page.route('**/api/courses', (route) => {
+    await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
       const changed = route.request().headers().authorization === `Bearer ${newToken}`;
       if (changed) newCourseRequests++;
       return route.fulfill({
-        json: [
+        json: courseListPage([
           { ...courseListItems[0], courseName: changed ? '다음 계정 코스' : '이전 계정 코스' },
-        ],
+        ]),
       });
     });
     await page.route(`**/api/courses/${courseListDetail.courseId}`, (route) => {

@@ -1,6 +1,6 @@
 import type { Page, Response } from '@playwright/test';
 import { authenticatedUser, expect, test } from '../fixtures/authenticatedTest';
-import { courseListDetail } from '../fixtures/courseList';
+import { courseListDetail, courseListPage } from '../fixtures/courseList';
 
 async function finishResponse(page: Page, response: Response) {
   await response.finished();
@@ -44,7 +44,7 @@ test('계정 전환 뒤 이전 등록 응답이 와도 새 계정의 현재 화�
       },
     }),
   );
-  await page.route('**/api/courses', async (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, async (route) => {
     if (route.request().method() === 'POST') {
       await postPending;
       return route.fulfill({
@@ -53,7 +53,7 @@ test('계정 전환 뒤 이전 등록 응답이 와도 새 계정의 현재 화�
         headers: { ETag: '"v1"' },
       });
     }
-    return route.fulfill({ json: [] });
+    return route.fulfill({ json: courseListPage([]) });
   });
   await page.route('**/api/courses/777', (route) =>
     route.fulfill({ status: 404, json: { code: 'COURSE_NOT_FOUND' } }),

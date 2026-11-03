@@ -14,6 +14,11 @@ export function useCourseDetailState(editing = false) {
     : undefined;
   const missing = !query.isValidId || code === 'COURSE_NOT_FOUND';
   const forbidden = code === 'FORBIDDEN';
+  const listPageParam = params.get('listPage');
+  const listPage =
+    listPageParam && /^[1-9]\d*$/.test(listPageParam) && Number(listPageParam) <= 2147483647
+      ? listPageParam
+      : null;
   const tabParam = params.get('tab');
   const tab = tabParam === 'terrain' || tabParam === 'facilities' ? tabParam : 'overview';
 
@@ -48,7 +53,7 @@ export function useCourseDetailState(editing = false) {
         return next;
       });
     },
-    backHref: '/my-courses',
-    editHref: `/my-courses/${encodeURIComponent(courseId)}/edit?${new URLSearchParams({ tab })}`,
+    backHref: listPage ? '/my-courses?page=' + listPage : '/my-courses',
+    editHref: `/my-courses/${encodeURIComponent(courseId)}/edit?${new URLSearchParams(listPage ? { tab, listPage } : { tab })}`,
   };
 }

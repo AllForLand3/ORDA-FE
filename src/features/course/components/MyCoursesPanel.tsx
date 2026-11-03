@@ -43,7 +43,7 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
         <>
           <div className="my-courses-toolbar">
             <p>
-              전체 <strong>{state.courses.length}</strong>
+              전체 <strong>{state.totalElements}</strong>
             </p>
           </div>
           {state.courses.length ? (
@@ -64,6 +64,30 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
             </div>
           )}
         </>
+      )}
+      {(state.totalPages > 1 || state.page > 0) && (
+        <nav aria-label="코스 목록 페이지" className="my-courses-pagination">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={state.loading || state.page === 0}
+            onClick={() => state.goToPage(state.page - 1)}
+          >
+            이전 페이지
+          </Button>
+          <span aria-live="polite" aria-atomic="true">
+            <strong>{state.page + 1}</strong>
+            {state.totalPages > 0 ? ' / ' + state.totalPages + ' 페이지' : ' 페이지'}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={state.loading || state.failed || state.page + 1 >= state.totalPages}
+            onClick={() => state.goToPage(state.page + 1)}
+          >
+            다음 페이지
+          </Button>
+        </nav>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import type { BrowserContext, Page } from '@playwright/test';
+import type { CourseListItem, CourseListPage } from '../../src/features/course/types/courseList';
 
 export const courseListItems = [
   {
@@ -10,6 +11,17 @@ export const courseListItems = [
     createType: 'IMPORT',
     lengthM: 5800,
     estTimeMin: 160,
+    savedAt: '2026-11-03T23:30:00Z',
+    difficultyCode: 'NORMAL',
+    nearby: {
+      radiusM: 200,
+      spotDataAvailable: true,
+      facilityDataAvailable: true,
+      viewSpotCount: 3,
+      stairSpotCount: 2,
+      toiletCount: 0,
+      parkingCount: 1,
+    },
   },
   {
     courseId: '101',
@@ -40,9 +52,17 @@ export const courseListDetail = {
   },
 };
 
+export function courseListPage(
+  items: CourseListItem[] = courseListItems,
+  page = 0,
+  totalElements = items.length,
+): CourseListPage {
+  return { items, page, size: 9, totalElements, totalPages: Math.ceil(totalElements / 9) };
+}
+
 export async function mockCourseList(target: BrowserContext | Page) {
-  await target.route('**/api/courses', (route) => {
+  await target.route(/\/api\/courses(?:\?.*)?$/, (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
-    return route.fulfill({ json: courseListItems });
+    return route.fulfill({ json: courseListPage() });
   });
 }

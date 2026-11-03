@@ -1,16 +1,16 @@
-﻿import { expect, test } from '../fixtures/authenticatedTest';
-import { courseListDetail, courseListItems } from '../fixtures/courseList';
+import { expect, test } from '../fixtures/authenticatedTest';
+import { courseListDetail, courseListItems, courseListPage } from '../fixtures/courseList';
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://*.tile.openstreetmap.org/**', (route) => route.abort());
 });
 
 test('인증된 목록 응답의 순서·문자열 ID·실제 값과 결측값을 표시한다', async ({ page }) => {
-  await page.route('**/api/courses', (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
     expect(route.request().method()).toBe('GET');
     expect(route.request().headers().authorization).toBe('Bearer e2e-access-token');
-    expect(new URL(route.request().url()).search).toBe('');
-    return route.fulfill({ json: courseListItems });
+    expect(new URL(route.request().url()).search).toBe('?page=0');
+    return route.fulfill({ json: courseListPage() });
   });
   await page.goto('/my-courses');
   await expect(page.getByRole('heading', { name: '내 코스', exact: true })).toBeVisible();
@@ -22,8 +22,20 @@ test('인증된 목록 응답의 순서·문자열 ID·실제 값과 결측값�
   await expect(cards.nth(0)).toContainText('가져온 코스');
   await expect(cards.nth(0)).toContainText('5.8km');
   await expect(cards.nth(0)).toContainText('160분');
+  await expect(cards.nth(0).locator('dd')).toHaveText(['5.8km', '160분', '보통']);
+  await expect(cards.nth(0).locator('time')).toHaveText('2026. 11. 04.');
+  await expect(cards.nth(0).locator('.my-course-card__facilities li')).toHaveText([
+    '화장실0곳',
+    '주차장1곳',
+  ]);
+  await expect(cards.nth(0).locator('.my-course-card__facts > span')).toHaveText([
+    '조망 지점 3곳',
+    '계단 지점 2곳',
+  ]);
+  await expect(cards.nth(1)).toContainText('저장일 미확인');
+  await expect(cards.nth(1)).toContainText('주변 정보가 아직 제공되지 않는 코스입니다.');
   await expect(cards.nth(1)).toContainText('저장한 코스');
-  await expect(cards.nth(1).locator('dd')).toHaveText(['미확인', '미확인']);
+  await expect(cards.nth(1).locator('dd')).toHaveText(['미확인', '미확인', '미산정']);
   await expect(
     cards.nth(0).getByRole('link', { name: '코스 상세 보기', exact: true }),
   ).toHaveAttribute('href', `/my-courses/${courseListItems[0].courseId}`);
@@ -37,8 +49,8 @@ for (const width of [360, 390, 1512]) {
   test(`긴 코스명과 메모를 ${width}px 카드 안에서 잘라내지 않고 줄바꿈한다`, async ({ page }) => {
     const courseName = 'A'.repeat(100);
     const memo = 'M'.repeat(1000);
-    await page.route('**/api/courses', (route) =>
-      route.fulfill({ json: [{ ...courseListItems[0], courseName, memo }] }),
+    await page.route(/\/api\/courses(?:\?.*)?$/, (route) =>
+      route.fulfill({ json: courseListPage([{ ...courseListItems[0], courseName, memo }]) }),
     );
     await page.setViewportSize({ width, height: 982 });
     await page.goto('/my-courses');
@@ -64,9 +76,9 @@ test('응답 전에는 로딩을 표시하고 예시 코스를 대신 표시하�
   const pending = new Promise<void>((resolve) => {
     release = resolve;
   });
-  await page.route('**/api/courses', async (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, async (route) => {
     await pending;
-    await route.fulfill({ json: courseListItems });
+    await route.fulfill({ json: courseListPage() });
   });
   try {
     await page.goto('/my-courses');
@@ -79,8 +91,10 @@ test('응답 전에는 로딩을 표시하고 예시 코스를 대신 표시하�
   }
 });
 
-test('빈 배열이면 빈 목록을 표시하고 업로드 화면에서 돌아온다', async ({ page }) => {
-  await page.route('**/api/courses', (route) => route.fulfill({ json: [] }));
+test('전체 개수가 0이면 빈 목록을 표시하고 업로드 화면에서 돌아온다', async ({ page }) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) =>
+    route.fulfill({ json: courseListPage([]) }),
+  );
   await page.route('**/api/mountains?*', (route) =>
     route.fulfill({ json: { items: [], page: 0, size: 100, totalElements: 0, totalPages: 0 } }),
   );
@@ -97,7 +111,7 @@ test('빈 배열이면 빈 목록을 표시하고 업로드 화면에서 돌아�
 
 test('목록 실패는 빈 결과와 구분하고 자동 재시도 없이 버튼으로 복구한다', async ({ page }) => {
   let requests = 0;
-  await page.route('**/api/courses', (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
     requests++;
     return route.fulfill(
       requests === 1
@@ -105,7 +119,7 @@ test('목록 실패는 빈 결과와 구분하고 자동 재시도 없이 버튼
             status: 503,
             json: { status: 503, code: 'INTERNAL_SERVER_ERROR', message: '조회 실패' },
           }
-        : { json: courseListItems },
+        : { json: courseListPage() },
     );
   });
   await page.goto('/my-courses');
@@ -121,11 +135,11 @@ test('실제 상세·편집으로 이동하고 복귀·새로고침·브라우�
   page,
 }) => {
   let renamed = false;
-  await page.route('**/api/courses', (route) =>
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) =>
     route.fulfill({
-      json: renamed
-        ? [{ ...courseListItems[0], courseName: '서버에서 변경된 코스' }]
-        : courseListItems,
+      json: courseListPage(
+        renamed ? [{ ...courseListItems[0], courseName: '서버에서 변경된 코스' }] : courseListItems,
+      ),
     }),
   );
   await page.route(`**/api/courses/${courseListDetail.courseId}`, (route) =>
@@ -167,7 +181,7 @@ test('실제 상세·편집으로 이동하고 복귀·새로고침·브라우�
 });
 
 test('목록 인증이 만료되면 로그인 화면으로 이동한다', async ({ page }) => {
-  await page.route('**/api/courses', (route) =>
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) =>
     route.fulfill({
       status: 401,
       json: { status: 401, code: 'UNAUTHORIZED', message: '인증 필요' },
@@ -258,4 +272,40 @@ test('목록과 실제 상세는 360~1512px에서 이미지·지도·내비게�
     await page.getByRole('link', { name: '내 코스', exact: true }).click();
     await expect(page.getByRole('heading', { name: '내 코스', exact: true })).toBeVisible();
   }
+});
+
+test('주변 자료가 없는 코스는 개수를 0으로 채우지 않는다', async ({ page }) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) =>
+    route.fulfill({
+      json: courseListPage([
+        {
+          ...courseListItems[0],
+          savedAt: null,
+          difficultyCode: null,
+          nearby: {
+            radiusM: 200,
+            spotDataAvailable: false,
+            facilityDataAvailable: false,
+            viewSpotCount: null,
+            stairSpotCount: null,
+            toiletCount: null,
+            parkingCount: null,
+          },
+        },
+      ]),
+    }),
+  );
+  await page.goto('/my-courses');
+  const card = page.getByRole('article');
+  await expect(card.locator('dd')).toHaveText(['5.8km', '160분', '미산정']);
+  await expect(card.locator('time')).toHaveCount(0);
+  await expect(card.locator('.my-course-card__facilities li')).toHaveText([
+    '화장실정보 없음',
+    '주차장정보 없음',
+  ]);
+  await expect(card.locator('.my-course-card__facts > span')).toHaveText([
+    '조망 지점 정보 없음',
+    '계단 지점 정보 없음',
+  ]);
+  await expect(card).toContainText('코스 반경 200m 내 등록된 지점·시설 기준입니다.');
 });

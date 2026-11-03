@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures/authenticatedTest';
+import { courseListPage } from '../fixtures/courseList';
 
 const course = {
   courseId: '9007199254740993',
@@ -25,23 +26,25 @@ test.beforeEach(async ({ page }) => {
 test('삭제 확인 취소·Escape는 요청하지 않고 성공 시 갱신된 목록으로 돌아간다', async ({ page }) => {
   let deleted = false;
   let deletes = 0;
-  await page.route('**/api/courses', (route) => {
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
     expect(route.request().method()).toBe('GET');
     return route.fulfill({
-      json: deleted
-        ? []
-        : [
-            {
-              courseId: course.courseId,
-              mountainId: course.mountainId,
-              mountainName: '관악산',
-              courseName: course.courseName,
-              memo: null,
-              createType: 'IMPORT',
-              lengthM: 180.4,
-              estTimeMin: null,
-            },
-          ],
+      json: courseListPage(
+        deleted
+          ? []
+          : [
+              {
+                courseId: course.courseId,
+                mountainId: course.mountainId,
+                mountainName: '관악산',
+                courseName: course.courseName,
+                memo: null,
+                createType: 'IMPORT',
+                lengthM: 180.4,
+                estTimeMin: null,
+              },
+            ],
+      ),
     });
   });
   await page.route(`**/api/courses/${course.courseId}`, async (route) => {

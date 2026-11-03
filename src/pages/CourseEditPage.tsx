@@ -47,7 +47,15 @@ function CourseEditWorkspace({ initial }: { initial: CourseSnapshot }) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [params] = useSearchParams();
   const tab = params.get('tab');
-  const detailHref = `/my-courses/${state.course.courseId}${tab === 'terrain' || tab === 'facilities' ? `?tab=${tab}` : ''}`;
+  const detailParams = new URLSearchParams();
+  if (tab === 'terrain' || tab === 'facilities') detailParams.set('tab', tab);
+  const listPage = params.get('listPage');
+  if (listPage && /^[1-9]\d*$/.test(listPage) && Number(listPage) <= 2147483647) {
+    detailParams.set('listPage', listPage);
+  }
+  const detailSearch = detailParams.toString();
+  const detailHref =
+    '/my-courses/' + state.course.courseId + (detailSearch ? '?' + detailSearch : '');
   return (
     <div className="course-edit-page">
       <MapPageLayout
