@@ -93,6 +93,34 @@ test('선택한 산 좌표를 코스 설정 지도의 초기 중심으로 사용
   await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
 });
 
+test('API 산 ID로 상세 정보를 조회해 코스 설정 지도에 반영한다', async ({ page }) => {
+  let authorization: string | undefined;
+  await page.route('**/api/mountains/42', async (route) => {
+    authorization = route.request().headers().authorization;
+    await route.fulfill({
+      json: {
+        mountainId: '42',
+        mountainName: '북한산',
+        sourceMountainCode: 'MNT-042',
+        sourceOldMountainCode: null,
+        serviceAvailable: true,
+        addressLabel: '서울특별시 강북구',
+        provinceName: '서울특별시',
+        districtName: '강북구',
+        elevationMeters: 836,
+        geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
+      },
+    });
+  });
+
+  await page.goto('/routes/setup?mountainId=42');
+
+  const map = page.locator('.orda-map-layout__map-surface');
+  await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
+  await expect(page.getByRole('group', { name: '지도 컨트롤' })).toContainText('북한산');
+  expect(authorization).toBe('Bearer e2e-access-token');
+});
+
 test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지 않는다', async ({ page }) => {
   for (const viewport of [
     { width: 360, height: 800 },

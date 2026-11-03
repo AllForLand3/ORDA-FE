@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
-import { MOUNTAIN_MOCKS, MountainHeader } from '@/features/course';
+import { MOUNTAIN_MOCKS, MountainHeader, useMountainDetailQuery } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
@@ -20,7 +20,13 @@ export function RouteSetupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mountainId = searchParams.get('mountainId');
-  const selectedMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
+  const fallbackMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
+  const mountainDetailQuery = useMountainDetailQuery(
+    mountainId && !fallbackMountain ? mountainId : null,
+  );
+  const selectedMountainName = mountainDetailQuery.data?.mountainName ?? fallbackMountain?.name;
+  const selectedMountainCoordinates =
+    mountainDetailQuery.data?.geometry?.coordinates ?? fallbackMountain?.coordinates;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const state = useRouteSetupState();
@@ -45,6 +51,12 @@ export function RouteSetupPage() {
       mapController?.centerOn(focusedPlace.coordinates, 14);
     }
   }, [focusedPlace, mapController]);
+
+  useEffect(() => {
+    if (!focusedPlace && selectedMountainCoordinates) {
+      mapController?.centerOn(selectedMountainCoordinates, 14);
+    }
+  }, [focusedPlace, mapController, selectedMountainCoordinates]);
 
   return (
     <div className="route-setup-page">
@@ -72,7 +84,7 @@ export function RouteSetupPage() {
         mapContent={
           <OpenLayersMap
             additionalLayers={layers}
-            initialCenter={selectedMountain?.coordinates}
+            initialCenter={selectedMountainCoordinates}
             onMapClick={(coordinate) => {
               if (state.step !== 'locations') return;
               if (state.searchRole && state.isMapSelectionMode) {
@@ -83,9 +95,7 @@ export function RouteSetupPage() {
             targetRef={mapContainerRef}
           />
         }
-        mapControls={
-          <MapControls controller={mapController} mountainName={selectedMountain?.name} />
-        }
+        mapControls={<MapControls controller={mapController} mountainName={selectedMountainName} />}
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
         mobilePanelSwipeToClose
         panel={<RouteSetupPanel state={state} />}
