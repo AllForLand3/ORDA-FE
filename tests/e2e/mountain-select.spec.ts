@@ -263,7 +263,31 @@ test('산 선택 시 상세 조회 결과로 서비스 가능 여부를 처리�
   );
   await page.locator('.mountain-card').filter({ hasText: '청계산' }).click();
   await cheonggyesanDetailRequest;
+  await expect(page.getByText('현재 코스 탐색 서비스를 제공하지 않는 산이에요.')).toBeVisible();
   await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+});
+
+test('산 상세 정보를 확인하는 동안 비활성 버튼의 사유를 안내한다', async ({ page }) => {
+  let releaseDetail: (() => void) | undefined;
+  const detailLoading = new Promise<void>((resolve) => {
+    releaseDetail = resolve;
+  });
+
+  await installMountainRoute(page);
+  await page.route('**/api/mountains/1', async (route) => {
+    await detailLoading;
+    await route.fulfill({ json: MOUNTAIN_DETAILS['1'] });
+  });
+  await page.goto('/mountains');
+
+  await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
+
+  await expect(page.getByText('산 정보를 확인하는 중이에요.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+
+  releaseDetail?.();
+  await expect(page.getByText('산 정보를 확인하는 중이에요.')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
 });
 
 test('산 상세 조회에서 산 미존재 오류를 안내한다', async ({ page }) => {

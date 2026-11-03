@@ -45,6 +45,12 @@ export function MountainSelectPage() {
       ? '선택한 산 정보를 찾을 수 없어요.'
       : '산 상세 정보를 불러오지 못했어요.'
     : null;
+  const courseSetupStatus =
+    selectedMountain && mountainDetailQuery.isPending
+      ? '산 정보를 확인하는 중이에요.'
+      : mountainDetail && !mountainDetail.serviceAvailable
+        ? '현재 코스 탐색 서비스를 제공하지 않는 산이에요.'
+        : null;
 
   useEffect(() => {
     const nextKeyword = searchQuery.trim();
@@ -126,16 +132,25 @@ export function MountainSelectPage() {
         />
       }
       panelFooter={
-        <Button
-          disabled={!selectedMountain || !mountainDetail?.serviceAvailable}
-          fullWidth
-          onClick={() =>
-            navigate(`/routes/setup?mountainId=${encodeURIComponent(selectedMountain!.mountainId)}`)
-          }
-          size="lg"
-        >
-          코스 탐색 설정
-        </Button>
+        <div className="mountain-select__footer">
+          {courseSetupStatus ? (
+            <p aria-live="polite" role="status">
+              {courseSetupStatus}
+            </p>
+          ) : null}
+          <Button
+            disabled={!selectedMountain || !mountainDetail?.serviceAvailable}
+            fullWidth
+            onClick={() =>
+              navigate(
+                `/routes/setup?mountainId=${encodeURIComponent(selectedMountain!.mountainId)}`,
+              )
+            }
+            size="lg"
+          >
+            코스 탐색 설정
+          </Button>
+        </div>
       }
       panelLabel="산 선택 패널"
       mobilePanelResizable
