@@ -1,19 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { useBeforeUnload, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
+import { useBeforeUnload, useBlocker, useNavigate } from 'react-router-dom';
 import { getAccessToken } from '@/lib/accessToken';
 import type { ApiErrorResponse } from '@/shared/types/api';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 import { createCourse } from '../api/course';
 import type { CourseGeometry } from '../types/course';
 import { parseCourseFile } from '../utils/courseGeometry';
 import { courseQueryKeys } from './useCourseQuery';
 import { useImportMountainsQuery } from './useImportMountainsQuery';
+import { useCourseSessionGuard } from './useCourseSessionGuard';
+
+const MAX_COURSE_FILE_BYTES = 128 * 1024;
 
 export function useCourseImportState() {
+  const accessToken = useAccessToken();
+  const isCurrentSession = useCourseSessionGuard(accessToken);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [params] = useSearchParams();
   const mountainsQuery = useImportMountainsQuery();
   const mountains = Array.from(
     new Map(
@@ -78,6 +83,8 @@ export function useCourseImportState() {
     try {
       if (!/\.(geojson|json)$/i.test(file.name))
         throw new Error('GeoJSON 또는 JSON 파일을 선택해주세요. GPX는 지원하지 않습니다.');
+      if (file.size > MAX_COURSE_FILE_BYTES)
+        throw new Error('파일은 128KiB(131,072바이트) 이하만 가져올 수 있습니다.');
       const parsed = parseCourseFile(await file.text());
       if (current !== sequence.current) return;
       setGeometry(parsed);
@@ -93,6 +100,7 @@ export function useCourseImportState() {
   }
 
   async function save() {
+    if (!isCurrentSession()) return;
     setSubmitted(true);
     if (busy.current || reading || !geometry || nameError || memoError || mountainError) return;
     busy.current = true;
@@ -105,14 +113,13 @@ export function useCourseImportState() {
         createType: 'IMPORT',
         geometry,
       });
+      if (!isCurrentSession()) return;
       completed.current = true;
-      queryClient.setQueryData(courseQueryKeys.detail(saved.course.courseId), saved);
+      queryClient.setQueryData(courseQueryKeys.detail(saved.course.courseId, accessToken), saved);
       blocker.reset?.();
-      navigate(
-        `/my-courses/${encodeURIComponent(saved.course.courseId)}?${new URLSearchParams({ list: params.get('list') ?? '' })}`,
-        { replace: true },
-      );
+      navigate(`/my-courses/${encodeURIComponent(saved.course.courseId)}`, { replace: true });
     } catch (error) {
+      if (!isCurrentSession()) return;
       const code = axios.isAxiosError<ApiErrorResponse>(error)
         ? error.response?.data?.code
         : undefined;
@@ -134,7 +141,6 @@ export function useCourseImportState() {
     }
   }
 
-  const listParams = new URLSearchParams(params.get('list') ?? '');
   return {
     geometry,
     fileName,
@@ -158,6 +164,6 @@ export function useCourseImportState() {
     setName,
     setMemo,
     setMountainId,
-    backHref: `/my-courses${listParams.size ? `?${listParams}` : ''}`,
+    backHref: '/my-courses',
   };
 }

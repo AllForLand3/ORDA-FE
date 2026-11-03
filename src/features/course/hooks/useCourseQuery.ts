@@ -1,16 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 
 import { getCourse } from '../api/course';
 
 export const courseQueryKeys = {
-  detail: (courseId: string) => ['courses', 'detail', courseId] as const,
+  detail: (courseId: string, accessToken: string | null) =>
+    ['courses', 'detail', courseId, accessToken] as const,
 };
 
 export function useCourseQuery(courseId: string, editing = false) {
+  const accessToken = useAccessToken();
   const isValidId =
     /^[0-9]+$/.test(courseId) && BigInt(courseId) > 0n && BigInt(courseId) <= 9223372036854775807n;
   const query = useQuery({
-    queryKey: courseQueryKeys.detail(courseId),
+    queryKey: courseQueryKeys.detail(courseId, accessToken),
     queryFn: ({ signal }) => getCourse(courseId, signal),
     enabled: isValidId,
     retry: false,

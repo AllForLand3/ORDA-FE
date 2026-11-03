@@ -36,6 +36,33 @@ async function selectMountain(page: Page) {
   await page.getByRole('option', { name: '관악산', exact: true }).click();
 }
 
+// 외부 배경 타일을 차단한 상태에서 실제 경로 선의 화면상 범위를 확인한다.
+async function routePixelBounds(page: Page) {
+  return page.locator('.ol-viewport canvas').evaluateAll((canvases) => {
+    let top = Infinity;
+    let bottom = -Infinity;
+    for (const canvas of canvases) {
+      const context = canvas.getContext('2d');
+      if (!context) continue;
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      const rect = canvas.getBoundingClientRect();
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (
+          pixels[i] === 7 &&
+          pixels[i + 1] === 92 &&
+          pixels[i + 2] === 71 &&
+          pixels[i + 3] > 200
+        ) {
+          const y = rect.top + (Math.floor(i / 4 / canvas.width) * rect.height) / canvas.height;
+          top = Math.min(top, y);
+          bottom = Math.max(bottom, y);
+        }
+      }
+    }
+    return Number.isFinite(top) ? { top, bottom } : null;
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route('https://*.tile.openstreetmap.org/**', (route) => route.abort());
   await page.route('**/api/mountains?*', (route) =>
@@ -149,6 +176,7 @@ for (const [kind, value] of [
     const map = page.locator('.orda-map-layout__map-surface');
     await expect(map).toHaveAttribute('data-map-ready', 'true');
     await expect(map).toHaveAttribute('data-map-center', /126\.975000,37\.475/);
+    await expect.poll(() => routePixelBounds(page)).not.toBeNull();
     expect(posts).toBe(0);
     await selectMountain(page);
     await page.getByRole('textbox', { name: '코스 이름', exact: true }).fill('내 코스');
@@ -225,19 +253,70 @@ test('잘못된 파일을 거부하고 이전 경로를 지워 잘못 등록하�
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
+test('128KiB 초과 파일은 읽지 않고 거부하며 경계 크기 파일을 다시 선택할 수 있다', async ({
+  page,
+}) => {
+  await page.goto('/my-courses/import');
+  await page.evaluate(() => {
+    const read = File.prototype.text;
+    document.documentElement.dataset.fileReadCount = '0';
+    File.prototype.text = function () {
+      const root = document.documentElement;
+      root.dataset.fileReadCount = String(Number(root.dataset.fileReadCount) + 1);
+      return read.call(this);
+    };
+  });
+  await upload(page, geometry);
+  await expect(page.locator('.ol-viewport')).toHaveCount(1);
+  await selectMountain(page);
+  const name = page.getByRole('textbox', { name: '코스 이름', exact: true });
+  const memo = page.getByRole('textbox', { name: '메모', exact: true });
+  await name.fill('유지할 이름');
+  await memo.fill('유지할 메모');
+  // UTF-8 바이트 수로 경계를 만든다. 문자열 길이로 검사하면 초과 파일을 놓친다.
+  const feature = JSON.stringify({ type: 'Feature', properties: { note: '산' }, geometry });
+  const boundary = feature + ' '.repeat(131_072 - Buffer.byteLength(feature, 'utf8'));
+  expect(Buffer.byteLength(boundary, 'utf8')).toBe(131_072);
+  const tooLarge = boundary + ' ';
+  expect(tooLarge.length).toBeLessThanOrEqual(131_072);
+  await upload(page, tooLarge, '경계.geojson');
+  await expect(page.getByRole('alert')).toHaveText(
+    '파일은 128KiB(131,072바이트) 이하만 가져올 수 있습니다.',
+  );
+  await expect(page.locator('html')).toHaveAttribute('data-file-read-count', '1');
+  await expect(page.locator('.ol-viewport')).toHaveCount(0);
+  const save = page.getByRole('button', { name: '등록', exact: true });
+  await expect(save).toBeDisabled();
+  await expect(name).toHaveValue('유지할 이름');
+  await expect(memo).toHaveValue('유지할 메모');
+  await expect(page.getByRole('button', { name: '코스가 속한 산', exact: true })).toContainText(
+    '관악산',
+  );
+  await upload(page, boundary, '경계.geojson');
+  await expect(page.locator('.ol-viewport')).toHaveCount(1);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-file-read-count', '2');
+  await expect(save).toBeEnabled();
+  await expect(name).toHaveValue('유지할 이름');
+  await expect(memo).toHaveValue('유지할 메모');
+});
+
 test('영역·크기 오류 뒤 입력과 파일을 유지하며 수동 재시도로 등록한다', async ({ page }) => {
   let posts = 0;
+  let submittedName: unknown;
+  const saved = { ...course, courseName: '보존할 코스' };
   await page.route('**/api/courses', (route) => {
     posts++;
+    submittedName = route.request().postDataJSON()?.courseName;
     return route.fulfill(
       posts === 1
         ? { status: 400, json: { code: 'COURSE_OUTSIDE_SERVICE_AREA' } }
         : posts === 2
           ? { status: 413, json: { code: 'PAYLOAD_TOO_LARGE' } }
-          : { status: 201, json: course },
+          : { status: 201, json: saved },
     );
   });
-  await page.route(`**/api/courses/${course.courseId}`, (route) => route.fulfill({ json: course }));
+  await page.route(`**/api/courses/${course.courseId}`, (route) => route.fulfill({ json: saved }));
   await page.goto('/my-courses/import');
   await upload(page, geometry);
   await selectMountain(page);
@@ -254,7 +333,8 @@ test('영역·크기 오류 뒤 입력과 파일을 유지하며 수동 재시�
   expect(posts).toBe(2);
   await save.click();
   await expect(page).toHaveURL(new RegExp(course.courseId));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('내 코스');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('보존할 코스');
+  expect(submittedName).toBe('보존할 코스');
   expect(posts).toBe(3);
 });
 
@@ -300,6 +380,7 @@ test('필수값·Unicode 길이를 검사하고 취소 시 입력 유실을 확�
   const save = page.getByRole('button', { name: '등록', exact: true });
   await save.click();
   await expect(page.getByRole('alert')).toContainText('산을 선택해주세요.');
+  await expect(page.getByRole('button', { name: '코스가 속한 산', exact: true })).toBeFocused();
   await selectMountain(page);
   const name = page.getByRole('textbox', { name: '코스 이름', exact: true });
   await name.fill('🌲'.repeat(101));
@@ -354,4 +435,94 @@ test('등록 중 중복 제출을 막고 모바일·PC에서 미리보기와 입
   complete();
   await expect(page).toHaveURL(new RegExp(course.courseId));
   expect(posts).toBe(1);
+});
+
+test('EPSG:3857 범위를 넘는 위도는 미리보기만 제한하고 원본 좌표로 등록한다', async ({ page }) => {
+  const polarGeometry = {
+    type: 'LineString',
+    coordinates: [
+      [126, 86],
+      [127, 90],
+    ],
+  };
+  let submittedGeometry: unknown;
+  await page.route('**/api/courses', (route) => {
+    submittedGeometry = route.request().postDataJSON()?.geometry;
+    return route.fulfill({ status: 201, json: { ...course, geometry: polarGeometry } });
+  });
+  await page.route(`**/api/courses/${course.courseId}`, (route) =>
+    route.fulfill({ json: { ...course, geometry: polarGeometry } }),
+  );
+  await page.goto('/my-courses/import');
+  await upload(page, polarGeometry);
+  await expect(
+    page.getByRole('region', { name: '가져온 코스 미리보기 지도' }).getByRole('status'),
+  ).toContainText('원본 좌표로 등록할 수 있습니다.');
+  await expect(page.locator('.ol-viewport')).toHaveCount(0);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await selectMountain(page);
+  await page.getByRole('button', { name: '등록', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(course.courseId));
+  expect(submittedGeometry).toEqual(polarGeometry);
+});
+
+test('모바일 패널 위에 경로를 맞추고 지도 직접 조작 이후에는 자동 맞춤을 멈춘다', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto('/my-courses/import');
+  await upload(page, {
+    type: 'LineString',
+    coordinates: [
+      [126.974, 37.475],
+      [126.976, 37.475],
+    ],
+  });
+  const map = page.locator('.orda-map-layout__map-surface');
+  const panel = page.getByRole('complementary', { name: '코스 가져오기 입력' });
+  async function expectVisibleRoute() {
+    await expect
+      .poll(async () => {
+        const pixels = await routePixelBounds(page);
+        const panelBox = await panel.boundingBox();
+        const mapBox = await map.boundingBox();
+        return Boolean(
+          pixels &&
+          panelBox &&
+          mapBox &&
+          pixels.top >= mapBox.y + 20 &&
+          pixels.bottom < panelBox.y - 20,
+        );
+      })
+      .toBe(true);
+  }
+  await expectVisibleRoute();
+  const initialCenter = await map.getAttribute('data-map-center');
+  await page.getByRole('button', { name: '패널 접기' }).click();
+  await expect.poll(() => map.getAttribute('data-map-center')).not.toBe(initialCenter);
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await expectVisibleRoute();
+  await page.setViewportSize({ width: 390, height: 800 });
+  await expectVisibleRoute();
+  const beforeZoom = Number(await map.getAttribute('data-map-zoom'));
+  await page.getByRole('button', { name: '+', exact: true }).click();
+  await expect
+    .poll(async () => Number(await map.getAttribute('data-map-zoom')))
+    .toBeGreaterThan(beforeZoom);
+  const zoom = await map.getAttribute('data-map-zoom');
+  const center = await map.getAttribute('data-map-center');
+  await page.getByRole('button', { name: '패널 접기' }).click();
+  await page.setViewportSize({ width: 390, height: 956 });
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await expect
+    .poll(() =>
+      map.evaluate(
+        (element) =>
+          element.dataset.mapSize ===
+          `${Math.round(element.clientWidth)}x${Math.round(element.clientHeight)}`,
+      ),
+    )
+    .toBe(true);
+  await expect(map).toHaveAttribute('data-map-center', center ?? '');
+  await expect(map).toHaveAttribute('data-map-zoom', zoom ?? '');
 });

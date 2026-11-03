@@ -54,8 +54,8 @@ export function CourseImportPanel({ state }: { state: State }) {
         {state.reading ? <p role="status">파일을 읽는 중입니다.</p> : null}
         {state.fileError ? <p role="alert">{state.fileError}</p> : null}
         <p className="course-edit-note">
-          EPSG:4326의 2D LineString을 가져옵니다. 경로가 하나인 Feature·FeatureCollection도
-          지원합니다. GPX는 지원하지 않습니다.
+          최대 128KiB 파일의 EPSG:4326 2D LineString을 가져옵니다. 경로가 하나인
+          Feature·FeatureCollection도 지원합니다. GPX는 지원하지 않습니다.
         </p>
       </div>
       <div className="orda-field">
@@ -87,6 +87,8 @@ export function CourseImportPanel({ state }: { state: State }) {
           value={state.mountainId}
           onValueChange={state.setMountainId}
           disabled={state.pending || state.mountains.length === 0}
+          invalid={Boolean(state.mountainError)}
+          describedBy={state.mountainError ? 'course-import-mountain-error' : undefined}
         />
         {!query.isPending && !query.isError ? (
           <Button
@@ -99,7 +101,11 @@ export function CourseImportPanel({ state }: { state: State }) {
             산 목록 새로고침
           </Button>
         ) : null}
-        {state.mountainError ? <p role="alert">{state.mountainError}</p> : null}
+        {state.mountainError ? (
+          <p id="course-import-mountain-error" role="alert">
+            {state.mountainError}
+          </p>
+        ) : null}
         {query.hasNextPage ? (
           <Button
             disabled={query.isFetching || state.pending}

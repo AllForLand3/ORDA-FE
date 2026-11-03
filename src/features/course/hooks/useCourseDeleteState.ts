@@ -4,11 +4,15 @@ import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import type { ApiErrorResponse } from '@/shared/types/api';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 import { deleteCourse, getCourse } from '../api/course';
 import type { CourseSnapshot } from '../types/course';
 import { courseQueryKeys } from './useCourseQuery';
+import { useCourseSessionGuard } from './useCourseSessionGuard';
 
 export function useCourseDeleteState(backHref: string) {
+  const accessToken = useAccessToken();
+  const isCurrentSession = useCourseSessionGuard(accessToken);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { courseId = '' } = useParams();
@@ -25,16 +29,21 @@ export function useCourseDeleteState(backHref: string) {
   const pending = deletion.isPending || refresh.isPending;
 
   async function confirm() {
-    if (busy.current || !target?.etag || needsRefresh) return;
+    if (!isCurrentSession() || busy.current || !target?.etag || needsRefresh) return;
     busy.current = true;
     setFailure('');
     try {
       await deletion.mutateAsync({ id: target.course.courseId, etag: target.etag });
-      await queryClient.cancelQueries({ queryKey: courseQueryKeys.detail(courseId) });
-      queryClient.removeQueries({ queryKey: courseQueryKeys.detail(courseId) });
-      queryClient.removeQueries({ queryKey: courseQueryKeys.detail(target.course.courseId) });
+      if (!isCurrentSession()) return;
+      await queryClient.cancelQueries({ queryKey: courseQueryKeys.detail(courseId, accessToken) });
+      if (!isCurrentSession()) return;
+      queryClient.removeQueries({ queryKey: courseQueryKeys.detail(courseId, accessToken) });
+      queryClient.removeQueries({
+        queryKey: courseQueryKeys.detail(target.course.courseId, accessToken),
+      });
       navigate(backHref, { replace: true });
     } catch (error) {
+      if (!isCurrentSession()) return;
       const code = axios.isAxiosError<ApiErrorResponse>(error)
         ? error.response?.data?.code
         : undefined;
@@ -58,15 +67,17 @@ export function useCourseDeleteState(backHref: string) {
   }
 
   async function reload() {
-    if (busy.current) return;
+    if (!isCurrentSession() || busy.current) return;
     busy.current = true;
     try {
       const latest = await refresh.mutateAsync();
-      queryClient.setQueryData(courseQueryKeys.detail(courseId), latest);
+      if (!isCurrentSession()) return;
+      queryClient.setQueryData(courseQueryKeys.detail(courseId, accessToken), latest);
       setTarget(null);
       setNeedsRefresh(false);
       setFailure('');
     } catch {
+      if (!isCurrentSession()) return;
       setFailure(
         '최신 코스를 불러오지 못했습니다. 삭제하지 않았습니다. 잠시 후 다시 시도해주세요.',
       );
@@ -84,6 +95,7 @@ export function useCourseDeleteState(backHref: string) {
     reload,
     open: (snapshot: CourseSnapshot) => {
       if (busy.current || !snapshot.etag) return;
+      if (!needsRefresh) setFailure('');
       // 충돌 후 확인창을 닫았다가 열어도 재조회 없이 다시 삭제할 수 없다.
       setTarget(snapshot);
     },
