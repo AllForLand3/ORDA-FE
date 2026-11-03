@@ -121,6 +121,37 @@ test('API 산 ID로 상세 정보를 조회해 코스 설정 지도에 반영한
   expect(authorization).toBe('Bearer e2e-access-token');
 });
 
+test('서비스 불가 산 ID로 코스 설정에 직접 접근하면 산 선택 화면으로 돌아간다', async ({
+  page,
+}) => {
+  await page.route('**/api/mountains/43', async (route) => {
+    await route.fulfill({
+      json: {
+        mountainId: '43',
+        mountainName: '서비스 준비 산',
+        sourceMountainCode: 'MNT-043',
+        sourceOldMountainCode: null,
+        serviceAvailable: false,
+        addressLabel: '서울특별시',
+        provinceName: '서울특별시',
+        districtName: null,
+        elevationMeters: 500,
+        geometry: { type: 'Point', coordinates: [126.98, 37.56] },
+      },
+    });
+  });
+  await page.route('**/api/mountains?*', async (route) => {
+    await route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    });
+  });
+
+  await page.goto('/routes/setup?mountainId=43');
+
+  await expect(page).toHaveURL(/\/mountains$/);
+  await expect(page.getByRole('heading', { name: '어느 산으로 갈까요?' })).toBeVisible();
+});
+
 test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지 않는다', async ({ page }) => {
   for (const viewport of [
     { width: 360, height: 800 },

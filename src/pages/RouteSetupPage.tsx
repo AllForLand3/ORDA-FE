@@ -58,6 +58,12 @@ export function RouteSetupPage() {
     }
   }, [focusedPlace, mapController, selectedMountainCoordinates]);
 
+  useEffect(() => {
+    if (mountainDetailQuery.data && !mountainDetailQuery.data.serviceAvailable) {
+      navigate('/mountains', { replace: true });
+    }
+  }, [mountainDetailQuery.data, navigate]);
+
   return (
     <div className="route-setup-page">
       <MapPageLayout
