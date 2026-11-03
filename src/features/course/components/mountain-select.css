@@ -317,14 +317,6 @@
   white-space: nowrap;
 }
 
-.mountain-card .mountain-card__recommend {
-  flex: 0 0 auto;
-  padding: 0.125rem 0.3125rem;
-  border-radius: 0.25rem;
-  font-size: 0.5625rem;
-  line-height: 1.25;
-}
-
 .mountain-card__location {
   overflow: hidden;
   color: var(--color-text-tertiary);

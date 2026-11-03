@@ -1,5 +1,4 @@
 import mountainPhoto from '@/assets/home/mountain-background.png';
-import { Badge } from '@/components/ui/Badge';
 
 import type { MountainListItem } from '../types/mountain';
 import { MountainSearchBar } from './MountainSearchBar';
@@ -116,11 +115,6 @@ export function MountainSelectionPanel({
                 <span className="mountain-card__body">
                   <span className="mountain-card__title-row">
                     <strong>{mountain.mountainName}</strong>
-                    {mountain.mountainName === '관악산' ? (
-                      <Badge className="mountain-card__recommend" variant="primary">
-                        추천
-                      </Badge>
-                    ) : null}
                   </span>
                   {location ? <span className="mountain-card__location">{location}</span> : null}
                 </span>
