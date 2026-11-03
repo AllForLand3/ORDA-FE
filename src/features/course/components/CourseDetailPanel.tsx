@@ -14,8 +14,19 @@ import { Badge, Card, Tabs } from '@/components/ui';
 import { getMyCourseMetrics } from '../mocks/my-courses';
 import type { MockMyCourse } from '../mocks/my-courses';
 
+/** 코스 주변 시설·계단 수. 3조 주변 시설 조회 결과를 페이지에서 넘겨받는다. */
+export interface CourseNearbyCounts {
+  stairs: number;
+  facilities: number;
+  toilet: number;
+  parking: number;
+  shelter: number;
+}
+
 interface CourseDetailPanelProps {
   course: MockMyCourse;
+  /** 없으면(undefined) 기존 예시 값, null이면 조회 중·실패로 보고 '—'를 표시한다. */
+  nearbyCounts?: CourseNearbyCounts | null;
   tab: 'overview' | 'terrain' | 'facilities';
   onTabChange: (value: string) => void;
   overviewAnalysis: ReactNode;
@@ -30,7 +41,11 @@ export function CourseDetailPanel({
   overviewAnalysis,
   terrainContent,
   facilitiesContent,
+  nearbyCounts,
 }: CourseDetailPanelProps) {
+  const countText = (count: number | undefined, fallback: string) =>
+    nearbyCounts === undefined ? fallback : count === undefined ? '—' : `${count}곳`;
+
   const overview = (
     <div className="my-course-overview">
       <dl aria-label="예시 요약 지표" className="my-course-metrics">
@@ -44,8 +59,16 @@ export function CourseDetailPanel({
       <dl className="course-detail-facts">
         {[
           { label: '난이도', value: '중급', icon: hikingIcon },
-          { label: '계단 구간', value: `${course.stairsCount}곳`, icon: stairsIcon },
-          { label: '주변 시설', value: `${course.facilityCount}곳`, icon: facilityIcon },
+          {
+            label: '계단 구간',
+            value: countText(nearbyCounts?.stairs, `${course.stairsCount}곳`),
+            icon: stairsIcon,
+          },
+          {
+            label: '주변 시설',
+            value: countText(nearbyCounts?.facilities, `${course.facilityCount}곳`),
+            icon: facilityIcon,
+          },
         ].map((item) => (
           <div key={item.label}>
             <dt>
@@ -83,16 +106,16 @@ export function CourseDetailPanel({
           <h2>주변 시설</h2>
           <dl>
             {[
-              { label: '화장실', icon: toiletIcon },
-              { label: '주차장', icon: parkingIcon },
-              { label: '쉼터', icon: shelterIcon },
+              { label: '화장실', icon: toiletIcon, count: nearbyCounts?.toilet },
+              { label: '주차장', icon: parkingIcon, count: nearbyCounts?.parking },
+              { label: '쉼터', icon: shelterIcon, count: nearbyCounts?.shelter },
             ].map((item) => (
               <div key={item.label}>
                 <dt>
                   <img alt="" aria-hidden="true" src={item.icon} />
                   {item.label}
                 </dt>
-                <dd>미제공</dd>
+                <dd>{countText(item.count, '미제공')}</dd>
               </div>
             ))}
           </dl>

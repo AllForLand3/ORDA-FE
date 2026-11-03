@@ -3,7 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 
 import backIcon from '@/assets/course/course-back.svg';
 import { Button } from '@/components/ui';
-import { NearbyFacilitiesPanel, TerrainAnalysisPanel } from '@/features/analysis';
+import {
+  isServerCourseId,
+  NearbyFacilitiesPanel,
+  TerrainAnalysisPanel,
+  useCourseNearby,
+} from '@/features/analysis';
 import { CourseDetailPanel, MyCoursesNavigation, useCourseDetailState } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
@@ -16,6 +21,9 @@ import './course-detail.css';
 
 export function CourseDetailPage() {
   const state = useCourseDetailState();
+  // 저장된 코스(BE ID)만 주변 시설·계단 수를 조회한다. 예시 코스는 기존 예시 값을 쓴다.
+  const nearby = useCourseNearby(state.course?.id);
+  const nearbyCounts = isServerCourseId(state.course?.id) ? (nearby.data ?? null) : undefined;
   const location = useLocation();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRegionRef = useRef<HTMLElement>(null);
@@ -89,6 +97,7 @@ export function CourseDetailPage() {
           <section aria-label="내 코스 상세 내용" className="course-detail-content">
             <CourseDetailPanel
               course={state.course}
+              nearbyCounts={nearbyCounts}
               onTabChange={state.setTab}
               tab={state.tab}
               overviewAnalysis={
@@ -109,7 +118,11 @@ export function CourseDetailPage() {
               }
               facilitiesContent={
                 state.tab === 'facilities' ? (
-                  <NearbyFacilitiesPanel candidateName={state.course.name} key={state.course.id} />
+                  <NearbyFacilitiesPanel
+                    candidateName={state.course.name}
+                    courseId={state.course.id}
+                    key={state.course.id}
+                  />
                 ) : null
               }
             />
