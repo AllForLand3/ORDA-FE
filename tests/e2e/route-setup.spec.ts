@@ -95,8 +95,13 @@ test('선택한 산 좌표를 코스 설정 지도의 초기 중심으로 사용
 
 test('API 산 ID로 상세 정보를 조회해 코스 설정 지도에 반영한다', async ({ page }) => {
   let authorization: string | undefined;
+  let releaseDetail: (() => void) | undefined;
+  const detailLoading = new Promise<void>((resolve) => {
+    releaseDetail = resolve;
+  });
   await page.route('**/api/mountains/42', async (route) => {
     authorization = route.request().headers().authorization;
+    await detailLoading;
     await route.fulfill({
       json: {
         mountainId: '42',
@@ -116,6 +121,11 @@ test('API 산 ID로 상세 정보를 조회해 코스 설정 지도에 반영한
   await page.goto('/routes/setup?mountainId=42');
 
   const map = page.locator('.orda-map-layout__map-surface');
+  await expect(page.getByText('산 위치를 확인하는 중이에요.')).toBeVisible();
+  await expect(map).not.toHaveAttribute('data-map-ready', 'true');
+  await expect(page.getByRole('button', { name: '현재 위치로 이동' })).toBeDisabled();
+
+  releaseDetail?.();
   await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
   await expect(page.getByRole('group', { name: '지도 컨트롤' })).toContainText('북한산');
   expect(authorization).toBe('Bearer e2e-access-token');

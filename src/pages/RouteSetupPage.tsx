@@ -21,12 +21,23 @@ export function RouteSetupPage() {
   const [searchParams] = useSearchParams();
   const mountainId = searchParams.get('mountainId');
   const fallbackMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
+  const usesApiMountain = Boolean(mountainId && !fallbackMountain);
   const mountainDetailQuery = useMountainDetailQuery(
     mountainId && !fallbackMountain ? mountainId : null,
   );
   const selectedMountainName = mountainDetailQuery.data?.mountainName ?? fallbackMountain?.name;
   const selectedMountainCoordinates =
     mountainDetailQuery.data?.geometry?.coordinates ?? fallbackMountain?.coordinates;
+  const isMountainLocationPending = usesApiMountain && mountainDetailQuery.isPending;
+  const hasMountainLocationError =
+    usesApiMountain &&
+    (mountainDetailQuery.isError ||
+      (Boolean(mountainDetailQuery.data) && !mountainDetailQuery.data?.geometry));
+  const canRenderMap =
+    !usesApiMountain ||
+    Boolean(
+      mountainDetailQuery.data?.serviceAvailable && mountainDetailQuery.data.geometry?.coordinates,
+    );
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const state = useRouteSetupState();
@@ -88,18 +99,36 @@ export function RouteSetupPage() {
         }
         mapContainerRef={mapContainerRef}
         mapContent={
-          <OpenLayersMap
-            additionalLayers={layers}
-            initialCenter={selectedMountainCoordinates}
-            onMapClick={(coordinate) => {
-              if (state.step !== 'locations') return;
-              if (state.searchRole && state.isMapSelectionMode) {
-                state.setPendingCoordinate(state.searchRole, coordinate);
-              }
-            }}
-            onControllerChange={setMapController}
-            targetRef={mapContainerRef}
-          />
+          canRenderMap ? (
+            <OpenLayersMap
+              additionalLayers={layers}
+              initialCenter={selectedMountainCoordinates}
+              onMapClick={(coordinate) => {
+                if (state.step !== 'locations') return;
+                if (state.searchRole && state.isMapSelectionMode) {
+                  state.setPendingCoordinate(state.searchRole, coordinate);
+                }
+              }}
+              onControllerChange={setMapController}
+              targetRef={mapContainerRef}
+            />
+          ) : (
+            <div
+              className="orda-map-layout__placeholder"
+              role={isMountainLocationPending ? 'status' : 'alert'}
+            >
+              <strong>
+                {isMountainLocationPending
+                  ? '산 위치를 확인하는 중이에요.'
+                  : '산 위치를 표시할 수 없어요.'}
+              </strong>
+              <span>
+                {hasMountainLocationError
+                  ? '산 선택 화면으로 돌아가 다시 선택해 주세요.'
+                  : '잠시만 기다려 주세요.'}
+              </span>
+            </div>
+          )
         }
         mapControls={<MapControls controller={mapController} mountainName={selectedMountainName} />}
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
