@@ -249,20 +249,20 @@ test('산 선택 시 상세 조회 결과로 서비스 가능 여부를 처리�
   await installMountainRoute(page);
   await page.goto('/mountains');
 
-  const gwanaksanDetailRequest = page.waitForRequest((request) =>
-    request.url().endsWith('/api/mountains/1'),
+  const gwanaksanDetailResponse = page.waitForResponse(
+    (response) => response.url().endsWith('/api/mountains/1') && response.status() === 200,
   );
   await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
 
-  await gwanaksanDetailRequest;
+  await gwanaksanDetailResponse;
   await expect(page.getByRole('region', { name: '선택한 산 상세' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
 
-  const cheonggyesanDetailRequest = page.waitForRequest((request) =>
-    request.url().endsWith('/api/mountains/3'),
+  const cheonggyesanDetailResponse = page.waitForResponse(
+    (response) => response.url().endsWith('/api/mountains/3') && response.status() === 200,
   );
   await page.locator('.mountain-card').filter({ hasText: '청계산' }).click();
-  await cheonggyesanDetailRequest;
+  await cheonggyesanDetailResponse;
   await expect(page.getByText('현재 코스 탐색 서비스를 제공하지 않는 산이에요.')).toBeVisible();
   await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
 });
