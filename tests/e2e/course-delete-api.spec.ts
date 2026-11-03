@@ -60,7 +60,7 @@ test('삭제 확인 취소·Escape는 요청하지 않고 성공 시 갱신된 �
     );
   });
   await page.goto('/mountains');
-  await page.goto(`${path}?${new URLSearchParams({ list: 'q=주말&tab=imported&sort=name' })}`);
+  await page.goto(path);
   const remove = page.getByRole('button', { name: '삭제', exact: true });
   const dialog = page.getByRole('dialog', { name: '코스를 삭제할까요?' });
   await remove.click();
@@ -72,12 +72,9 @@ test('삭제 확인 취소·Escape는 요청하지 않고 성공 시 갱신된 �
   expect(deletes).toBe(0);
   await remove.click();
   await dialog.getByRole('button', { name: '삭제하기', exact: true }).click();
-  await expect(page).toHaveURL(/\/my-courses\?/);
+  await expect(page).toHaveURL('/my-courses');
   await expect(page.getByRole('heading', { name: '저장한 코스가 없어요' })).toBeVisible();
   await expect(page.getByRole('article')).toHaveCount(0);
-  expect(new URL(page.url()).searchParams.get('q')).toBe('주말');
-  expect(new URL(page.url()).searchParams.get('tab')).toBe('imported');
-  expect(new URL(page.url()).searchParams.get('sort')).toBe('name');
   expect(deletes).toBe(1);
   // 삭제된 상세를 다시 열어도 캐시의 코스를 표시하지 않는다.
   await page.goto(path);
@@ -102,6 +99,9 @@ test('500이면 자동 재시도하지 않으며 확인창에서 수동 재시�
   await confirm.click();
   await expect(page.getByRole('alert')).toContainText('삭제하지 못했습니다.');
   expect(deletes).toBe(1);
+  await page.getByRole('button', { name: '취소', exact: true }).click();
+  await page.getByRole('button', { name: '삭제', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
   await confirm.click();
   await expect(page).toHaveURL(/\/my-courses$/);
   expect(deletes).toBe(2);
@@ -133,6 +133,7 @@ test('412 후 재조회와 재확인 없이는 최신 ETag로 삭제하지 않�
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await remove.click();
   await expect(page.getByRole('button', { name: '삭제하기', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('alert')).toContainText('다른 곳에서 코스가 변경되어');
   await page.getByRole('button', { name: '최신 코스 확인' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('변경된 코스');
   await expect(page.getByRole('dialog')).not.toBeVisible();

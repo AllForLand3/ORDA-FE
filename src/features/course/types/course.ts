@@ -16,7 +16,6 @@ export interface CreateCourseRequest {
 export interface UpdateCourseRequest {
   courseName?: string;
   memo?: string | null;
-  geometry?: CourseGeometry;
 }
 
 export interface CourseDetail {
