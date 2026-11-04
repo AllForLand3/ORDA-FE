@@ -1,8 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-
 import { Button } from '@/components/ui';
-
 import type { TerrainAnalysisPhase, TerrainAnalysisResponse } from '../types/terrainAnalysis';
+
+const ElevationProfileChart = lazy(() =>
+  import('./ElevationProfileChart').then((module) => ({
+    default: module.ElevationProfileChart,
+  })),
+);
 
 interface CourseTerrainAnalysisPanelProps {
   courseName: string;
@@ -126,6 +131,17 @@ export function CourseTerrainAnalysisPanel({
       {completedResult ? (
         <section aria-label="고도 분석 결과" className="terrain-analysis__result">
           <p role="status">고도 분석이 완료됐어요</p>
+
+          <Suspense
+            fallback={
+              <p role="status" className="insights-note">
+                고도 그래프를 준비하고 있어요.
+              </p>
+            }
+          >
+            <ElevationProfileChart samples={completedResult.samples} />
+          </Suspense>
+
           <dl className="terrain-analysis__criteria" aria-label="분석 기준">
             <div>
               <dt>DEM</dt>
