@@ -96,6 +96,33 @@ test('완료 응답을 보관하고 탭 전환 후에도 POST를 다시 실행�
   expect(posts).toBe(1);
 });
 
+test('완료 결과 보관 후 재진입 조회가 404이면 미분석으로 되돌리거나 POST를 반복하지 않는다', async ({
+  page,
+}) => {
+  let posts = 0;
+  // 공통 프로파일 스텁은 최초 진입과 재진입 모두 RESOURCE_NOT_FOUND를 반환한다.
+  await page.route('**/api/courses/6/terrain-analyses', async (route) => {
+    posts++;
+    await route.fulfill({ json: result });
+  });
+  await page.goto('/my-courses/6');
+  await page.getByRole('button', { name: '고도 분석하기', exact: true }).click();
+  await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toBeVisible();
+  await navigate(page, '7');
+  await navigate(page, '6');
+  // 요약 탭은 설명을 접으므로 상세 안내를 제공하는 지형 분석 탭에서 검증한다.
+  await page.getByRole('tab', { name: '지형 분석', exact: true }).click();
+  await expect(
+    page.getByText('해당 조건의 결과를 찾지 못했어요. 분석 완료 여부를 확인할 수 없어요.', {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '고도 분석하기', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '결과 다시 확인', exact: true })).toBeEnabled();
+  expect(posts).toBe(1);
+});
+
 test('진행 응답 이후 조회로 완료된다', async ({ page }) => {
   await page.route('**/api/courses/6/terrain-analyses', async (route) => {
     await route.fulfill({ status: 202, json: running });

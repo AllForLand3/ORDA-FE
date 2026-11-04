@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getCourseDetail } from '../api/course';
 
+/** 숫자형 ID 형식을 확인하고 예시 ID나 빈 주소의 서버 전송을 막는다. */
 export function isValidCourseId(courseId: string | undefined): courseId is string {
   return courseId !== undefined && /^[1-9]\d*$/.test(courseId);
 }
@@ -11,6 +12,7 @@ export const courseQueryKeys = {
     ['courses', 'detail', userId, courseId] as const,
 };
 
+/** 사용자·코스별로 현재 상세를 조회하며 요청 취소와 오류 재시도 정책을 적용한다. */
 export function useCourseDetailQuery(courseId: string | undefined, userId: string | undefined) {
   return useQuery({
     queryKey: courseQueryKeys.detail(userId, courseId),

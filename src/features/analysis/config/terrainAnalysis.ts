@@ -3,6 +3,7 @@ export interface TerrainAnalysisConfig {
   sampleIntervalM: number;
 }
 
+/** DEM ID와 BE가 허용하는 샘플 간격을 검증하며 잘못된 설정은 사용하지 않는다. */
 function readTerrainAnalysisConfig(): TerrainAnalysisConfig | null {
   const demId = String(import.meta.env.VITE_TERRAIN_DEM_ID ?? '').trim();
 

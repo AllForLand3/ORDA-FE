@@ -25,6 +25,7 @@ import '@/features/course/components/my-courses.css';
 import './my-courses.css';
 import './course-detail.css';
 
+/** 인증·현재 코스·분석을 조합하며 탭 전환 중에도 하나의 분석 실행을 유지한다. */
 export function CourseDetailPage() {
   const { currentUser } = useAuth();
   const state = useCourseDetailState(currentUser?.userId);

@@ -253,49 +253,56 @@ for (const failure of [
   });
 }
 
-test('버전 충돌 후 최신 코스를 조회하며 새 버전으로 자동 POST하지 않는다', async ({ page }) => {
-  let detailGets = 0;
-  let posts = 0;
-  await page.route('**/api/courses/6', async (route) => {
-    detailGets++;
-    await route.fulfill({
-      json: {
-        courseId: '6',
-        mountainId: '1',
-        courseName: '복구 검증 코스',
-        memo: '',
-        createType: 'IMPORT',
-        revNo: detailGets > 1 ? 2 : 1,
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [126.96, 37.44],
-            [126.97, 37.45],
-          ],
+for (const conflict of [
+  { label: 'CONFLICT 코드와 HTTP 409', status: 409, code: 'CONFLICT' },
+  { label: '오류 코드 없는 HTTP 409', status: 409, code: undefined },
+  { label: '다른 오류 코드의 HTTP 409', status: 409, code: 'COURSE_REVISION_CONFLICT' },
+  { label: 'HTTP 409가 아닌 CONFLICT 코드', status: 400, code: 'CONFLICT' },
+]) {
+  test(`${conflict.label} 충돌 후 최신 코스를 조회하며 자동 POST하지 않는다`, async ({ page }) => {
+    let detailGets = 0;
+    let posts = 0;
+    await page.route('**/api/courses/6', async (route) => {
+      detailGets++;
+      await route.fulfill({
+        json: {
+          courseId: '6',
+          mountainId: '1',
+          courseName: '복구 검증 코스',
+          memo: '',
+          createType: 'IMPORT',
+          revNo: detailGets > 1 ? 2 : 1,
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [126.96, 37.44],
+              [126.97, 37.45],
+            ],
+          },
+          lengthM: 25,
         },
-        lengthM: 25,
-      },
+      });
     });
-  });
-  await page.route(profileUrl, async (route) => {
-    if (new URL(route.request().url()).searchParams.get('revNo') === '2')
-      await route.fulfill({ json: { ...done, revNo: 2 } });
-    else await notFound(route);
-  });
-  await page.route(postUrl, async (route) => {
-    posts++;
-    await route.fulfill({
-      status: 409,
-      headers: { Location: '/api/terrain-analyses/6' },
-      json: { code: 'CONFLICT' },
+    await page.route(profileUrl, async (route) => {
+      if (new URL(route.request().url()).searchParams.get('revNo') === '2')
+        await route.fulfill({ json: { ...done, revNo: 2 } });
+      else await notFound(route);
     });
+    await page.route(postUrl, async (route) => {
+      posts++;
+      await route.fulfill({
+        status: conflict.status,
+        headers: { Location: '/api/terrain-analyses/6' },
+        json: conflict.code ? { code: conflict.code } : { message: '버전 충돌' },
+      });
+    });
+    await begin(page);
+    await page.getByRole('button', { name: '최신 코스 불러오기', exact: true }).click();
+    await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toBeVisible();
+    expect(detailGets).toBe(2);
+    expect(posts).toBe(1);
   });
-  await begin(page);
-  await page.getByRole('button', { name: '최신 코스 불러오기', exact: true }).click();
-  await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toBeVisible();
-  expect(detailGets).toBe(2);
-  expect(posts).toBe(1);
-});
+}
 
 test('유효하지 않은 Location은 따라가지 않고 현재 조건을 확인한다', async ({ page }) => {
   let posts = 0;

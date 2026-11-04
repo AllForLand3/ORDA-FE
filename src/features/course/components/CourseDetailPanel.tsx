@@ -13,6 +13,7 @@ interface CourseDetailPanelProps {
   facilitiesContent: ReactNode;
 }
 
+/** 원본 m 값을 유지하고 표시할 때만 m 또는 km 단위로 변환한다. */
 function formatDistance(lengthM: number): string {
   if (lengthM < 1000) {
     return `${lengthM.toLocaleString('ko-KR', {
@@ -25,6 +26,7 @@ function formatDistance(lengthM: number): string {
   })} km`;
 }
 
+/** 실제 코스 정보와 상위 페이지에서 전달한 분석·시설 탭 내용을 표시한다. */
 export function CourseDetailPanel({
   course,
   tab,

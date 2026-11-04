@@ -18,6 +18,7 @@ export interface TerrainApiProblem {
   status: number | null;
 }
 
+/** 비정형 오류도 처리할 수 있도록 API 코드와 HTTP 상태만 추출한다. */
 export function getTerrainApiProblem(error: unknown): TerrainApiProblem {
   if (!isAxiosError<ErrorBody>(error)) {
     return {
@@ -32,6 +33,7 @@ export function getTerrainApiProblem(error: unknown): TerrainApiProblem {
   };
 }
 
+/** 실패 Location의 분석 ID만 추출하며 외부 URL을 요청 주소로 사용하지 않는다. */
 export function getFailureAnalysisId(error: unknown): string | null {
   if (!isAxiosError(error)) {
     return null;
@@ -58,6 +60,7 @@ export function getFailureAnalysisId(error: unknown): string | null {
   }
 }
 
+/** 현재 코스 버전과 DEM·간격으로 분석 실행 또는 동일 조건 재시도를 요청한다. */
 export async function requestTerrainAnalysis(
   courseId: string,
   body: TerrainAnalysisRequest,
@@ -72,6 +75,7 @@ export async function requestTerrainAnalysis(
   return response.data;
 }
 
+/** 분석 ID에 해당하는 상태·통계·전체 샘플을 조회한다. */
 export async function getTerrainAnalysis(
   analysisId: string,
   signal?: AbortSignal,
@@ -84,6 +88,7 @@ export async function getTerrainAnalysis(
   return response.data;
 }
 
+/** 분석 ID를 모를 때 현재 코스·버전·DEM·간격에 해당하는 결과를 조회한다. */
 export async function getCurrentTerrainProfile(
   conditions: TerrainAnalysisConditions,
   signal?: AbortSignal,

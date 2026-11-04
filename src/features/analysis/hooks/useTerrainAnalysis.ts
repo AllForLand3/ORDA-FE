@@ -56,6 +56,7 @@ export const terrainAnalysisKeys = {
     ] as const,
 };
 
+/** API 오류 코드와 HTTP 상태를 인증·접근·충돌 안내로 분류한다. */
 function getBlockingProblem(error: unknown): BlockingProblem | null {
   const { code, status } = getTerrainApiProblem(error);
 
@@ -66,7 +67,7 @@ function getBlockingProblem(error: unknown): BlockingProblem | null {
     };
   }
 
-  if (code === 'CONFLICT') {
+  if (code === 'CONFLICT' || status === 409) {
     return {
       phase: 'conflict',
       message: '코스가 변경됐어요. 최신 코스 정보를 불러와주세요.',
@@ -103,6 +104,7 @@ function getBlockingProblem(error: unknown): BlockingProblem | null {
   return null;
 }
 
+/** 이전 조회가 끝난 뒤 취소 가능한 대기를 두어 요청 중첩을 방지한다. */
 function waitForNextPoll(milliseconds: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -126,6 +128,7 @@ function waitForNextPoll(milliseconds: number, signal: AbortSignal): Promise<voi
   });
 }
 
+/** 응답의 코스·버전·DEM·간격·분석 ID와 완료 결과의 필수 항목을 확인한다. */
 function assertMatchingResponse(
   response: TerrainAnalysisResponse,
   conditions: TerrainAnalysisConditions,
@@ -165,6 +168,10 @@ function assertMatchingResponse(
   }
 }
 
+/**
+ * 사용자·분석 조건별 결과를 관리하고 요청·순차 조회·실패 복구를 제공한다.
+ * GET으로 현재 결과를 확인하며 POST는 사용자 동작에서만 실행한다.
+ */
 export function useTerrainAnalysis(
   userId: string | undefined,
   conditions: TerrainAnalysisConditions | null,
@@ -231,6 +238,7 @@ export function useTerrainAnalysis(
     gcTime: 0,
   });
 
+  /** 실행을 하나로 제한하고 이전 조건의 응답을 차단하며 결과 또는 오류 안내를 반영한다. */
   const runOperation = useCallback(
     async (operation: Operation, knownAnalysisId: string | null = null): Promise<void> => {
       if (!userId || !target || activeRunRef.current !== null) {
@@ -278,6 +286,7 @@ export function useTerrainAnalysis(
         }, milliseconds);
       };
 
+      /** ID가 없으면 현재 조건을 조회하고, 응답 검증 후에만 조건별 캐시에 보관한다. */
       const readResult = async (id: string | null): Promise<TerrainAnalysisResponse> => {
         readingProfile = id === null;
 

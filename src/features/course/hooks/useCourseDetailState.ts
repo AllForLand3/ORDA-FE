@@ -13,6 +13,7 @@ interface CourseDetailError {
   canRetry: boolean;
 }
 
+/** 상세 조회 오류를 사용자 안내와 수동 재시도 가능 여부로 변환한다. */
 function getCourseDetailError(error: unknown): CourseDetailError {
   if (isAxiosError<ApiErrorResponse>(error)) {
     const code = error.response?.data?.code;
@@ -71,6 +72,7 @@ function getCourseDetailError(error: unknown): CourseDetailError {
   };
 }
 
+/** 실제 상세 조회와 URL의 탭·목록 복귀 조건을 조합해 페이지 상태를 제공한다. */
 export function useCourseDetailState(userId: string | undefined) {
   const { courseId } = useParams();
   const [params, setParams] = useSearchParams();

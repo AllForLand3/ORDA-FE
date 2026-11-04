@@ -89,6 +89,20 @@ test('없는 코스는 재시도 없이 접근 불가 안내를 표시한다', a
   await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toHaveCount(0);
 });
 
+test('RESOURCE_NOT_FOUND 상세 응답도 재시도 없는 코스 없음 안내로 표시한다', async ({ page }) => {
+  await page.route('**/api/courses/6', async (route) => {
+    await route.fulfill({
+      status: 404,
+      json: { status: 404, code: 'RESOURCE_NOT_FOUND', message: '리소스를 찾을 수 없습니다.' },
+    });
+  });
+  await page.goto('/my-courses/6');
+  await expect(
+    page.getByRole('heading', { name: '코스를 찾을 수 없어요', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toHaveCount(0);
+});
+
 test('예시 ID를 실제 상세 API에 전송하지 않는다', async ({ page }) => {
   const requests: string[] = [];
   await page.route('**/api/courses/**', async (route) => {

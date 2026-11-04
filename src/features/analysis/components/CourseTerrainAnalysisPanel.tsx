@@ -72,6 +72,7 @@ const messages: Record<TerrainAnalysisPhase, { title: string; description: strin
   },
 };
 
+/** 분석 단계와 사용 가능한 사용자 동작을 표시하며 API 호출은 상위 훅에 맡긴다. */
 export function CourseTerrainAnalysisPanel({
   courseName,
   phase,
