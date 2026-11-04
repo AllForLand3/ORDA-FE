@@ -178,6 +178,7 @@
 }
 
 .terrain-analysis__metrics dd {
+  overflow-wrap: anywhere;
   margin: 0.25rem 0 0;
   color: var(--color-neutral-900);
   font-size: 0.9375rem;

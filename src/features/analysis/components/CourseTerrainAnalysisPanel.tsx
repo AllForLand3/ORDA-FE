@@ -3,6 +3,18 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui';
 import type { TerrainAnalysisPhase, TerrainAnalysisResponse } from '../types/terrainAnalysis';
 
+const metricFormatter = new Intl.NumberFormat('ko-KR', {
+  maximumFractionDigits: 1,
+});
+
+function formatElevationMetric(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '미제공';
+  }
+
+  return `${metricFormatter.format(value)} m`;
+}
+
 const ElevationProfileChart = lazy(() =>
   import('./ElevationProfileChart').then((module) => ({
     default: module.ElevationProfileChart,
@@ -97,6 +109,7 @@ export function CourseTerrainAnalysisPanel({
     configured && phase === 'done' && result?.status === 'DONE' && result.analysis !== null
       ? result
       : null;
+  const summary = completedResult?.analysis;
   const missingCompletedResult = configured && phase === 'done' && completedResult === null;
   const text = missingCompletedResult
     ? {
@@ -132,6 +145,20 @@ export function CourseTerrainAnalysisPanel({
         <section aria-label="고도 분석 결과" className="terrain-analysis__result">
           <p role="status">고도 분석이 완료됐어요</p>
 
+          <dl aria-label="고도 분석 통계" className="terrain-analysis__metrics">
+            {[
+              { label: '누적 상승', value: summary?.ascentM },
+              { label: '누적 하강', value: summary?.descentM },
+              { label: '최고 고도', value: summary?.maxElevationM },
+              { label: '최저 고도', value: summary?.minElevationM },
+            ].map((metric) => (
+              <div key={metric.label}>
+                <dt>{metric.label}</dt>
+                <dd>{formatElevationMetric(metric.value)}</dd>
+              </div>
+            ))}
+          </dl>
+
           <Suspense
             fallback={
               <p role="status" className="insights-note">
@@ -141,6 +168,12 @@ export function CourseTerrainAnalysisPanel({
           >
             <ElevationProfileChart samples={completedResult.samples} />
           </Suspense>
+
+          <p className="insights-note">
+            {typeof summary?.sampleCount === 'number' && typeof summary?.missingCount === 'number'
+              ? `전체 ${summary.sampleCount.toLocaleString('ko-KR')}개 중 고도 미제공 ${summary.missingCount.toLocaleString('ko-KR')}개`
+              : '샘플 수와 결측 개수 정보가 미제공 상태입니다.'}
+          </p>
 
           <dl className="terrain-analysis__criteria" aria-label="분석 기준">
             <div>
@@ -156,6 +189,10 @@ export function CourseTerrainAnalysisPanel({
               <dd>{completedResult.sampleIntervalM} m</dd>
             </div>
           </dl>
+          <p className="insights-disclaimer">
+            샘플 간격은 코스에서 고도를 추출하는 간격입니다. 자료의 명목 해상도보다 좁게 설정해도
+            원천 고도 자료의 해상도가 높아지는 것은 아닙니다.
+          </p>
         </section>
       ) : (
         <div className="insights-empty">
