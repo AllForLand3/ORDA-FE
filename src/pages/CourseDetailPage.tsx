@@ -60,6 +60,7 @@ export function CourseDetailPage() {
     <CourseTerrainAnalysisPanel
       courseName={course.courseName}
       phase={analysis.phase}
+      result={analysis.result}
       configured={terrainAnalysisConfig !== null}
       message={analysis.message}
       canStart={analysis.canStart}

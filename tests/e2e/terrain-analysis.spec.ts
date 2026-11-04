@@ -86,11 +86,19 @@ test('완료 응답을 보관하고 탭 전환 후에도 POST를 다시 실행�
     await route.fulfill({ json: result });
   });
   await page.goto('/my-courses/6');
+  await expect(page.getByRole('region', { name: '고도 분석 결과', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '고도 분석하기', exact: true }).click();
   await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toBeVisible();
+  const completedPanel = page.getByRole('region', { name: '고도 분석 결과', exact: true });
+  await expect(completedPanel).toBeVisible();
+  await expect(completedPanel.getByText('테스트 DEM', { exact: true })).toBeVisible();
+  await expect(completedPanel.getByText('30 m', { exact: true })).toBeVisible();
+  await expect(completedPanel.getByText('25 m', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: '지형 분석', exact: true }).click();
   await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toBeVisible();
+  await expect(completedPanel).toBeVisible();
   await navigate(page, '7');
+  await expect(completedPanel).toHaveCount(0);
   await navigate(page, '6');
   await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toBeVisible();
   expect(posts).toBe(1);
@@ -118,6 +126,7 @@ test('완료 결과 보관 후 재진입 조회가 404이면 미분석으로 되
     }),
   ).toBeVisible();
   await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '고도 분석 결과', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '고도 분석하기', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '결과 다시 확인', exact: true })).toBeEnabled();
   expect(posts).toBe(1);
@@ -133,8 +142,34 @@ test('진행 응답 이후 조회로 완료된다', async ({ page }) => {
   await page.goto('/my-courses/6');
   await page.getByRole('button', { name: '고도 분석하기', exact: true }).click();
   await expect(page.getByText('고도 분석이 진행 중이에요', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '고도 분석 결과', exact: true })).toHaveCount(0);
   await expect(page.getByText('고도 분석이 완료됐어요', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '고도 분석 결과', exact: true })).toBeVisible();
 });
+
+for (const invalidResult of [
+  { ...result, revNo: 2 },
+  { ...result, analysis: null },
+  { ...result, status: 'FAILED', analysis: null, samples: [] },
+]) {
+  test(`조건 불일치·통계 누락·실패 결과를 표시하지 않는다 ${invalidResult.status}-${invalidResult.revNo}-${invalidResult.analysis === null}`, async ({
+    page,
+  }) => {
+    await page.route('**/api/courses/6/terrain-analyses', async (route) => {
+      await route.fulfill({ json: invalidResult });
+    });
+    await page.goto('/my-courses/6');
+    await page.getByRole('button', { name: '고도 분석하기', exact: true }).click();
+    await page.getByRole('tab', { name: '지형 분석', exact: true }).click();
+    await expect(
+      page.getByRole('button', {
+        name: invalidResult.status === 'FAILED' ? '다시 시도' : '결과 다시 확인',
+        exact: true,
+      }),
+    ).toBeEnabled();
+    await expect(page.getByRole('region', { name: '고도 분석 결과', exact: true })).toHaveCount(0);
+  });
+}
 
 test('진행 중 코스를 바꿨다가 돌아와도 종료된 조회를 진행 중으로 표시하지 않는다', async ({
   page,

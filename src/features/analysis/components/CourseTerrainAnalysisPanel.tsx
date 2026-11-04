@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui';
 
-import type { TerrainAnalysisPhase } from '../types/terrainAnalysis';
+import type { TerrainAnalysisPhase, TerrainAnalysisResponse } from '../types/terrainAnalysis';
 
 interface CourseTerrainAnalysisPanelProps {
   courseName: string;
   phase: TerrainAnalysisPhase;
+  result: TerrainAnalysisResponse | null;
   configured: boolean;
   message: string | null;
 
@@ -76,6 +77,7 @@ const messages: Record<TerrainAnalysisPhase, { title: string; description: strin
 export function CourseTerrainAnalysisPanel({
   courseName,
   phase,
+  result,
   configured,
   message,
   canStart,
@@ -86,11 +88,22 @@ export function CourseTerrainAnalysisPanel({
   onCheck,
   onRefreshCourse,
 }: CourseTerrainAnalysisPanelProps) {
-  const text = messages[phase];
+  const completedResult =
+    configured && phase === 'done' && result?.status === 'DONE' && result.analysis !== null
+      ? result
+      : null;
+  const missingCompletedResult = configured && phase === 'done' && completedResult === null;
+  const text = missingCompletedResult
+    ? {
+        title: '분석 결과를 표시할 수 없어요',
+        description: '현재 조건에 맞는 완료 결과를 확인하지 못했어요.',
+      }
+    : messages[phase];
 
   const isBusy = phase === 'checking' || phase === 'requesting' || phase === 'running';
 
   const isError =
+    missingCompletedResult ||
     phase === 'failed' ||
     phase === 'unknown' ||
     phase === 'blocked' ||
@@ -110,47 +123,69 @@ export function CourseTerrainAnalysisPanel({
         </div>
       </header>
 
-      <div className="insights-empty">
-        <div role={isError ? 'alert' : 'status'}>
-          <strong>{configured ? text.title : '분석을 사용할 수 없어요'}</strong>
+      {completedResult ? (
+        <section aria-label="고도 분석 결과" className="terrain-analysis__result">
+          <p role="status">고도 분석이 완료됐어요</p>
+          <dl className="terrain-analysis__criteria" aria-label="분석 기준">
+            <div>
+              <dt>DEM</dt>
+              <dd>{completedResult.demName}</dd>
+            </div>
+            <div>
+              <dt>자료 명목 해상도</dt>
+              <dd>{completedResult.resolutionM} m</dd>
+            </div>
+            <div>
+              <dt>샘플 간격</dt>
+              <dd>{completedResult.sampleIntervalM} m</dd>
+            </div>
+          </dl>
+        </section>
+      ) : (
+        <div className="insights-empty">
+          <div role={isError ? 'alert' : 'status'}>
+            <strong>{configured ? text.title : '분석을 사용할 수 없어요'}</strong>
 
-          <p>
-            {configured
-              ? (message ?? text.description)
-              : '분석 설정을 확인한 뒤 다시 이용해주세요.'}
-          </p>
+            <p>
+              {configured
+                ? missingCompletedResult
+                  ? text.description
+                  : (message ?? text.description)
+                : '분석 설정을 확인한 뒤 다시 이용해주세요.'}
+            </p>
+          </div>
+
+          {configured && phase === 'idle' ? (
+            <Button disabled={!canStart} onClick={onStart}>
+              고도 분석하기
+            </Button>
+          ) : null}
+
+          {configured && isBusy ? (
+            <Button disabled>{phase === 'checking' ? '확인 중…' : '분석 중…'}</Button>
+          ) : null}
+
+          {configured && phase === 'failed' ? (
+            <Button disabled={!canRetry} onClick={onRetry}>
+              다시 시도
+            </Button>
+          ) : null}
+
+          {configured && phase === 'unknown' ? (
+            <Button disabled={!canCheck} onClick={onCheck} variant="secondary">
+              결과 다시 확인
+            </Button>
+          ) : null}
+
+          {configured && phase === 'conflict' ? (
+            <Button onClick={onRefreshCourse} variant="secondary">
+              최신 코스 불러오기
+            </Button>
+          ) : null}
+
+          {phase === 'auth' ? <Link to="/login">로그인하기</Link> : null}
         </div>
-
-        {configured && phase === 'idle' ? (
-          <Button disabled={!canStart} onClick={onStart}>
-            고도 분석하기
-          </Button>
-        ) : null}
-
-        {configured && isBusy ? (
-          <Button disabled>{phase === 'checking' ? '확인 중…' : '분석 중…'}</Button>
-        ) : null}
-
-        {configured && phase === 'failed' ? (
-          <Button disabled={!canRetry} onClick={onRetry}>
-            다시 시도
-          </Button>
-        ) : null}
-
-        {configured && phase === 'unknown' ? (
-          <Button disabled={!canCheck} onClick={onCheck} variant="secondary">
-            결과 다시 확인
-          </Button>
-        ) : null}
-
-        {configured && phase === 'conflict' ? (
-          <Button onClick={onRefreshCourse} variant="secondary">
-            최신 코스 불러오기
-          </Button>
-        ) : null}
-
-        {phase === 'auth' ? <Link to="/login">로그인하기</Link> : null}
-      </div>
+      )}
     </section>
   );
 }
