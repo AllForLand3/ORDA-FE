@@ -1,54 +1,125 @@
+import { isAxiosError } from 'axios';
 import { useParams, useSearchParams } from 'react-router-dom';
 
-import { MOCK_MY_COURSES } from '../mocks/my-courses';
+import type { ApiErrorResponse } from '@/shared/types/api';
+
+import { isValidCourseId, useCourseDetailQuery } from './useCourseDetailQuery';
 
 type CourseDetailTab = 'overview' | 'terrain' | 'facilities';
 
-export function useCourseDetailState() {
+interface CourseDetailError {
+  title: string;
+  message: string;
+  canRetry: boolean;
+}
+
+/** 상세 조회 오류를 사용자 안내와 수동 재시도 가능 여부로 변환한다. */
+function getCourseDetailError(error: unknown): CourseDetailError {
+  if (isAxiosError<ApiErrorResponse>(error)) {
+    const code = error.response?.data?.code;
+
+    switch (code) {
+      case 'INVALID_REQUEST':
+        return {
+          title: '코스 주소를 확인해주세요',
+          message: '올바른 코스 주소로 다시 접속해주세요.',
+          canRetry: false,
+        };
+
+      case 'COURSE_NOT_FOUND':
+      case 'RESOURCE_NOT_FOUND':
+        return {
+          title: '코스를 찾을 수 없어요',
+          message: '삭제되었거나 접근할 수 없는 코스입니다.',
+          canRetry: false,
+        };
+
+      case 'FORBIDDEN':
+        return {
+          title: '코스에 접근할 수 없어요',
+          message: '접근 권한이나 접속 환경을 확인해주세요.',
+          canRetry: false,
+        };
+
+      case 'UNAUTHORIZED':
+        return {
+          title: '로그인이 필요해요',
+          message: '다시 로그인한 뒤 이용해주세요.',
+          canRetry: false,
+        };
+
+      case 'COURSE_STATE_UNAVAILABLE':
+        return {
+          title: '코스 정보를 확인할 수 없어요',
+          message: '코스 정보에 문제가 있어요. 잠시 후 다시 시도해주세요.',
+          canRetry: true,
+        };
+    }
+
+    if (!error.response) {
+      return {
+        title: '코스 정보를 불러오지 못했어요',
+        message: '연결 상태를 확인한 뒤 다시 시도해주세요.',
+        canRetry: true,
+      };
+    }
+  }
+
+  return {
+    title: '코스 정보를 불러오지 못했어요',
+    message: '잠시 후 다시 시도해주세요.',
+    canRetry: true,
+  };
+}
+
+/** 실제 상세 조회와 URL의 탭·목록 복귀 조건을 조합해 페이지 상태를 제공한다. */
+export function useCourseDetailState(userId: string | undefined) {
   const { courseId } = useParams();
   const [params, setParams] = useSearchParams();
-  // 향후 상세 조회 연결 지점. 현재 URL의 ID로 UI Mock만 찾는다.
-  const course = MOCK_MY_COURSES.find((item) => item.id === courseId);
+  const query = useCourseDetailQuery(courseId, userId);
+
   const tabParam = params.get('tab');
   const tab: CourseDetailTab =
     tabParam === 'terrain' || tabParam === 'facilities' ? tabParam : 'overview';
+
   const listParams = new URLSearchParams(params.get('list') ?? '');
   const backHref = `/my-courses${listParams.size ? `?${listParams}` : ''}`;
 
+  const invalidId = !isValidCourseId(courseId);
+
+  const error: CourseDetailError | null = invalidId
+    ? {
+        title: '코스 주소를 확인해주세요',
+        message: '올바른 코스 주소로 다시 접속해주세요.',
+        canRetry: false,
+      }
+    : query.isError
+      ? getCourseDetailError(query.error)
+      : null;
+
   return {
-    course,
+    course: error ? undefined : query.data,
     tab,
     backHref,
-    isError: params.get('preview') === 'error',
-    editHref: `/my-courses/${encodeURIComponent(courseId ?? '')}/edit?${new URLSearchParams({ list: params.get('list') ?? '', tab })}`,
-    isExportOpen: params.get('export') === '1',
-    setExportOpen: (open: boolean) => {
-      setParams(
-        (current) => {
-          const next = new URLSearchParams(current);
-          if (open) next.set('export', '1');
-          else next.delete('export');
-          return next;
-        },
-        { replace: true },
-      );
+    error,
+
+    isLoading: !invalidId && query.isPending,
+    isFetching: query.isFetching,
+
+    retry: () => {
+      void query.refetch();
     },
+
     setTab: (value: string) => {
-      if (value !== 'overview' && value !== 'terrain' && value !== 'facilities') return;
+      if (value !== 'overview' && value !== 'terrain' && value !== 'facilities') {
+        return;
+      }
+
       setParams((current) => {
         const next = new URLSearchParams(current);
         next.set('tab', value);
         return next;
       });
     },
-    retry: () =>
-      setParams(
-        (current) => {
-          const next = new URLSearchParams(current);
-          next.delete('preview');
-          return next;
-        },
-        { replace: true },
-      ),
   };
 }
