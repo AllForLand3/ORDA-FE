@@ -32,6 +32,7 @@ const result = {
 };
 const running = { ...result, status: 'RUNNING', analysis: null, samples: [], completedAt: null };
 
+/** 앱을 다시 로드하지 않고 코스를 전환해 늦은 응답과 자원 정리를 확인한다. */
 async function navigate(page: Page, id: string) {
   await page.evaluate((value) => {
     history.pushState({}, '', `/my-courses/${value}`);
@@ -249,6 +250,7 @@ test.beforeEach(async ({ page }) => {
 // 아래 시나리오는 테스트 본문에서 공통 404 스텁보다 나중에 완료 응답을 등록한다.
 const probePath = '/tests/fixtures/terrainChartProbe.ts';
 
+/** Vite가 해석한 실제 ECharts 인스턴스에서 렌더링 결과를 읽는다. */
 async function readProfileChart(page: Page) {
   return page.evaluate(async (path) => {
     const probe: typeof import('../fixtures/terrainChartProbe') = await import(path);
@@ -256,6 +258,7 @@ async function readProfileChart(page: Page) {
   }, probePath);
 }
 
+/** 완료 GET 응답을 설치하고 실제 차트가 표시될 때까지 기다린다. */
 async function showCompletedProfile(
   page: Page,
   samples: TerrainAnalysisSample[],
@@ -270,13 +273,91 @@ async function showCompletedProfile(
     await route.fulfill({ status: 500, json: { code: 'UNEXPECTED_POST' } });
   });
   await page.goto('/my-courses/6?tab=terrain');
-  await expect(page.locator('.elevation-profile__chart svg')).toBeVisible();
+  // 첫 진입은 ECharts 지연 로딩·Vite 변환을 포함하므로 초기 렌더링에 한해 기다린다.
+  await expect(page.locator('.elevation-profile__chart svg')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('.elevation-profile__chart')).toHaveAttribute(
     'data-chart-ready',
     'true',
   );
   return () => posts;
 }
+
+for (const scenario of [
+  { lengthM: 0.5, unit: 'm', tick: '0.1' },
+  { lengthM: 4, unit: 'm', tick: '1' },
+  { lengthM: 1000, unit: 'km', tick: '0.2' },
+]) {
+  test(`${scenario.lengthM}m 프로파일의 거리축에 구분 가능한 눈금과 단위를 표시한다`, async ({
+    page,
+  }) => {
+    const samples = [
+      { seqNo: 1, distanceM: 0, elevationM: 100 },
+      { seqNo: 2, distanceM: scenario.lengthM, elevationM: 101 },
+    ];
+    await showCompletedProfile(page, samples, {
+      ascentM: 1,
+      descentM: 0,
+      minElevationM: 100,
+      maxElevationM: 101,
+      sampleCount: 2,
+      missingCount: 0,
+    });
+    const svg = page.locator('.elevation-profile__chart svg');
+    await expect(svg).toContainText(`거리 (${scenario.unit})`);
+    await expect(svg.getByText(scenario.tick, { exact: true })).toBeVisible();
+    expect((await readProfileChart(page)).max).toBe(scenario.lengthM);
+    await expect(page.locator('.elevation-profile__chart')).toHaveAttribute(
+      'aria-label',
+      new RegExp(`가로축은 거리 ${scenario.unit}`),
+    );
+    await page.getByText('고도 데이터 표 보기', { exact: true }).click();
+    await expect(
+      page.locator('.elevation-profile__table tbody tr').last().locator('td').first(),
+    ).toHaveText(scenario.lengthM.toLocaleString('ko-KR'));
+    await page.evaluate(async (path) => {
+      const probe: typeof import('../fixtures/terrainChartProbe') = await import(path);
+      probe.captureChart().chart.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: 1 });
+    }, probePath);
+    await expect(svg).toContainText(`거리 ${scenario.lengthM.toLocaleString('ko-KR')} m`);
+  });
+}
+
+test('샘플에서 재계산하지 않고 BE 통계를 표시 단계에서만 반올림한다', async ({ page }) => {
+  await showCompletedProfile(page, result.samples, {
+    ascentM: 123.44,
+    descentM: 45.66,
+    minElevationM: -3.26,
+    maxElevationM: 456.78,
+    sampleCount: 2,
+    missingCount: 0,
+  });
+  // 샘플의 1m·2m와 일부러 다른 BE 통계를 사용해 FE 재계산을 감지한다.
+  const metrics = page.locator('[aria-label="고도 분석 통계"]');
+  await expect(metrics.locator('dd')).toHaveText(['123.4 m', '45.7 m', '456.8 m', '-3.3 m']);
+});
+
+test('전체 결측으로 실패한 분석은 완료 그래프 대신 재시도 안내를 표시한다', async ({ page }) => {
+  // 전체 결측은 BE 계약상 FAILED다. 불가능한 DONE 응답을 정상 결과로 취급하지 않는다.
+  await page.route('**/api/courses/6/elevation-profile?*', async (route) => {
+    await route.fulfill({
+      json: {
+        ...result,
+        status: 'FAILED',
+        analysis: null,
+        samples: [],
+        completedAt: null,
+        failure: { code: 'ANALYSIS_FAILED', message: '고도를 추출할 수 없어 분석에 실패했습니다.' },
+      },
+    });
+  });
+  await page.goto('/my-courses/6?tab=terrain');
+  await expect(
+    page.getByText('고도를 추출할 수 없어 분석에 실패했습니다.', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toBeEnabled();
+  await expect(page.getByRole('region', { name: '고도 분석 결과', exact: true })).toHaveCount(0);
+  await expect(page.locator('.elevation-profile__chart')).toHaveCount(0);
+});
 
 const gapCases = [
   { name: '부분 결측', elevations: [100, 110, null, 120, 130], segments: 2 },

@@ -7,6 +7,7 @@ const metricFormatter = new Intl.NumberFormat('ko-KR', {
   maximumFractionDigits: 1,
 });
 
+/** BE 통계의 실제 0과 미제공을 구분하고 표시 단계에서만 반올림한다. */
 function formatElevationMetric(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return '미제공';

@@ -29,17 +29,20 @@ const numberFormatter = new Intl.NumberFormat('ko-KR', {
   maximumFractionDigits: 1,
 });
 
+/** 원본 값을 변경하지 않고 툴팁·표에 표시할 m 단위 숫자를 반올림한다. */
 function formatNumber(value: number): string {
   return numberFormatter.format(value);
 }
 
+/** 입력 샘플의 순서와 결측을 유지하며 거리 범위에 맞는 단위로 고도를 표시한다. */
 export function ElevationProfileChart({ samples, isExample = false }: ElevationProfileChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<ReturnType<typeof init> | null>(null);
+  const distanceUnit = (samples[samples.length - 1]?.distanceM ?? 0) < 1000 ? 'm' : 'km';
 
   const description = isExample
-    ? '실제 코스와 무관한 예시 고도 프로파일입니다. 가로축은 거리 km, 세로축은 고도 m입니다.'
-    : '현재 코스의 고도 프로파일입니다. 가로축은 거리 km, 세로축은 고도 m입니다.';
+    ? `실제 코스와 무관한 예시 고도 프로파일입니다. 가로축은 거리 ${distanceUnit}, 세로축은 고도 m입니다.`
+    : `현재 코스의 고도 프로파일입니다. 가로축은 거리 ${distanceUnit}, 세로축은 고도 m입니다.`;
 
   // 차트 생성과 크기 감지, 해제를 담당한다.
   useEffect(() => {
@@ -154,7 +157,7 @@ export function ElevationProfileChart({ samples, isExample = false }: ElevationP
 
       xAxis: {
         type: 'value',
-        name: '거리 (km)',
+        name: `거리 (${distanceUnit})`,
         nameLocation: 'middle',
         nameGap: 30,
         min: 0,
@@ -167,7 +170,7 @@ export function ElevationProfileChart({ samples, isExample = false }: ElevationP
           formatter: (value: number) =>
             new Intl.NumberFormat('ko-KR', {
               maximumFractionDigits: 2,
-            }).format(value / 1000),
+            }).format(distanceUnit === 'm' ? value : value / 1000),
           hideOverlap: true,
           fontSize: 10,
           color: color('--color-text-secondary'),
@@ -226,7 +229,7 @@ export function ElevationProfileChart({ samples, isExample = false }: ElevationP
 
     // 이전 데이터와 병합하지 않고 새 옵션으로 교체한다.
     chart.setOption(option, { notMerge: true });
-  }, [samples, description, isExample]);
+  }, [samples, description, isExample, distanceUnit]);
 
   return (
     <figure className="elevation-profile">
