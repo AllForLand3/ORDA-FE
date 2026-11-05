@@ -479,8 +479,20 @@ export function useTerrainAnalysis(
 
   const configured = Boolean(userId && target);
 
+  const response = resultQuery.data;
+
   const completedResult =
-    phase === 'done' && resultQuery.data?.status === 'DONE' ? resultQuery.data : null;
+    configured &&
+    target !== null &&
+    phase === 'done' &&
+    response?.status === 'DONE' &&
+    response.courseId === target.courseId &&
+    response.revNo === target.revNo &&
+    response.demId === target.demId &&
+    response.sampleIntervalM === target.sampleIntervalM &&
+    response.analysis !== null
+      ? response
+      : null;
 
   return {
     phase,

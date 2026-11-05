@@ -4,9 +4,19 @@ import easyIcon from '@/assets/analysis/difficulty-easy.svg';
 import hardIcon from '@/assets/analysis/difficulty-hard.svg';
 import mediumIcon from '@/assets/analysis/difficulty-medium.svg';
 import { Button } from '@/components/ui';
+import { SAMPLE_ELEVATION_PROFILE } from '../mocks/terrain';
+import type { TerrainAnalysisSample } from '../types/terrainAnalysis';
 
 const ElevationProfileChart = lazy(() =>
   import('./ElevationProfileChart').then((module) => ({ default: module.ElevationProfileChart })),
+);
+
+const exampleSamples: readonly TerrainAnalysisSample[] = SAMPLE_ELEVATION_PROFILE.map(
+  (point, index) => ({
+    seqNo: index + 1,
+    distanceM: point.distanceM,
+    elevationM: point.elevationM,
+  }),
 );
 
 interface TerrainAnalysisPanelProps {
@@ -47,7 +57,7 @@ export function TerrainAnalysisPanel({ candidateName }: TerrainAnalysisPanelProp
             </div>
           }
         >
-          <ElevationProfileChart />
+          <ElevationProfileChart samples={exampleSamples} isExample />
         </Suspense>
       ) : (
         <div className="insights-empty" role="status">
