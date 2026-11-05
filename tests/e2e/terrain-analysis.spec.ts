@@ -1,4 +1,8 @@
 import type { Page } from '@playwright/test';
+import type {
+  TerrainAnalysisResponse,
+  TerrainAnalysisSample,
+} from '../../src/features/analysis/types/terrainAnalysis';
 
 import { expect, test } from '../fixtures/authenticatedTest';
 
@@ -240,4 +244,279 @@ test.beforeEach(async ({ page }) => {
       },
     });
   });
+});
+
+// 아래 시나리오는 테스트 본문에서 공통 404 스텁보다 나중에 완료 응답을 등록한다.
+const probePath = '/tests/fixtures/terrainChartProbe.ts';
+
+async function readProfileChart(page: Page) {
+  return page.evaluate(async (path) => {
+    const probe: typeof import('../fixtures/terrainChartProbe') = await import(path);
+    return probe.readChart();
+  }, probePath);
+}
+
+async function showCompletedProfile(
+  page: Page,
+  samples: TerrainAnalysisSample[],
+  summary: TerrainAnalysisResponse['analysis'],
+) {
+  let posts = 0;
+  await page.route('**/api/courses/6/elevation-profile?*', async (route) => {
+    await route.fulfill({ json: { ...result, samples, analysis: summary } });
+  });
+  await page.route('**/api/courses/6/terrain-analyses', async (route) => {
+    posts++;
+    await route.fulfill({ status: 500, json: { code: 'UNEXPECTED_POST' } });
+  });
+  await page.goto('/my-courses/6?tab=terrain');
+  await expect(page.locator('.elevation-profile__chart svg')).toBeVisible();
+  await expect(page.locator('.elevation-profile__chart')).toHaveAttribute(
+    'data-chart-ready',
+    'true',
+  );
+  return () => posts;
+}
+
+const gapCases = [
+  { name: '부분 결측', elevations: [100, 110, null, 120, 130], segments: 2 },
+  { name: '연속 결측', elevations: [100, 110, null, null, 120, 130], segments: 2 },
+  { name: '시작·끝 결측과 고립된 점', elevations: [null, 100, 120, null, 110, null], segments: 2 },
+];
+
+for (const scenario of gapCases) {
+  test(`${scenario.name}: 샘플·거리 범위를 유지하고 결측 선을 연결하지 않는다`, async ({
+    page,
+  }) => {
+    const samples = scenario.elevations.map((elevationM, index) => ({
+      seqNo: index + 1,
+      distanceM: index * 25,
+      elevationM,
+    }));
+    const valid = scenario.elevations.filter((value): value is number => value !== null);
+    const missingCount = samples.length - valid.length;
+    await showCompletedProfile(page, samples, {
+      // 이 세 데이터는 연속된 100→110 또는 100→120 구간만 상승량에 기여한다.
+      ascentM: 20,
+      descentM: 0,
+      minElevationM: Math.min(...valid),
+      maxElevationM: Math.max(...valid),
+      sampleCount: samples.length,
+      missingCount,
+    });
+    const chart = await readProfileChart(page);
+    expect(chart.data).toEqual(samples.map((sample) => [sample.distanceM, sample.elevationM]));
+    expect(chart.connectNulls).toBe(false);
+    expect(chart.min).toBe(0);
+    expect(chart.max).toBe(samples[samples.length - 1].distanceM);
+    // SVG의 move 명령은 끊어진 선의 시작을 나타낸다. 하나의 연속 선이면 실패한다.
+    expect(chart.linePaths.join(' ').match(/[Mm]/g)?.length).toBe(scenario.segments);
+    expect(chart.linePaths.join(' ')).not.toMatch(/NaN|Infinity/);
+    await page.getByText('고도 데이터 표 보기', { exact: true }).click();
+    const rows = page.locator('.elevation-profile__table tbody tr');
+    await expect(rows).toHaveCount(samples.length);
+    await expect(
+      page.locator('.elevation-profile__table td', { hasText: '고도 미제공' }),
+    ).toHaveCount(missingCount);
+    await expect(
+      page.getByText(`전체 ${samples.length}개 중 고도 미제공 ${missingCount}개`, { exact: true }),
+    ).toBeVisible();
+    for (let index = 0; index < samples.length; index++) {
+      await expect(rows.nth(index).locator('td').first()).toHaveText(
+        String(samples[index].distanceM),
+      );
+    }
+  });
+}
+
+for (const elevationM of [0, 100]) {
+  test(`동일 고도 ${elevationM}m를 결측으로 바꾸지 않고 표시한다`, async ({ page }) => {
+    const samples = [0, 25, 50].map((distanceM, index) => ({
+      seqNo: index + 1,
+      distanceM,
+      elevationM,
+    }));
+    await showCompletedProfile(page, samples, {
+      ascentM: 0,
+      descentM: 0,
+      minElevationM: elevationM,
+      maxElevationM: elevationM,
+      sampleCount: 3,
+      missingCount: 0,
+    });
+    const chart = await readProfileChart(page);
+    expect(chart.data).toEqual(samples.map((sample) => [sample.distanceM, elevationM]));
+    expect(chart.linePaths.length).toBeGreaterThan(0);
+    expect(chart.linePaths.join(' ')).not.toMatch(/NaN|Infinity/);
+    await expect(page.getByRole('definition').filter({ hasText: /^0 m$/ })).toHaveCount(
+      elevationM === 0 ? 4 : 2,
+    );
+    await page.getByText('고도 데이터 표 보기', { exact: true }).click();
+    await expect(page.locator('.elevation-profile__table tbody tr')).toHaveCount(3);
+    await expect(page.locator('.elevation-profile__table tbody')).not.toContainText('고도 미제공');
+  });
+}
+
+for (const width of [360, 390, 1280]) {
+  test(`${width}px에서 통계·차트가 넘치지 않고 탭 전환·크기 변경에 대응한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const posts = await showCompletedProfile(page, result.samples, result.analysis);
+    for (const tab of ['코스 비교', '지형 분석']) {
+      await page.getByRole('tab', { name: tab, exact: true }).click();
+      await expect(page.locator('.elevation-profile__chart svg')).toBeVisible();
+      await expect
+        .poll(async () => {
+          const chart = await readProfileChart(page);
+          return chart.width > 0 && Math.abs(chart.width - chart.containerWidth) <= 1;
+        })
+        .toBe(true);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      ).toBe(true);
+      for (const element of await page
+        .locator('.terrain-analysis__metrics dd, .terrain-analysis__criteria dd')
+        .all()) {
+        await expect(element).toBeVisible();
+        expect(await element.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(
+          true,
+        );
+      }
+    }
+    await page.setViewportSize({ width: width === 1280 ? 390 : 1280, height: 900 });
+    await expect
+      .poll(async () => {
+        const chart = await readProfileChart(page);
+        return chart.width > 0 && Math.abs(chart.width - chart.containerWidth) <= 1;
+      })
+      .toBe(true);
+    expect(posts()).toBe(0);
+  });
+}
+
+test('2,000개 샘플 전체와 툴팁을 표시하고 탭 전환 후에도 유지한다', async ({ page }) => {
+  const samples = Array.from({ length: 2000 }, (_, index) => ({
+    seqNo: index + 1,
+    distanceM: index * 25,
+    elevationM: index % 2 === 0 ? 100 : 101,
+  }));
+  const posts = await showCompletedProfile(page, samples, {
+    ascentM: 1000,
+    descentM: 999,
+    minElevationM: 100,
+    maxElevationM: 101,
+    sampleCount: 2000,
+    missingCount: 0,
+  });
+  await page.getByText('고도 데이터 표 보기', { exact: true }).click();
+  const rows = page.locator('.elevation-profile__table tbody tr');
+  await expect(rows).toHaveCount(2000);
+  await expect(rows.first().locator('td').first()).toHaveText('0');
+  await expect(rows.last().locator('td').first()).toHaveText('49,975');
+  for (const tab of ['코스 비교', '지형 분석']) {
+    await page.getByRole('tab', { name: tab, exact: true }).click();
+    await expect(page.locator('.elevation-profile__chart svg')).toBeVisible();
+    expect((await readProfileChart(page)).data).toHaveLength(2000);
+  }
+  // 실제 툴팁 formatter와 SVG 렌더링을 검증하되 마우스 좌표에는 의존하지 않는다.
+  await page.evaluate(async (path) => {
+    const probe: typeof import('../fixtures/terrainChartProbe') = await import(path);
+    probe.captureChart().chart.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: 1999 });
+  }, probePath);
+  await expect(page.locator('.elevation-profile__chart svg')).toContainText('거리 49,975 m');
+  await expect(page.locator('.elevation-profile__chart svg')).toContainText('고도 101 m');
+  expect(posts()).toBe(0);
+});
+
+test('탭 이탈·코스 이동 시 차트와 크기 감지·resize 리스너를 정리한다', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    const observers = new Set<ResizeObserver>();
+    const listeners = new Set<unknown>();
+    let expectingChartResizeListener = false;
+    const NativeObserver = window.ResizeObserver;
+    window.ResizeObserver = class extends NativeObserver {
+      observe(target: Element, options?: ResizeObserverOptions) {
+        if (target.classList.contains('elevation-profile__chart')) {
+          observers.add(this);
+          expectingChartResizeListener = true;
+        }
+        super.observe(target, options);
+      }
+      disconnect() {
+        observers.delete(this);
+        super.disconnect();
+      }
+    };
+    window.addEventListener = new Proxy(window.addEventListener, {
+      apply(target, thisArg, args) {
+        if (args[0] === 'resize' && expectingChartResizeListener) {
+          listeners.add(args[1]);
+          expectingChartResizeListener = false;
+        }
+        return Reflect.apply(target, thisArg, args);
+      },
+    });
+    window.removeEventListener = new Proxy(window.removeEventListener, {
+      apply(target, thisArg, args) {
+        if (args[0] === 'resize') listeners.delete(args[1]);
+        return Reflect.apply(target, thisArg, args);
+      },
+    });
+    const state = window as Window & {
+      __terrainResources: () => { observers: number; listeners: number };
+    };
+    state.__terrainResources = () => ({ observers: observers.size, listeners: listeners.size });
+  });
+  await showCompletedProfile(page, result.samples, result.analysis);
+  for (const destination of ['facilities', 'course']) {
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const state = window as Window & {
+            __terrainResources: () => { observers: number; listeners: number };
+          };
+          return state.__terrainResources();
+        }),
+      )
+      .toEqual({ observers: 1, listeners: 1 });
+    const previous = await page.evaluateHandle(async (path) => {
+      const probe: typeof import('../fixtures/terrainChartProbe') = await import(path);
+      return probe.captureChart();
+    }, probePath);
+    try {
+      if (destination === 'facilities') {
+        await page.getByRole('tab', { name: '주변 시설', exact: true }).click();
+      } else {
+        await navigate(page, '7');
+      }
+      await expect(page.locator('.elevation-profile__chart')).toHaveCount(0);
+      await expect
+        .poll(() =>
+          previous.evaluate(({ chart, element }) => ({
+            disposed: chart.isDisposed(),
+            ready: element.dataset.chartReady ?? null,
+            width: element.dataset.chartWidth ?? null,
+          })),
+        )
+        .toEqual({ disposed: true, ready: null, width: null });
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const state = window as Window & {
+              __terrainResources: () => { observers: number; listeners: number };
+            };
+            return state.__terrainResources();
+          }),
+        )
+        .toEqual({ observers: 0, listeners: 0 });
+    } finally {
+      await previous.dispose();
+    }
+    if (destination === 'facilities') {
+      await page.getByRole('tab', { name: '지형 분석', exact: true }).click();
+      await expect(page.locator('.elevation-profile__chart svg')).toBeVisible();
+    }
+  }
+  expect(errors).toEqual([]);
 });
