@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
+import deleteIcon from '@/assets/course/course-delete.svg';
+import downloadIcon from '@/assets/route/download.svg';
+import editIcon from '@/assets/route/edit.svg';
 
 import courseThumbnail from '@/assets/course/my-course-thumbnail.png';
 import parkingIcon from '@/assets/course/course-parking.svg';
 import stairsIcon from '@/assets/course/course-stairs.svg';
 import toiletIcon from '@/assets/course/course-toilet.svg';
-import { Card } from '@/components/ui';
+import { Button, Card } from '@/components/ui';
 
 import type { CourseListItem } from '../types/courseList';
 
@@ -44,7 +47,7 @@ export function MyCourseCard({ course, detailHref, editHref }: MyCourseCardProps
   const nearby = course.nearby;
 
   return (
-    <Card aria-label={course.courseName} className="my-course-card">
+    <Card aria-label={course.courseName} className="my-course-card" padding="none">
       <Link
         aria-label={`${course.courseName} 상세 보기`}
         className="my-course-card__thumbnail"
@@ -136,8 +139,49 @@ export function MyCourseCard({ course, detailHref, editHref }: MyCourseCardProps
           <Link to={detailHref}>
             코스 상세 보기 <span aria-hidden="true">↗</span>
           </Link>
-          <Link to={editHref}>편집</Link>
         </div>
+      </div>
+      <div aria-label="코스 관리" className="my-course-card__actions">
+        <Link
+          className="orda-button orda-button--quiet orda-button--sm my-course-card__action my-course-card__action--standard"
+          to={editHref}
+        >
+          <span
+            aria-hidden="true"
+            className="my-course-card__action-icon"
+            style={{ maskImage: `url("${editIcon}")` }}
+          />
+          편집
+        </Link>
+        <Button
+          className="my-course-card__action my-course-card__action--standard"
+          disabled
+          title="파일 내보내기는 아직 제공하지 않습니다."
+          size="sm"
+          variant="quiet"
+        >
+          <span
+            aria-hidden="true"
+            className="my-course-card__action-icon"
+            style={{ maskImage: `url("${downloadIcon}")` }}
+          />
+          내보내기
+        </Button>
+        <Button
+          aria-disabled="true"
+          disabled
+          title="코스 상세 화면에서 삭제할 수 있습니다."
+          className="my-course-card__action my-course-card__action--danger"
+          size="sm"
+          variant="quiet"
+        >
+          <span
+            aria-hidden="true"
+            className="my-course-card__action-icon"
+            style={{ maskImage: `url("${deleteIcon}")` }}
+          />
+          삭제
+        </Button>
       </div>
     </Card>
   );

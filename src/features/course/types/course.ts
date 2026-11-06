@@ -35,3 +35,6 @@ export interface CourseSnapshot {
   /** 응답 헤더의 강한 ETag 원문. 없으면 수정·삭제 전 상세를 다시 조회한다. */
   etag: string | null;
 }
+
+export type CourseLineString = CourseGeometry;
+export type CourseDetailResponse = CourseDetail;

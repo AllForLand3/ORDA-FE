@@ -145,7 +145,7 @@ test('상세에서 편집하고 변경한 속성만 저장하며 다음 저장�
     'true',
   );
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('tab', { name: '코스 정보' }).click();
+  await page.getByRole('tab', { name: '코스 비교' }).click();
   await expect(page.getByText('등록된 메모가 없습니다.')).toBeVisible();
 });
 

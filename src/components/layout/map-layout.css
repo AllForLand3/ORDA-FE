@@ -1,7 +1,6 @@
 .orda-map-layout {
   --orda-bottom-navigation-height: 0px;
-  /* 헤더 아래 지도 버튼 두 개와 패널이 겹치지 않도록 상단 공간을 확보한다. */
-  --orda-mobile-panel-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 10.75rem);
+  --orda-mobile-map-clearance: 13.75rem;
 
   position: relative;
   display: flex;
@@ -120,7 +119,7 @@
   inset-inline: 0;
   inset-block-end: var(--orda-bottom-navigation-height);
   display: flex;
-  max-height: calc(100% - var(--orda-mobile-panel-top) - var(--orda-bottom-navigation-height));
+  max-height: calc(100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height));
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--color-border-default);
@@ -137,7 +136,7 @@
 }
 
 .orda-responsive-panel[data-panel-size='expanded'] .orda-responsive-panel__surface {
-  height: calc(100% - var(--orda-mobile-panel-top) - var(--orda-bottom-navigation-height));
+  height: calc(100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height));
 }
 
 .orda-responsive-panel__toggle {
@@ -259,10 +258,10 @@
   .orda-responsive-panel[data-mobile-resizable='true'] .orda-responsive-panel__surface {
     --orda-panel-compact-height: min(
       22.375rem,
-      calc(100% - var(--orda-mobile-panel-top) - var(--orda-bottom-navigation-height))
+      calc(100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height))
     );
     --orda-panel-expanded-height: calc(
-      100% - var(--orda-mobile-panel-top) - var(--orda-bottom-navigation-height)
+      100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height)
     );
     --orda-panel-target-height: var(--orda-panel-compact-height);
 

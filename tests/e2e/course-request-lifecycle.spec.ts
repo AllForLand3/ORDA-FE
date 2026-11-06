@@ -99,6 +99,11 @@ test('계정 전환 뒤 이전 등록 응답이 와도 새 계정의 현재 화�
 test('삭제 요청 중 상세를 떠나면 늦은 삭제 응답이 현재 화면을 이동시키지 않는다', async ({
   page,
 }) => {
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    }),
+  );
   let finishDelete = () => {};
   const pending = new Promise<void>((resolve) => {
     finishDelete = resolve;

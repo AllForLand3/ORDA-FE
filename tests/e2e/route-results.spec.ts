@@ -37,11 +37,6 @@ test('예시 코스를 선택하고 탭·뒤로가기·새로고침에서도 선
   await page.reload();
   await expect(second).toHaveAttribute('aria-pressed', 'true');
 
-  const card = page.getByRole('article', { name: '예시 코스 2: 계곡 완만 코스' });
-  await card.getByText('상세보기', { exact: true }).click();
-  await expect(
-    card.getByText('실제 등산로, 경로 선형과 분석 자료는 제공되지 않았습니다.'),
-  ).toBeVisible();
   expect(apiRequests).toEqual([]);
 });
 
@@ -76,27 +71,23 @@ test('편집 모달은 임시 입력과 취소만 허용하고 키보드 포커�
 
   const downloads: string[] = [];
   page.on('download', (download) => downloads.push(download.suggestedFilename()));
-  await card.getByRole('button', { name: '내보내기', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '내보내기 준비 중' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '파일 내보내기 미연결' })).toBeDisabled();
-  await page.keyboard.press('Escape');
+  await card.getByRole('button', { name: '저장하기', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '내보내기 준비 중' })).toHaveCount(0);
   expect(downloads).toEqual([]);
 });
 
 test('로딩·빈 결과·오류 데모를 구분하고 분석 결측을 수치로 채우지 않는다', async ({ page }) => {
-  await page.goto('/routes/results?candidate=invalid&tab=invalid');
+  await page.goto('/routes/results?candidate=invalid&tab=invalid&preview=loading');
   await expect(page.getByRole('tab', { name: '코스 비교' })).toHaveAttribute(
     'aria-selected',
     'true',
   );
-  const preview = page.getByRole('combobox', { name: '화면 상태 미리보기' });
-  await preview.selectOption('loading');
   await expect(page.getByText('예시 코스를 불러오는 모습이에요')).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toBeVisible();
   await expect(page.getByRole('article')).toHaveCount(0);
-  await preview.selectOption('empty');
+  await page.goto('/routes/results?preview=empty');
   await expect(page.getByText('표시할 코스가 없어요')).toBeVisible();
-  await preview.selectOption('error');
+  await page.goto('/routes/results?preview=error');
   await expect(page.getByRole('alert')).toContainText('코스를 표시하지 못했어요');
   await page.getByRole('button', { name: '예시 코스로 돌아가기' }).click();
   await expect(page.getByRole('article')).toHaveCount(3);
@@ -163,14 +154,16 @@ test('모바일과 PC에서 패널·지도·에셋이 넘치지 않고 접기·�
     await third.focus();
     await page.keyboard.press('Enter');
     await expect(third).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: '패널 접기' }).click();
+    const closeButton = page.getByRole('button', { name: '패널 접기' });
+    await expect(closeButton).toHaveText('접기');
+    await closeButton.click();
     await expect(panel).toBeHidden();
     await page.getByRole('button', { name: '패널 펼치기' }).click();
     await expect(panel).toBeVisible();
   }
 });
 
-test('설정 화면의 예시 진입과 조건 변경 링크가 입력된 조건을 유지한다', async ({ page }) => {
+test('설정 화면의 예시 진입과 결과 화면 공통 헤더가 정상 동작한다', async ({ page }) => {
   await page.goto(
     `/routes/setup?${selectedPlaces}&step=conditions&level=intermediate&priorities=gentle-slope&facilities=shelter`,
   );
@@ -179,9 +172,13 @@ test('설정 화면의 예시 진입과 조건 변경 링크가 입력된 조건
   await explore.click();
   await expect(page).toHaveURL(/\/routes\/results/);
   await expect(page.getByText('3개 코스 · 모든 지표는 예시 데이터입니다.')).toBeVisible();
-  await page.getByRole('link', { name: '← 조건 변경' }).click();
   await expect(page).toHaveURL(/level=intermediate/);
   await expect(page).toHaveURL(/priorities=gentle-slope/);
   await expect(page).toHaveURL(/facilities=shelter/);
-  await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '← 조건 변경' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: '화면 상태 미리보기' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '마이페이지로 이동' })).toBeVisible();
+  await expect(page.getByText('선택한 산', { exact: true })).toBeVisible();
+  await expect(page.getByText('관악산', { exact: true })).toBeVisible();
 });

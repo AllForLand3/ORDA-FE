@@ -12,6 +12,25 @@ test('모바일 산 목록은 실제 터치 드래그로 높이를 바꾸고 내
     viewport: { width: 440, height: 956 },
   });
   await installAuthenticatedSession(context);
+  await context.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: {
+        items: Array.from({ length: 10 }, (_, index) => ({
+          mountainId: String(index + 1),
+          mountainName: `테스트 산 ${index + 1}`,
+          addressLabel: '서울특별시 관악구',
+          provinceName: '서울특별시',
+          districtName: '관악구',
+          elevationMeters: 629,
+          geometry: { type: 'Point', coordinates: [126.96444, 37.44472] },
+        })),
+        page: 0,
+        size: 10,
+        totalElements: 10,
+        totalPages: 1,
+      },
+    }),
+  );
   const page = await context.newPage();
   const client = await context.newCDPSession(page);
   async function touch(
@@ -42,6 +61,7 @@ test('모바일 산 목록은 실제 터치 드래그로 높이를 바꾸고 내
     ]) {
       await page.setViewportSize(viewport);
       await page.goto('/mountains');
+      await expect(page.locator('.mountain-card')).toHaveCount(10);
       const root = page.locator('.orda-responsive-panel');
       const panel = page.getByRole('complementary', { name: '산 선택 패널' });
       const initialHeight = await panel.evaluate((element) => element.clientHeight);

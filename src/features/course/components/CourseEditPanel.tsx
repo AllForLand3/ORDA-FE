@@ -22,6 +22,17 @@ export function CourseEditPanel({ state, detailHref }: { state: State; detailHre
       }}
     >
       <TextField
+        endAdornment={
+          <Button
+            aria-label="코스 이름 지우기"
+            disabled={state.pending}
+            onClick={() => state.setName('')}
+            size="sm"
+            variant="quiet"
+          >
+            <span aria-hidden="true">×</span>
+          </Button>
+        }
         label="코스 이름"
         required
         value={state.draft.name}

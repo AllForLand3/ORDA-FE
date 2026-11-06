@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 
 import addIcon from '@/assets/course/course-add.svg';
-import { Button } from '@/components/ui';
+import { Button, Tabs, TextField } from '@/components/ui';
+import { Select } from '@/components/ui/Select';
 
 import type { useMyCoursesState } from '../hooks/useMyCoursesState';
 import { MyCourseCard } from './MyCourseCard';
@@ -18,7 +19,11 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
       <header className="my-courses-intro">
         <div>
           <h1>내 코스</h1>
-          <p>저장하거나 직접 만든 코스를 관리하고 다시 분석해보세요.</p>
+          <p>
+            저장하거나 직접 만든 코스를
+            <br />
+            관리하고 다시 분석해보세요
+          </p>
         </div>
         <div className="my-courses-upload">
           <Button onClick={() => navigate(state.getImportHref())} size="sm">
@@ -28,6 +33,45 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
           <small>(GeoJSON)</small>
         </div>
       </header>
+      <p className="my-courses-demo-note">
+        검색·정렬·분류는 현재 페이지의 코스에만 적용됩니다. 썸네일은 예시 이미지입니다.
+      </p>
+      <div className="my-courses-search">
+        <TextField
+          hideLabel
+          label="내 코스 검색"
+          placeholder="현재 페이지의 코스 이름이나 산 이름 검색"
+          value={state.search}
+          onChange={(event) => state.setSearch(event.target.value)}
+          variant="search"
+        />
+        <Select
+          ariaLabel="코스 정렬"
+          className="my-courses-sort"
+          value={state.sort}
+          onValueChange={state.setSort}
+          options={[
+            { value: 'latest', label: '최신순' },
+            { value: 'oldest', label: '오래된순' },
+            { value: 'name', label: '이름순' },
+          ]}
+        />
+      </div>
+      <Tabs
+        ariaLabel="내 코스 분류"
+        value={state.tab}
+        onValueChange={state.setTab}
+        items={state.tabs.map((tab) => ({
+          value: tab.value,
+          label: (
+            <>
+              {tab.label}
+              <span className="my-courses-tab-count">{tab.count}</span>
+            </>
+          ),
+          content: null,
+        }))}
+      />
       {state.loading ? (
         <div className="my-courses-feedback" role="status" aria-busy="true">
           코스 목록을 불러오는 중입니다.
@@ -59,8 +103,16 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
             </div>
           ) : (
             <div className="my-courses-feedback" role="status">
-              <h2>저장한 코스가 없어요</h2>
-              <p>코스를 업로드하면 이곳에서 확인할 수 있습니다.</p>
+              <h2>
+                {state.totalElements
+                  ? '현재 페이지에 조건에 맞는 코스가 없어요'
+                  : '저장한 코스가 없어요'}
+              </h2>
+              <p>
+                {state.totalElements
+                  ? '검색·분류 조건을 바꾸거나 다른 페이지를 확인해주세요.'
+                  : '코스를 업로드하면 이곳에서 확인할 수 있습니다.'}
+              </p>
             </div>
           )}
         </>

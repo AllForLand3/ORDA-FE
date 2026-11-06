@@ -3,6 +3,38 @@ import { courseListDetail } from '../fixtures/courseList';
 
 const coursePath = `/my-courses/${courseListDetail.courseId}`;
 
+test('Mock 상세의 편집·내보내기 모달은 디자인과 미리보기를 유지하며 서버에 저장하지 않는다', async ({
+  page,
+}) => {
+  const mutations: string[] = [];
+  const downloads: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/api/courses') && request.method() !== 'GET')
+      mutations.push(request.method());
+  });
+  page.on('download', (download) => downloads.push(download.suggestedFilename()));
+  await page.setViewportSize({ width: 440, height: 956 });
+  await page.goto('/my-courses/example-ridge-1');
+  await page.getByRole('button', { name: '편집', exact: true }).click();
+  const edit = page.getByRole('dialog', { name: /코스 편집/ });
+  await expect(edit).toBeVisible();
+  const editBox = await edit.boundingBox();
+  await edit.getByRole('button', { name: '코스 편집 닫기' }).click();
+  await page.getByRole('button', { name: '내보내기', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: '코스 내보내기', exact: true });
+  await expect(sheet).toBeVisible();
+  const exportBox = await sheet.boundingBox();
+  expect(exportBox?.width).toBe(editBox?.width);
+  expect(exportBox?.height).toBe(editBox?.height);
+  await expect(sheet.getByRole('radio', { name: /^GPX/ })).toBeChecked();
+  await sheet.getByRole('radio', { name: /^GeoJSON/ }).check();
+  await expect(sheet.getByRole('button', { name: '내보내기', exact: true })).toBeDisabled();
+  await sheet.getByRole('button', { name: '완료 화면 미리보기', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  expect(mutations).toEqual([]);
+  expect(downloads).toEqual([]);
+});
+
 test.beforeEach(async ({ page }) => {
   let saved = { ...courseListDetail };
   let version = 1;

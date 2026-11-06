@@ -1,6 +1,107 @@
 import { expect, test } from '../fixtures/authenticatedTest';
 import { courseListDetail, courseListItems, courseListPage } from '../fixtures/courseList';
 
+test('현재 페이지의 검색·정렬·키보드 분류와 새로고침을 유지한다', async ({ page }) => {
+  const items = courseListItems.map((item, index) => ({
+    ...item,
+    savedAt: index === 0 ? '2026-11-04T00:00:00Z' : '2026-11-03T00:00:00Z',
+  }));
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) =>
+    route.fulfill({ json: courseListPage(items) }),
+  );
+  await page.goto('/my-courses');
+  const cards = page.getByRole('article');
+  const search = page.getByRole('searchbox', { name: '내 코스 검색' });
+  await expect(cards).toHaveCount(2);
+  await search.fill('존재하지않는검색대상');
+  await expect(page.getByText('현재 페이지에 조건에 맞는 코스가 없어요')).toBeVisible();
+  await search.fill('');
+  await page.getByRole('button', { name: '코스 정렬', exact: true }).click();
+  await page.getByRole('option', { name: '오래된순', exact: true }).click();
+  await expect(cards.first()).toHaveAccessibleName(items[1].courseName);
+  await page.getByRole('button', { name: '코스 정렬', exact: true }).click();
+  await page.getByRole('option', { name: '최신순', exact: true }).click();
+  await expect(cards.first()).toHaveAccessibleName(items[0].courseName);
+  await page.getByRole('tab', { name: /저장한 코스/ }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: /가져온 코스/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(cards).toHaveCount(1);
+  await expect(cards).toHaveAccessibleName(items[0].courseName);
+  await page.keyboard.press('Home');
+  await expect(cards).toHaveCount(2);
+  await page.getByRole('button', { name: '코스 정렬', exact: true }).click();
+  await page.getByRole('option', { name: '이름순', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name: '코스 정렬', exact: true })).toContainText(
+    '이름순',
+  );
+  await expect(cards).toHaveCount(2);
+});
+
+test('뒤로가기·앞으로가기는 목록 URL의 검색어와 결과를 동기화한다', async ({ page }) => {
+  await page.goto('/my-courses?q=' + encodeURIComponent('관악산 등산'));
+  const search = page.getByRole('searchbox', { name: '내 코스 검색' });
+  await expect(search).toHaveValue('관악산 등산');
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await page.evaluate(() => {
+    const next = new URL(location.href);
+    next.searchParams.set('q', '메모');
+    history.pushState({}, '', next);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(search).toHaveValue('메모');
+  await expect(page.getByRole('article')).toHaveAccessibleName(courseListItems[1].courseName);
+  await page.goBack();
+  await expect(search).toHaveValue('관악산 등산');
+  await expect(page.getByRole('article')).toHaveAccessibleName(courseListItems[0].courseName);
+  await page.goForward();
+  await expect(search).toHaveValue('메모');
+  await expect(page.getByRole('article')).toHaveAccessibleName(courseListItems[1].courseName);
+});
+
+test('현재 페이지 검색을 API 필터로 보내지 않고 상세·편집 왕복에서 목록 조건을 보존한다', async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  await page.route(/\/api\/courses(?:\?.*)?$/, (route) => {
+    requests.push(route.request().url());
+    return route.fulfill({ json: courseListPage() });
+  });
+  await page.route('**/api/courses/101', (route) =>
+    route.fulfill({
+      json: {
+        ...courseListDetail,
+        courseId: '101',
+        courseName: courseListItems[1].courseName,
+        memo: null,
+      },
+      headers: { ETag: '"v1"' },
+    }),
+  );
+  const listUrl = '/my-courses?page=0&q=' + encodeURIComponent('메모') + '&sort=name&tab=all';
+  await page.goto(listUrl);
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(
+    page.getByText(
+      '검색·정렬·분류는 현재 페이지의 코스에만 적용됩니다. 썸네일은 예시 이미지입니다.',
+    ),
+  ).toBeVisible();
+  await page.getByRole('article').getByRole('link', { name: '편집', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: '코스 이름', exact: true })).toHaveValue(
+    courseListItems[1].courseName,
+  );
+  await page.getByRole('link', { name: '취소', exact: true }).click();
+  await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
+  await expect(page).toHaveURL(new URL(listUrl, 'http://127.0.0.1:5173').href);
+  await expect(page.getByRole('searchbox', { name: '내 코스 검색' })).toHaveValue('메모');
+  await expect(page.getByRole('article')).toHaveCount(1);
+  for (const request of requests)
+    expect(Object.fromEntries(new URL(request).searchParams)).toEqual({ page: '0' });
+});
+
 test.beforeEach(async ({ page }) => {
   await page.route('https://*.tile.openstreetmap.org/**', (route) => route.abort());
 });
@@ -192,17 +293,23 @@ test('목록 인증이 만료되면 로그인 화면으로 이동한다', async 
   await expect(page.getByRole('heading', { name: '로그인', exact: true })).toBeVisible();
 });
 
-test('잘못된 상세 ID는 예시 화면으로 대체하지 않고 코스 없음으로 표시한다', async ({ page }) => {
+test('잘못된 상세 ID와 명시적인 Mock 오류 미리보기를 구분한다', async ({ page }) => {
   await page.goto('/my-courses/unknown-example');
   await expect(page.getByRole('heading', { name: '코스를 찾을 수 없어요' })).toBeVisible();
   await expect(page.locator('.ol-viewport')).toHaveCount(0);
   await page.goto('/my-courses/example-ridge-1?preview=error');
-  await expect(page.getByRole('alert')).toContainText('코스를 찾을 수 없어요');
+  await expect(page.getByRole('alert')).toContainText('코스 상세를 표시하지 못했어요');
+  await expect(page.getByRole('button', { name: '예시 상세 다시 보기' })).toBeVisible();
   await expect(page.getByRole('button', { name: '다시 시도' })).toHaveCount(0);
   await expect(page.locator('.ol-viewport')).toHaveCount(0);
 });
 
 test('목록과 실제 상세는 360~1512px에서 이미지·지도·내비게이션을 표시한다', async ({ page }) => {
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    }),
+  );
   await page.route(`**/api/courses/${courseListDetail.courseId}`, (route) =>
     route.fulfill({ json: courseListDetail, headers: { ETag: '"v1"' } }),
   );

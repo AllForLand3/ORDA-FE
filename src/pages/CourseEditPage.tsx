@@ -48,6 +48,7 @@ function CourseEditWorkspace({ initial }: { initial: CourseSnapshot }) {
   const [params] = useSearchParams();
   const tab = params.get('tab');
   const detailParams = new URLSearchParams();
+  if (params.has('list')) detailParams.set('list', params.get('list') ?? '');
   if (tab === 'terrain' || tab === 'facilities') detailParams.set('tab', tab);
   const listPage = params.get('listPage');
   if (listPage && /^[1-9]\d*$/.test(listPage) && Number(listPage) <= 2147483647) {

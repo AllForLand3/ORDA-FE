@@ -3,39 +3,110 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 
 import backIcon from '@/assets/course/course-back.svg';
 import { Button } from '@/components/ui';
+
 import {
-  MyCoursesNavigation,
+  CourseTerrainAnalysisPanel,
+  MockElevationProfileSection,
+  NearbyFacilitiesPanel,
+  TerrainAnalysisPanel,
+  terrainAnalysisConfig,
+  useTerrainAnalysis,
+} from '@/features/analysis';
+
+import type { TerrainAnalysisConditions } from '@/features/analysis';
+
+import { useAuth } from '@/features/auth';
+
+import {
   CourseDetailPanel,
-  useCourseLayer,
+  MyCoursesNavigation,
   useCourseDetailState,
+  useCourseLayer,
   useCourseDeleteState,
   CourseDeleteDialog,
 } from '@/features/course';
+
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
+import { CourseExportDialog, RouteEditDialog } from '@/features/route';
+
+import '@/features/analysis/analysis.css';
+import '@/features/course/components/my-courses.css';
 
 import './my-courses.css';
 import './course-detail.css';
-import '@/features/course/components/my-courses.css';
 
+/** 인증·현재 코스·분석을 조합하며 탭 전환 중에도 하나의 분석 실행을 유지한다. */
 export function CourseDetailPage() {
   const { courseId } = useParams();
   return <CourseDetailWorkspace key={courseId} />;
 }
 
 function CourseDetailWorkspace() {
+  const { currentUser } = useAuth();
   const state = useCourseDetailState();
-  const deletion = useCourseDeleteState(state.backHref);
-  const course = state.snapshot?.course;
-  const courseLayer = useCourseLayer(course?.geometry);
-  const targetRef = useRef<HTMLDivElement>(null);
-  const mapRegionRef = useRef<HTMLElement>(null);
-  const [controller, setController] = useState<MapController | null>(null);
   const location = useLocation();
 
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRegionRef = useRef<HTMLElement>(null);
+
+  const [controller, setController] = useState<MapController | null>(null);
+  const [isEditOpen, setEditOpen] = useState(false);
+
+  const course = state.course;
+  const deletion = useCourseDeleteState(state.backHref);
+  const courseLayer = useCourseLayer(state.isMock ? undefined : course?.geometry);
+  const targetRef = mapContainerRef;
+
+  const conditions: TerrainAnalysisConditions | null =
+    course && !state.isMock && terrainAnalysisConfig
+      ? {
+          courseId: course.courseId,
+          revNo: course.revNo,
+          demId: terrainAnalysisConfig.demId,
+          sampleIntervalM: terrainAnalysisConfig.sampleIntervalM,
+        }
+      : null;
+
+  const analysis = useTerrainAnalysis(currentUser?.userId, conditions);
+
   useEffect(() => {
-    if (location.hash === '#course-detail-map') mapRegionRef.current?.focus();
+    if (location.hash === '#course-detail-map') {
+      mapRegionRef.current?.focus();
+    }
   }, [location.hash, course?.courseId]);
+
+  const analysisPanel = course ? (
+    state.mockCourse ? (
+      <TerrainAnalysisPanel
+        candidateName={state.mockCourse.name}
+        mockData={{
+          distanceM: state.mockCourse.distanceM,
+          elevationGainM: state.mockCourse.elevationGainM,
+        }}
+      />
+    ) : (
+      <CourseTerrainAnalysisPanel
+        courseName={course.courseName}
+        phase={analysis.phase}
+        configured={terrainAnalysisConfig !== null}
+        message={analysis.message}
+        canStart={analysis.canStart}
+        canRetry={analysis.canRetry}
+        canCheck={analysis.canCheck}
+        onStart={() => {
+          void analysis.start();
+        }}
+        onRetry={() => {
+          void analysis.retry();
+        }}
+        onCheck={() => {
+          void analysis.check();
+        }}
+        onRefreshCourse={state.retry}
+      />
+    )
+  ) : null;
 
   return (
     <div className="course-detail-page">
@@ -43,17 +114,33 @@ function CourseDetailWorkspace() {
         <div className="my-courses-site-header__inner">
           <Link aria-label="내 코스 목록으로" className="course-detail-back" to={state.backHref}>
             <img alt="" aria-hidden="true" src={backIcon} />
-            <span>코스 상세</span>
+            <span>내 코스로</span>
           </Link>
+
           <div aria-label="코스 관리" className="course-detail-actions">
-            {course && !state.isUnavailable && state.snapshot?.etag ? (
-              <Link to={state.editHref}>편집</Link>
+            {state.mockCourse ? (
+              <Button onClick={() => setEditOpen(true)} size="sm" variant="secondary">
+                편집
+              </Button>
+            ) : state.snapshot?.etag && !state.isUnavailable ? (
+              <Link
+                className="orda-button orda-button--secondary orda-button--sm"
+                to={state.editHref}
+              >
+                편집
+              </Link>
             ) : (
-              <Button disabled size="sm" variant="quiet">
+              <Button disabled size="sm" variant="secondary">
                 편집
               </Button>
             )}
-            <Button disabled size="sm" variant="quiet">
+
+            <Button
+              disabled={!state.mockCourse}
+              onClick={() => state.setExportOpen(true)}
+              size="sm"
+              variant="secondary"
+            >
               내보내기
             </Button>
             <Button
@@ -69,20 +156,31 @@ function CourseDetailWorkspace() {
           </div>
         </div>
       </header>
+
       {state.isLoading ? (
         <main className="my-courses-feedback" aria-busy="true">
-          <p role="status">코스를 불러오는 중입니다.</p>
+          <p role="status">코스 정보를 불러오고 있어요.</p>
         </main>
-      ) : state.isUnavailable || !course ? (
+      ) : state.error ? (
         <main className="my-courses-feedback">
           <div role="alert">
-            <h1>{state.errorTitle}</h1>
-            <p>{state.errorMessage}</p>
+            <h1>{state.error.title}</h1>
+            <p>{state.error.message}</p>
           </div>
-          {state.canRetry ? <Button onClick={state.retry}>다시 시도</Button> : null}
+
+          {state.error.canRetry ? (
+            <Button disabled={state.isFetching} onClick={state.retry} variant="secondary">
+              {state.isMockPreviewError
+                ? '예시 상세 다시 보기'
+                : state.isFetching
+                  ? '다시 불러오는 중…'
+                  : '다시 시도'}
+            </Button>
+          ) : null}
+
           <Link to={state.backHref}>내 코스 목록으로 돌아가기</Link>
         </main>
-      ) : (
+      ) : course ? (
         <main className="course-detail-workspace">
           <section
             aria-label="저장된 코스 경로 지도"
@@ -91,7 +189,19 @@ function CourseDetailWorkspace() {
             ref={mapRegionRef}
             tabIndex={-1}
           >
-            {courseLayer ? (
+            {state.isMock ? (
+              <>
+                <div className="orda-map-layout__map-surface" ref={targetRef}>
+                  <OpenLayersMap onControllerChange={setController} targetRef={targetRef} />
+                </div>
+                <span className="course-detail-map__note">
+                  {state.mockCourse?.mountainName} · 실제 경로 미제공
+                </span>
+                <div className="course-detail-map__controls">
+                  <MapControls controller={controller} />
+                </div>
+              </>
+            ) : courseLayer ? (
               <>
                 <div className="orda-map-layout__map-surface" ref={targetRef}>
                   <OpenLayersMap
@@ -110,9 +220,8 @@ function CourseDetailWorkspace() {
               <p role="alert">표시할 수 있는 코스 경로가 없습니다.</p>
             )}
           </section>
+
           <section aria-label="내 코스 상세 내용" className="course-detail-content">
-            <CourseDetailPanel course={course} tab={state.tab} onTabChange={state.setTab} />
-            <p className="my-courses-demo-note">내보내기는 아직 제공하지 않습니다.</p>
             {state.snapshot?.etag === null ? (
               <div role="status">
                 <p>편집에 필요한 버전 정보를 받지 못했습니다. 상세 정보를 다시 조회해주세요.</p>
@@ -121,11 +230,54 @@ function CourseDetailWorkspace() {
                 </Button>
               </div>
             ) : null}
+            <CourseDetailPanel
+              course={course}
+              mockCourse={state.mockCourse}
+              onTabChange={state.setTab}
+              tab={state.tab}
+              overviewAnalysis={
+                state.mockCourse ? (
+                  <MockElevationProfileSection />
+                ) : state.tab === 'overview' ? (
+                  analysisPanel
+                ) : null
+              }
+              terrainContent={state.tab === 'terrain' ? analysisPanel : null}
+              facilitiesContent={
+                state.mockCourse ? (
+                  <NearbyFacilitiesPanel candidateName={state.mockCourse.name} mockData />
+                ) : state.tab === 'facilities' ? (
+                  <section aria-label="주변 시설 안내" className="insights-panel">
+                    <div className="insights-empty" role="status">
+                      <strong>주변 시설 정보 미제공</strong>
+                      <p>이 코스의 주변 시설 정보가 아직 연결되지 않았어요.</p>
+                    </div>
+                  </section>
+                ) : null
+              }
+            />
+            {!state.isMock ? (
+              <p className="my-courses-demo-note">내보내기는 아직 제공하지 않습니다.</p>
+            ) : null}
           </section>
         </main>
+      ) : (
+        <main className="my-courses-feedback">
+          <p role="status">코스 정보를 확인하고 있어요.</p>
+        </main>
       )}
+
       <MyCoursesNavigation />
       <CourseDeleteDialog state={deletion} />
+      {state.mockCourse && isEditOpen ? (
+        <RouteEditDialog
+          candidate={{ name: state.mockCourse.name, memo: state.mockCourse.description }}
+          onClose={() => setEditOpen(false)}
+        />
+      ) : null}
+      {state.mockCourse && state.isExportOpen ? (
+        <CourseExportDialog courseName={state.mockCourse.name} onOpenChange={state.setExportOpen} />
+      ) : null}
     </div>
   );
 }
