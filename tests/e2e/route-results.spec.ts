@@ -37,11 +37,6 @@ test('예시 코스를 선택하고 탭·뒤로가기·새로고침에서도 선
   await page.reload();
   await expect(second).toHaveAttribute('aria-pressed', 'true');
 
-  const card = page.getByRole('article', { name: '예시 코스 2: 계곡 완만 코스' });
-  await card.getByText('상세보기', { exact: true }).click();
-  await expect(
-    card.getByText('실제 등산로, 경로 선형과 분석 자료는 제공되지 않았습니다.'),
-  ).toBeVisible();
   expect(apiRequests).toEqual([]);
 });
 
@@ -76,7 +71,7 @@ test('편집 모달은 임시 입력과 취소만 허용하고 키보드 포커�
 
   const downloads: string[] = [];
   page.on('download', (download) => downloads.push(download.suggestedFilename()));
-  await card.getByRole('button', { name: '내보내기', exact: true }).click();
+  await card.getByRole('button', { name: '저장하기', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '내보내기 준비 중' })).toBeVisible();
   await expect(page.getByRole('button', { name: '파일 내보내기 미연결' })).toBeDisabled();
   await page.keyboard.press('Escape');
@@ -163,7 +158,9 @@ test('모바일과 PC에서 패널·지도·에셋이 넘치지 않고 접기·�
     await third.focus();
     await page.keyboard.press('Enter');
     await expect(third).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: '패널 접기' }).click();
+    const closeButton = page.getByRole('button', { name: '패널 접기' });
+    await expect(closeButton).toHaveText('접기');
+    await closeButton.click();
     await expect(panel).toBeHidden();
     await page.getByRole('button', { name: '패널 펼치기' }).click();
     await expect(panel).toBeVisible();

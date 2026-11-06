@@ -112,6 +112,7 @@ export function RouteResultsPage() {
           />
         }
         panelLabel="예시 코스 비교 결과"
+        panelCloseText="접기"
         panelSize="expanded"
       />
     </div>

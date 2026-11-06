@@ -1,5 +1,3 @@
-import counterOne from '@/assets/route/counter-one.svg';
-import counterTwo from '@/assets/route/counter-two.svg';
 import downloadIcon from '@/assets/route/download.svg';
 import editIcon from '@/assets/route/edit.svg';
 import facilityIcon from '@/assets/route/facility.svg';
@@ -42,13 +40,9 @@ export function RouteCandidateCard({
         onClick={onSelect}
         type="button"
       >
-        {index < 2 ? (
-          <img alt="" aria-hidden="true" src={index === 0 ? counterOne : counterTwo} />
-        ) : (
-          <span aria-hidden="true" className="route-candidate__number">
-            3
-          </span>
-        )}
+        <span aria-hidden="true" className="route-candidate__number">
+          {index + 1}
+        </span>
         <span className="route-candidate__heading">
           <strong>{candidate.name}</strong>
           <span className="route-candidate__tags">
@@ -90,16 +84,10 @@ export function RouteCandidateCard({
           </Button>
           <Button onClick={onExport} size="sm" variant="quiet">
             <img alt="" aria-hidden="true" src={downloadIcon} />
-            내보내기
+            저장하기
           </Button>
         </div>
       </div>
-
-      <details className="route-candidate__details">
-        <summary>상세보기</summary>
-        <p>거리·시간·누적 상승·난이도·시설 수는 모두 디자인 확인용 예시입니다.</p>
-        <p>실제 등산로, 경로 선형과 분석 자료는 제공되지 않았습니다.</p>
-      </details>
     </Card>
   );
 }
