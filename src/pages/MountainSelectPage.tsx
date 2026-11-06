@@ -35,10 +35,10 @@ export function MountainSelectPage() {
     size: MOUNTAINS_PAGE_SIZE,
   });
   const mountains = mountainsQuery.data?.items ?? EMPTY_MOUNTAINS;
-  const markerLayer = useMountainMarkerLayer(mountains, selectedMountain);
-  const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
   const mountainDetailQuery = useMountainDetailQuery(selectedMountain?.mountainId ?? null);
   const mountainDetail = mountainDetailQuery.data ?? null;
+  const markerLayer = useMountainMarkerLayer(mountains, mountainDetail ?? selectedMountain);
+  const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
   const mountainDetailErrorCode = getApiErrorCode(mountainDetailQuery.error);
   const mountainDetailError = mountainDetailQuery.isError
     ? mountainDetailErrorCode === 'MOUNTAIN_NOT_FOUND'
@@ -139,13 +139,17 @@ export function MountainSelectPage() {
             </p>
           ) : null}
           <Button
-            disabled={!selectedMountain || !mountainDetail?.serviceAvailable}
-            fullWidth
-            onClick={() =>
-              navigate(
-                `/routes/setup?mountainId=${encodeURIComponent(selectedMountain!.mountainId)}`,
-              )
+            disabled={
+              !selectedMountain || mountainDetailQuery.isError || !mountainDetail?.serviceAvailable
             }
+            fullWidth
+            onClick={() => {
+              if (selectedMountain) {
+                navigate(
+                  `/routes/setup?mountainId=${encodeURIComponent(selectedMountain.mountainId)}`,
+                );
+              }
+            }}
             size="lg"
           >
             코스 탐색 설정

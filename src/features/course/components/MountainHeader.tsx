@@ -23,10 +23,6 @@ export function MountainHeader() {
           className="mountain-explorer-header__account"
           to="/my-page"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <circle cx="12" cy="8" r="3.25" />
-            <path d="M5.5 20c.5-3.45 2.8-5.25 6.5-5.25s6 1.8 6.5 5.25" />
-          </svg>
           <span>마이페이지</span>
         </Link>
       </div>

@@ -3,7 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
-import { MOUNTAIN_MOCKS, MountainHeader, useMountainDetailQuery } from '@/features/course';
+import {
+  MOUNTAIN_MOCKS,
+  MountainHeader,
+  isValidMountainCoordinate,
+  useMountainDetailQuery,
+} from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
@@ -32,11 +37,13 @@ export function RouteSetupPage() {
   const hasMountainLocationError =
     usesApiMountain &&
     (mountainDetailQuery.isError ||
-      (Boolean(mountainDetailQuery.data) && !mountainDetailQuery.data?.geometry));
+      (Boolean(mountainDetailQuery.data) &&
+        !isValidMountainCoordinate(selectedMountainCoordinates)));
   const canRenderMap =
     !usesApiMountain ||
     Boolean(
-      mountainDetailQuery.data?.serviceAvailable && mountainDetailQuery.data.geometry?.coordinates,
+      mountainDetailQuery.data?.serviceAvailable &&
+      isValidMountainCoordinate(selectedMountainCoordinates),
     );
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);

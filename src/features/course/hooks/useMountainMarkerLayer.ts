@@ -11,34 +11,18 @@ import goldPin from '@/assets/course/mountain-pin-gold.svg';
 import greenPin from '@/assets/course/mountain-pin-green.svg';
 
 import type { MountainListItem } from '../types/mountain';
-
-function isValidCoordinate(coordinate: readonly number[]) {
-  const [longitude, latitude] = coordinate;
-
-  return (
-    coordinate.length === 2 &&
-    Number.isFinite(longitude) &&
-    Number.isFinite(latitude) &&
-    longitude >= -180 &&
-    longitude <= 180 &&
-    latitude >= -90 &&
-    latitude <= 90
-  );
-}
+import { isValidMountainCoordinate } from '../utils/mountainCoordinates';
 
 export function useMountainMarkerLayer(
   mountains: MountainListItem[],
   selectedMountain: MountainListItem | null,
 ) {
   const markerMountains = useMemo(() => {
-    if (
-      !selectedMountain ||
-      mountains.some((mountain) => mountain.mountainId === selectedMountain.mountainId)
-    ) {
-      return mountains;
-    }
-
-    return [...mountains, selectedMountain];
+    if (!selectedMountain) return mountains;
+    return [
+      ...mountains.filter((mountain) => mountain.mountainId !== selectedMountain.mountainId),
+      selectedMountain,
+    ];
   }, [mountains, selectedMountain]);
 
   const layer = useMemo(() => {
@@ -114,7 +98,7 @@ export function useMountainMarkerLayer(
     const features = markerMountains.flatMap((mountain) => {
       const coordinate = mountain.geometry?.coordinates;
 
-      if (!coordinate || !isValidCoordinate(coordinate)) {
+      if (!coordinate || !isValidMountainCoordinate(coordinate)) {
         return [];
       }
 

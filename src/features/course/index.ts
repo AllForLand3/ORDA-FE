@@ -5,6 +5,7 @@ export type { MountainSearchBarProps } from './components/MountainSearchBar';
 export { MountainSelectionPanel } from './components/MountainSelectionPanel';
 export type { MountainSelectionPanelProps } from './components/MountainSelectionPanel';
 export { useMountainMarkerLayer } from './hooks/useMountainMarkerLayer';
+export { isValidMountainCoordinate } from './utils/mountainCoordinates';
 export { useMountainDetailQuery } from './hooks/useMountainDetailQuery';
 export { useMountainsQuery } from './hooks/useMountainsQuery';
 export { useServiceAreaQuery } from './hooks/useServiceAreaQuery';

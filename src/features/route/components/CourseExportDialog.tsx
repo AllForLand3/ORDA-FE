@@ -28,6 +28,7 @@ export function CourseExportDialog({ courseName, onOpenChange }: CourseExportDia
             ? '디자인 미리보기 · 파일 생성 및 다운로드 안 됨'
             : `${courseName}를 어떤 형식으로 내보낼까요?`
         }
+        eyebrow="COURSE EXPORT"
         footer={
           preview ? (
             <Button fullWidth onClick={() => onOpenChange(false)}>

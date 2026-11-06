@@ -2,8 +2,10 @@ import { useState } from 'react';
 
 import addIcon from '@/assets/course/course-add.svg';
 import { Button, Dialog, Tabs, TextField } from '@/components/ui';
+import { CourseExportDialog, RouteEditDialog } from '@/features/route';
 
 import type { useMyCoursesState } from '../hooks/useMyCoursesState';
+import type { MockMyCourse } from '../mocks/my-courses';
 import { MyCourseCard } from './MyCourseCard';
 import { Select } from '@/components/ui/Select';
 
@@ -13,6 +15,8 @@ interface MyCoursesPanelProps {
 
 export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
   const [uploadNoticeOpen, setUploadNoticeOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<MockMyCourse | null>(null);
+  const [exportingCourse, setExportingCourse] = useState<MockMyCourse | null>(null);
   const selectedTab = state.tabs.find((item) => item.value === state.tab);
   const content = (
     <>
@@ -47,8 +51,9 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
             <MyCourseCard
               course={course}
               detailHref={state.getDetailHref(course.id)}
-              editHref={state.getEditHref(course.id)}
               key={course.id}
+              onEdit={() => setEditingCourse(course)}
+              onExport={() => setExportingCourse(course)}
             />
           ))}
         </div>
@@ -149,6 +154,20 @@ export function MyCoursesPanel({ state }: MyCoursesPanelProps) {
       >
         <p>현재는 예시 코스 목록과 상세 화면만 확인할 수 있어요.</p>
       </Dialog>
+      {editingCourse ? (
+        <RouteEditDialog
+          candidate={{ name: editingCourse.name, memo: editingCourse.description }}
+          onClose={() => setEditingCourse(null)}
+        />
+      ) : null}
+      {exportingCourse ? (
+        <CourseExportDialog
+          courseName={exportingCourse.name}
+          onOpenChange={(open) => {
+            if (!open) setExportingCourse(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

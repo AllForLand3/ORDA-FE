@@ -192,6 +192,33 @@ test('산 선택 레이아웃은 360·768·1024px에서 넘치지 않고 패널�
       await expect(page.getByRole('navigation', { name: '주요 메뉴' })).toHaveCount(0);
       await expect(page.getByRole('link', { name: '내 코스', exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: '마이페이지로 이동' })).toBeVisible();
+
+      if (viewport.width === 1024) {
+        const mountainMyCourses = await page
+          .getByRole('link', { name: '내 코스', exact: true })
+          .boundingBox();
+        const mountainMyPage = await page
+          .getByRole('link', { name: '마이페이지로 이동' })
+          .boundingBox();
+
+        await page.goto('/my-courses');
+
+        const myCoursesMyCourses = await page
+          .getByRole('link', { name: '내 코스', exact: true })
+          .boundingBox();
+        const myCoursesMyPage = await page
+          .getByRole('link', { name: '마이페이지', exact: true })
+          .boundingBox();
+
+        expect({ width: mountainMyCourses?.width, height: mountainMyCourses?.height }).toEqual({
+          width: myCoursesMyCourses?.width,
+          height: myCoursesMyCourses?.height,
+        });
+        expect({ width: mountainMyPage?.width, height: mountainMyPage?.height }).toEqual({
+          width: myCoursesMyPage?.width,
+          height: myCoursesMyPage?.height,
+        });
+      }
     }
   }
 });
@@ -304,6 +331,58 @@ test('산 상세 조회에서 산 미존재 오류를 안내한다', async ({ pa
 
   await expect(page.getByRole('alert')).toContainText('선택한 산 정보를 찾을 수 없어요.');
   await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+});
+
+test('산 상세 일반 실패는 선택을 취소할 수 있고 탐색을 비활성화한다', async ({ page }) => {
+  await installMountainRoute(page);
+  await page.route('**/api/mountains/1', (route) =>
+    route.fulfill({
+      status: 500,
+      json: { status: 500, code: 'INTERNAL_SERVER_ERROR', message: '조회 실패' },
+    }),
+  );
+  await page.goto('/mountains');
+  await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
+  await expect(page.getByRole('alert')).toContainText('산 상세 정보를 불러오지 못했어요.');
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+  await page.getByRole('button', { name: '선택 취소' }).click();
+  await expect(page.getByText('산을 선택하지 않았습니다.')).toBeVisible();
+});
+
+test('검색은 마지막 입력 300ms 후 요청하고 페이지를 초기화한다', async ({ page }) => {
+  const keywords: string[] = [];
+  await page.clock.install();
+  await page.route('**/api/mountains?*', async (route) => {
+    const url = new URL(route.request().url());
+    const keyword = url.searchParams.get('keyword') ?? '';
+    keywords.push(keyword);
+    await route.fulfill({ json: { ...getMountainPage(url), totalPages: 2 } });
+  });
+  await page.goto('/mountains');
+  await expect(page.locator('.mountain-card')).toHaveCount(3);
+  await page
+    .getByRole('navigation', { name: '산 목록 페이지' })
+    .getByRole('button', { name: '다음' })
+    .click();
+  await expect(page.getByText('검색 결과가 없어요.')).toBeVisible();
+  const search = page.getByRole('searchbox', { name: '산 이름 검색' });
+  await search.fill('관');
+  await page.clock.fastForward(200);
+  await search.fill('관악산');
+  await page.clock.fastForward(299);
+  expect(keywords).toEqual(['', '']);
+  const response = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === '/api/mountains' &&
+      url.searchParams.get('keyword') === '관악산' &&
+      url.searchParams.get('page') === '0'
+    );
+  });
+  await page.clock.fastForward(1);
+  await response;
+  await expect(page.locator('.mountain-card')).toHaveCount(1);
+  expect(keywords).toEqual(['', '', '관악산']);
 });
 
 test('산 목록은 이전·다음 페이지를 이동한다', async ({ page }) => {

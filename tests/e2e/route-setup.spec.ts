@@ -47,7 +47,9 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await expect(next).toBeEnabled();
   await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
-  await expect(page.getByText('예시 장소 · 실제 경로 추천 미연결')).toBeVisible();
+  await expect(
+    page.getByText('출발지와 도착지를 각각 선택하면 다음 단계로 갈 수 있어요.'),
+  ).toBeVisible();
 
   await next.click();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
@@ -367,12 +369,67 @@ test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다
 });
 
 test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', async ({ page }) => {
+  const mountain = {
+    mountainId: '42',
+    mountainName: '북한산',
+    addressLabel: '서울특별시 강북구',
+    provinceName: '서울특별시',
+    districtName: '강북구',
+    elevationMeters: 836,
+    geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
+  };
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [mountain], page: 0, size: 10, totalElements: 1, totalPages: 1 },
+    }),
+  );
+  await page.route('**/api/mountains/42', (route) =>
+    route.fulfill({
+      json: {
+        ...mountain,
+        sourceMountainCode: null,
+        sourceOldMountainCode: null,
+        serviceAvailable: true,
+      },
+    }),
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/mountains');
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+  await page.locator('.mountain-card').filter({ hasText: '북한산' }).click();
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
   await page.getByRole('button', { name: '코스 탐색 설정' }).click();
-  await expect(page).toHaveURL(/\/routes\/setup/);
+  await expect(page).toHaveURL(/\/routes\/setup\?mountainId=42$/);
   await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-center',
+    '126.978000,37.658630',
+  );
 });
+
+for (const coordinates of [null, [200, 37]]) {
+  test(`산 좌표가 ${coordinates ? '잘못되면' : '없으면'} 임의 위치에 지도를 생성하지 않는다`, async ({
+    page,
+  }) => {
+    await page.route('**/api/mountains/42', (route) =>
+      route.fulfill({
+        json: {
+          mountainId: '42',
+          mountainName: '위치 없는 산',
+          serviceAvailable: true,
+          geometry: coordinates ? { type: 'Point', coordinates } : null,
+        },
+      }),
+    );
+    await page.goto('/routes/setup?mountainId=42');
+    await expect(page.getByRole('alert')).toContainText('산 위치를 표시할 수 없어요.');
+    await expect(page.locator('.orda-map-layout__map-surface')).not.toHaveAttribute(
+      'data-map-ready',
+      'true',
+    );
+    await expect(page.getByRole('button', { name: '현재 위치로 이동' })).toBeDisabled();
+  });
+}
 
 test('설정된 출발지도 지도에서 새 좌표로 다시 선택할 수 있다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });

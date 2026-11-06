@@ -17,10 +17,11 @@ import type { MockMyCourse } from '../mocks/my-courses';
 interface MyCourseCardProps {
   course: MockMyCourse;
   detailHref: string;
-  editHref: string;
+  onEdit: () => void;
+  onExport: () => void;
 }
 
-export function MyCourseCard({ course, detailHref, editHref }: MyCourseCardProps) {
+export function MyCourseCard({ course, detailHref, onEdit, onExport }: MyCourseCardProps) {
   return (
     <Card aria-label={course.name} className="my-course-card" padding="none">
       <Link
@@ -79,17 +80,24 @@ export function MyCourseCard({ course, detailHref, editHref }: MyCourseCardProps
         </div>
       </div>
       <div aria-label="코스 관리" className="my-course-card__actions">
-        <Link className="my-course-card__action my-course-card__action--standard" to={editHref}>
+        <Button
+          className="my-course-card__action my-course-card__action--standard"
+          onClick={onEdit}
+          size="sm"
+          variant="quiet"
+        >
           <span
             aria-hidden="true"
             className="my-course-card__action-icon"
             style={{ maskImage: `url("${editIcon}")` }}
           />
           편집
-        </Link>
-        <Link
+        </Button>
+        <Button
           className="my-course-card__action my-course-card__action--standard"
-          to={`${detailHref}&export=1`}
+          onClick={onExport}
+          size="sm"
+          variant="quiet"
         >
           <span
             aria-hidden="true"
@@ -97,7 +105,7 @@ export function MyCourseCard({ course, detailHref, editHref }: MyCourseCardProps
             style={{ maskImage: `url("${downloadIcon}")` }}
           />
           내보내기
-        </Link>
+        </Button>
         <Button
           aria-disabled="true"
           className="my-course-card__action my-course-card__action--danger"
