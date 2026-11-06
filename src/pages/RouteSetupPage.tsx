@@ -36,7 +36,9 @@ export function RouteSetupPage() {
   const selectedMountainCoordinates =
     mountainDetailQuery.data?.geometry?.coordinates ?? fallbackMountain?.coordinates;
   const isMountainLocationPending =
-    usesApiMountain && !hasInvalidMountainId && mountainDetailQuery.isPending;
+    usesApiMountain &&
+    !hasInvalidMountainId &&
+    (mountainDetailQuery.isPending || mountainDetailQuery.isFetching);
   const hasMountainLocationError =
     usesApiMountain &&
     (hasInvalidMountainId ||
@@ -47,6 +49,7 @@ export function RouteSetupPage() {
     !usesApiMountain ||
     Boolean(
       mountainDetailQuery.isSuccess &&
+      !mountainDetailQuery.isFetching &&
       !mountainDetailQuery.isError &&
       mountainDetailQuery.data.serviceAvailable === true &&
       isValidMountainCoordinate(selectedMountainCoordinates),
@@ -83,10 +86,21 @@ export function RouteSetupPage() {
   }, [focusedPlace, mapController, selectedMountainCoordinates]);
 
   useEffect(() => {
-    if (mountainDetailQuery.data && !mountainDetailQuery.data.serviceAvailable) {
+    if (
+      usesApiMountain &&
+      mountainDetailQuery.isSuccess &&
+      !mountainDetailQuery.isFetching &&
+      mountainDetailQuery.data?.serviceAvailable === false
+    ) {
       navigate('/mountains', { replace: true });
     }
-  }, [mountainDetailQuery.data, navigate]);
+  }, [
+    usesApiMountain,
+    mountainDetailQuery.isSuccess,
+    mountainDetailQuery.isFetching,
+    mountainDetailQuery.data,
+    navigate,
+  ]);
 
   return (
     <div className="route-setup-page">
