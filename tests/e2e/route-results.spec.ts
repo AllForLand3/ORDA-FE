@@ -72,9 +72,7 @@ test('편집 모달은 임시 입력과 취소만 허용하고 키보드 포커�
   const downloads: string[] = [];
   page.on('download', (download) => downloads.push(download.suggestedFilename()));
   await card.getByRole('button', { name: '저장하기', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '내보내기 준비 중' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '파일 내보내기 미연결' })).toBeDisabled();
-  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: '내보내기 준비 중' })).toHaveCount(0);
   expect(downloads).toEqual([]);
 });
 

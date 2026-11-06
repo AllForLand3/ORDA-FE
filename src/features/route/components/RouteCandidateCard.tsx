@@ -16,7 +16,6 @@ interface RouteCandidateCardProps {
   selected: boolean;
   onSelect: () => void;
   onEdit: () => void;
-  onExport: () => void;
 }
 
 export function RouteCandidateCard({
@@ -25,7 +24,6 @@ export function RouteCandidateCard({
   selected,
   onSelect,
   onEdit,
-  onExport,
 }: RouteCandidateCardProps) {
   return (
     <Card
@@ -82,7 +80,7 @@ export function RouteCandidateCard({
             <img alt="" aria-hidden="true" src={editIcon} />
             코스 편집
           </Button>
-          <Button onClick={onExport} size="sm" variant="quiet">
+          <Button size="sm" variant="quiet">
             <img alt="" aria-hidden="true" src={downloadIcon} />
             저장하기
           </Button>

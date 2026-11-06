@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
-import { Button, Dialog, Tabs } from '@/components/ui';
+import { Button, Tabs } from '@/components/ui';
 
 import type { useRouteResultsState } from '../hooks/useRouteResultsState';
 import { MOCK_ROUTE_CANDIDATES } from '../mocks/route-results';
@@ -21,7 +21,6 @@ export function RouteResultsPanel({
   facilitiesContent,
 }: RouteResultsPanelProps) {
   const [editingCandidate, setEditingCandidate] = useState<MockRouteCandidate | null>(null);
-  const [exportingCandidate, setExportingCandidate] = useState<MockRouteCandidate | null>(null);
   const comparison = (
     <div aria-busy={state.previewState === 'loading'} className="route-results-comparison">
       {state.previewState === 'ready' ? (
@@ -32,7 +31,6 @@ export function RouteResultsPanel({
               index={index}
               key={candidate.id}
               onEdit={() => setEditingCandidate(candidate)}
-              onExport={() => setExportingCandidate(candidate)}
               onSelect={() => state.selectCandidate(candidate.id)}
               selected={candidate.id === state.selectedCandidate.id}
             />
@@ -95,25 +93,6 @@ export function RouteResultsPanel({
       />
       {editingCandidate ? (
         <RouteEditDialog candidate={editingCandidate} onClose={() => setEditingCandidate(null)} />
-      ) : null}
-      {exportingCandidate ? (
-        <Dialog
-          description={`${exportingCandidate.name}는 예시 코스입니다. 실제 경로 파일이 없어 내보낼 수 없어요.`}
-          footer={
-            <Button onClick={() => setExportingCandidate(null)} variant="secondary">
-              닫기
-            </Button>
-          }
-          onOpenChange={(open) => {
-            if (!open) setExportingCandidate(null);
-          }}
-          open
-          title="내보내기 준비 중"
-        >
-          <Button disabled fullWidth>
-            파일 내보내기 미연결
-          </Button>
-        </Dialog>
       ) : null}
     </div>
   );
