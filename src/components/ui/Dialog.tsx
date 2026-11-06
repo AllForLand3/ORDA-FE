@@ -15,6 +15,7 @@ export interface DialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  eyebrow?: string;
   children: ReactNode;
   footer?: ReactNode;
   closeLabel?: string;
@@ -25,6 +26,7 @@ export function Dialog({
   onOpenChange,
   title,
   description,
+  eyebrow,
   children,
   footer,
   closeLabel = '닫기',
@@ -94,6 +96,11 @@ export function Dialog({
       <div className="orda-dialog__surface">
         <header className="orda-dialog__header">
           <div>
+            {eyebrow ? (
+              <span aria-hidden="true" className="orda-dialog__eyebrow">
+                {eyebrow}
+              </span>
+            ) : null}
             <h2 className="orda-dialog__title" id={`orda-dialog-title-${generatedId}`}>
               {title}
             </h2>

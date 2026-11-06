@@ -474,6 +474,10 @@
   box-shadow: 0 0 10px rgb(0 0 0 / 8%);
 }
 
+.my-course-overview .mock-elevation-profile.orda-card {
+  box-shadow: none;
+}
+
 .my-course-overview h2 {
   margin: 0;
   font-size: 0.875rem;
@@ -482,6 +486,10 @@
 
 .my-course-overview__profile > h2 {
   padding: 0.75rem 0.625rem 0;
+}
+
+.my-course-overview > .my-course-overview__points {
+  margin-bottom: 0.75rem;
 }
 
 .my-course-overview__analysis .insights-panel {
@@ -533,7 +541,20 @@
   margin-top: 0.75rem;
 }
 
-.my-course-overview__summaries dl {
+.my-course-overview__summaries--stacked {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.my-course-overview__summaries--stacked .my-course-overview__facilities {
+  order: 1;
+}
+
+.my-course-overview__summaries--stacked .my-course-overview__points {
+  order: 2;
+}
+
+.my-course-overview__summaries dl,
+.my-course-overview > .my-course-overview__points dl {
   display: grid;
   gap: 0.75rem;
   margin: 0.75rem 0 0;
@@ -541,18 +562,22 @@
 }
 
 .my-course-overview__summaries dl > div,
-.my-course-overview__summaries dt {
+.my-course-overview__summaries dt,
+.my-course-overview > .my-course-overview__points dl > div,
+.my-course-overview > .my-course-overview__points dt {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
 
-.my-course-overview__summaries dl > div {
+.my-course-overview__summaries dl > div,
+.my-course-overview > .my-course-overview__points dl > div {
   justify-content: space-between;
   flex-wrap: wrap;
 }
 
-.my-course-overview__summaries dd {
+.my-course-overview__summaries dd,
+.my-course-overview > .my-course-overview__points dd {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 0.625rem;

@@ -64,26 +64,77 @@ test('카드에서 상세 페이지로 진입하고 목록 조건과 뒤로가�
   await page.getByRole('link', { name: '능선 조망 코스 · 예시 2', exact: true }).click();
   await expect(page).toHaveURL(/\/my-courses\/example-ridge-2/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('능선 조망 코스 · 예시 2');
+  await expect(page.getByText('내 코스로', { exact: true })).toBeVisible();
+  const editButton = page.getByRole('button', { name: '편집', exact: true });
+  await expect(editButton).toHaveClass(/orda-button--secondary/);
+  await expect(page.getByRole('button', { name: '내보내기', exact: true })).toHaveClass(
+    /orda-button--secondary/,
+  );
+  const detailUrl = page.url();
+  await editButton.click();
+  const editDialog = page.getByRole('dialog', { name: /코스 편집/ });
+  await expect(editDialog).toBeVisible();
+  await expect(editDialog.getByRole('textbox', { name: '코스 이름' })).toHaveValue(
+    '능선 조망 코스 · 예시 2',
+  );
+  await expect(editDialog.getByRole('textbox', { name: '메모', exact: true })).toHaveValue(
+    '전망이 좋은 능선을 따라 걷는 코스입니다.',
+  );
+  await expect(editDialog.getByRole('button', { name: '삭제', exact: true })).toHaveCSS(
+    'color',
+    'rgb(228, 87, 61)',
+  );
+  await expect(editDialog.getByRole('button', { name: '취소', exact: true })).toHaveCSS(
+    'min-height',
+    '36px',
+  );
+  const dialogStyles = await editDialog.evaluate((dialog) => {
+    const nameShell = dialog.querySelector('.orda-input-shell');
+    const memo = dialog.querySelector('.orda-text-area');
+    return {
+      nameBorder: nameShell ? getComputedStyle(nameShell).borderTopColor : '',
+      memoBorder: memo ? getComputedStyle(memo).borderTopColor : '',
+      handleDisplay: getComputedStyle(
+        dialog.querySelector('.orda-dialog__surface') as Element,
+        '::before',
+      ).display,
+    };
+  });
+  expect(dialogStyles.memoBorder).toBe(dialogStyles.nameBorder);
+  expect(dialogStyles.handleDisplay).toBe('none');
+  await expect(page).toHaveURL(detailUrl);
+  await editDialog.getByRole('button', { name: '코스 편집 닫기' }).click();
+  await expect(editDialog).not.toBeVisible();
 
   const map = page.locator('.course-detail-map .orda-map-layout__map-surface');
 
   await expect(map).toHaveAttribute('data-map-ready', 'true');
   await expect(map).toHaveAttribute('data-map-projection', 'EPSG:3857');
-  await expect(page.getByText('분석 미제공', { exact: true })).toBeVisible();
-
-  await page.getByRole('tab', { name: '지형 분석' }).click();
-  await page.getByRole('button', { name: '샘플 프로파일 보기' }).click();
-
+  await expect(page.getByRole('tab', { name: '요약' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.my-course-overview__points dl > div')).toHaveCount(2);
   await expect(page.locator('.elevation-profile__chart')).toHaveAttribute(
     'data-chart-ready',
     'true',
   );
-
+  await page.getByRole('tab', { name: '코스 분석' }).click();
+  await expect(page.getByText('604m', { exact: true })).toBeVisible();
+  await expect(page.locator('.elevation-profile__chart')).toHaveAttribute(
+    'data-chart-ready',
+    'true',
+  );
   await page.getByRole('tab', { name: '주변 시설' }).click();
-
   await expect(
     page.getByRole('heading', { name: '능선 조망 코스 · 예시 2 주변 시설' }),
   ).toBeVisible();
+  await page.getByRole('button', { name: '화장실 3' }).click();
+  await expect(page.locator('.nearby-facilities__list > li')).toHaveCount(3);
+  await expect(page.getByText('3곳 · 코스와 가까운 순', { exact: true })).toBeVisible();
+  await page
+    .locator('.nearby-facility-card')
+    .first()
+    .getByText('상세 정보', { exact: true })
+    .click();
+  await expect(page.getByText('서울 관악구 신림동 203-1', { exact: true })).toBeVisible();
 
   await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
 
@@ -137,7 +188,7 @@ test('뒤로가기와 앞으로가기로 변경된 검색어를 입력창과 목
   await expect(search).toHaveValue('예시 4');
 });
 
-test('검색 디바운스 전에도 카드 링크에 현재 검색어를 보존한다', async ({ page }) => {
+test('검색 디바운스 전에도 상세 링크와 편집 모달에 현재 목록 상태를 보존한다', async ({ page }) => {
   await page.clock.install();
   await page.goto('/my-courses');
 
@@ -146,14 +197,15 @@ test('검색 디바운스 전에도 카드 링크에 현재 검색어를 보존�
 
   const card = page.getByRole('article');
   const detailHref = await card.getByRole('link', { name: '코스 상세 보기' }).getAttribute('href');
-  const editHref = await card.getByRole('link', { name: '편집' }).getAttribute('href');
+  expect(detailHref).not.toBeNull();
+  const list = new URL(detailHref!, 'http://localhost').searchParams.get('list');
+  expect(new URLSearchParams(list ?? '').get('q')).toBe('예시 2');
 
-  for (const href of [detailHref, editHref]) {
-    expect(href).not.toBeNull();
-
-    const list = new URL(href!, 'http://localhost').searchParams.get('list');
-    expect(new URLSearchParams(list ?? '').get('q')).toBe('예시 2');
-  }
+  await card.getByRole('button', { name: '편집', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: /코스 편집/ })).toBeVisible();
+  await expect(page).toHaveURL(/\/my-courses\?q=/);
+  expect(new URL(page.url()).searchParams.get('q')).toBe('예시 2');
+  await page.getByRole('button', { name: '코스 편집 닫기' }).click();
 });
 
 test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 안내만 제공한다', async ({ page }) => {
@@ -169,8 +221,8 @@ test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 �
   await expect(upload).toBeFocused();
 
   const firstCard = page.getByRole('article').first();
-  const edit = firstCard.getByRole('link', { name: '편집', exact: true });
-  const exportCourse = firstCard.getByRole('link', { name: '내보내기', exact: true });
+  const edit = firstCard.getByRole('button', { name: '편집', exact: true });
+  const exportCourse = firstCard.getByRole('button', { name: '내보내기', exact: true });
   const remove = firstCard.getByRole('button', { name: '삭제', exact: true });
 
   await expect(remove).toHaveAttribute('aria-disabled', 'true');

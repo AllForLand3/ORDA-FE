@@ -6,8 +6,8 @@ test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화�
     if (isDomainApiRequest(request.url())) apiRequests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
-  await page.goto('/my-courses?tab=saved&q=예시+2&sort=oldest');
-  await page.getByRole('link', { name: '편집', exact: true }).click();
+  const list = new URLSearchParams({ tab: 'saved', q: '예시 2', sort: 'oldest' }).toString();
+  await page.goto(`/my-courses/example-ridge-2/edit?${new URLSearchParams({ list }).toString()}`);
   await expect(page).toHaveURL(/example-ridge-2\/edit/);
   const name = page.getByRole('textbox', { name: '코스 이름' });
   const memo = page.getByRole('textbox', { name: '메모', exact: true });
@@ -43,16 +43,16 @@ test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화�
   await page.getByRole('link', { name: '취소', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('능선 조망 코스 · 예시 2');
   await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
-  await expect(page.getByRole('searchbox', { name: '내 코스 검색' })).toHaveValue('예시 2');
-  await expect(page.getByRole('combobox', { name: '코스 정렬' })).toHaveValue('oldest');
+  await expect(page.getByRole('textbox', { name: '내 코스 검색' })).toHaveValue('예시 2');
+  await expect(page.getByRole('button', { name: '코스 정렬' })).toContainText('오래된순');
   await page.goto('/my-courses/example-ridge-2/edit');
   await expect(name).toHaveValue('능선 조망 코스 · 예시 2');
   expect(apiRequests).toEqual([]);
 });
 
 test('변경 중 취소·브라우저 뒤로가기·새로고침은 유실 확인을 제공한다', async ({ page }) => {
-  await page.goto('/my-courses/example-ridge-1');
-  await page.getByRole('link', { name: '편집', exact: true }).click();
+  await page.goto('/my-courses');
+  await page.goto('/my-courses/example-ridge-1/edit');
   const name = page.getByRole('textbox', { name: '코스 이름' });
   await name.fill('버릴 변경');
   await page.getByRole('link', { name: '취소', exact: true }).click();
@@ -68,7 +68,7 @@ test('변경 중 취소·브라우저 뒤로가기·새로고침은 유실 확�
   await page.getByRole('link', { name: '취소', exact: true }).click();
   await leave.getByRole('button', { name: '변경 버리고 나가기' }).click();
   await expect(page).toHaveURL(/example-ridge-1(?:\?|$)/);
-  await page.getByRole('link', { name: '편집', exact: true }).click();
+  await page.goto('/my-courses/example-ridge-1/edit');
   await name.fill('새로고침하면 사라짐');
   await page.getByRole('button', { name: '패널 접기' }).click();
   await page.getByRole('link', { name: '코스 편집', exact: true }).click();
@@ -97,13 +97,21 @@ test('내보내기는 형식 선택과 완료 디자인 미리보기만 제공�
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/my-courses');
-  await page
-    .getByRole('article')
-    .first()
-    .getByRole('link', { name: '내보내기', exact: true })
-    .click();
+  const firstCard = page.getByRole('article').first();
+  await firstCard.getByRole('button', { name: '편집', exact: true }).click();
+  const editSheet = page.getByRole('dialog', { name: /코스 편집/ });
+  const editBox = await editSheet.boundingBox();
+  await editSheet.getByRole('button', { name: '코스 편집 닫기' }).click();
+
+  const entry = firstCard.getByRole('button', { name: '내보내기', exact: true });
+  const listUrl = page.url();
+  await entry.click();
   const sheet = page.getByRole('dialog', { name: '코스 내보내기', exact: true });
   await expect(sheet).toBeVisible();
+  await expect(page).toHaveURL(listUrl);
+  const exportBox = await sheet.boundingBox();
+  expect(exportBox?.width).toBe(editBox?.width);
+  expect(exportBox?.height).toBe(editBox?.height);
   const gpx = sheet.getByRole('radio', { name: /^GPX/ });
   const geojson = sheet.getByRole('radio', { name: /^GeoJSON/ });
   await expect(gpx).toBeChecked();
@@ -132,7 +140,7 @@ test('내보내기는 형식 선택과 완료 디자인 미리보기만 제공�
   await expect(geojson).toBeChecked();
   await sheet.getByRole('button', { name: '취소', exact: true }).click();
   await expect(sheet).not.toBeVisible();
-  const entry = page.getByRole('banner').getByRole('button', { name: '내보내기', exact: true });
+  await expect(entry).toBeFocused();
   await entry.click();
   await expect(gpx).toBeChecked();
   await sheet.getByRole('button', { name: '완료 화면 미리보기', exact: true }).click();

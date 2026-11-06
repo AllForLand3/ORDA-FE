@@ -95,6 +95,33 @@ test('산 선택 레이아웃은 360·768·1024px에서 넘치지 않고 패널�
       await expect(page.getByRole('navigation', { name: '주요 메뉴' })).toHaveCount(0);
       await expect(page.getByRole('link', { name: '내 코스', exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: '마이페이지로 이동' })).toBeVisible();
+
+      if (viewport.width === 1024) {
+        const mountainMyCourses = await page
+          .getByRole('link', { name: '내 코스', exact: true })
+          .boundingBox();
+        const mountainMyPage = await page
+          .getByRole('link', { name: '마이페이지로 이동' })
+          .boundingBox();
+
+        await page.goto('/my-courses');
+
+        const myCoursesMyCourses = await page
+          .getByRole('link', { name: '내 코스', exact: true })
+          .boundingBox();
+        const myCoursesMyPage = await page
+          .getByRole('link', { name: '마이페이지', exact: true })
+          .boundingBox();
+
+        expect({ width: mountainMyCourses?.width, height: mountainMyCourses?.height }).toEqual({
+          width: myCoursesMyCourses?.width,
+          height: myCoursesMyCourses?.height,
+        });
+        expect({ width: mountainMyPage?.width, height: mountainMyPage?.height }).toEqual({
+          width: myCoursesMyPage?.width,
+          height: myCoursesMyPage?.height,
+        });
+      }
     }
   }
 });

@@ -6,6 +6,9 @@ import { Button } from '@/components/ui';
 
 import {
   CourseTerrainAnalysisPanel,
+  MockElevationProfileSection,
+  NearbyFacilitiesPanel,
+  TerrainAnalysisPanel,
   terrainAnalysisConfig,
   useTerrainAnalysis,
 } from '@/features/analysis';
@@ -18,6 +21,7 @@ import { CourseDetailPanel, MyCoursesNavigation, useCourseDetailState } from '@/
 
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
+import { CourseExportDialog, RouteEditDialog } from '@/features/route';
 
 import '@/features/analysis/analysis.css';
 import '@/features/course/components/my-courses.css';
@@ -35,11 +39,12 @@ export function CourseDetailPage() {
   const mapRegionRef = useRef<HTMLElement>(null);
 
   const [controller, setController] = useState<MapController | null>(null);
+  const [isEditOpen, setEditOpen] = useState(false);
 
   const course = state.course;
 
   const conditions: TerrainAnalysisConditions | null =
-    course && terrainAnalysisConfig
+    course && !state.isMock && terrainAnalysisConfig
       ? {
           courseId: course.courseId,
           revNo: course.revNo,
@@ -57,25 +62,35 @@ export function CourseDetailPage() {
   }, [location.hash, course?.courseId]);
 
   const analysisPanel = course ? (
-    <CourseTerrainAnalysisPanel
-      courseName={course.courseName}
-      phase={analysis.phase}
-      configured={terrainAnalysisConfig !== null}
-      message={analysis.message}
-      canStart={analysis.canStart}
-      canRetry={analysis.canRetry}
-      canCheck={analysis.canCheck}
-      onStart={() => {
-        void analysis.start();
-      }}
-      onRetry={() => {
-        void analysis.retry();
-      }}
-      onCheck={() => {
-        void analysis.check();
-      }}
-      onRefreshCourse={state.retry}
-    />
+    state.mockCourse ? (
+      <TerrainAnalysisPanel
+        candidateName={state.mockCourse.name}
+        mockData={{
+          distanceM: state.mockCourse.distanceM,
+          elevationGainM: state.mockCourse.elevationGainM,
+        }}
+      />
+    ) : (
+      <CourseTerrainAnalysisPanel
+        courseName={course.courseName}
+        phase={analysis.phase}
+        configured={terrainAnalysisConfig !== null}
+        message={analysis.message}
+        canStart={analysis.canStart}
+        canRetry={analysis.canRetry}
+        canCheck={analysis.canCheck}
+        onStart={() => {
+          void analysis.start();
+        }}
+        onRetry={() => {
+          void analysis.retry();
+        }}
+        onCheck={() => {
+          void analysis.check();
+        }}
+        onRefreshCourse={state.retry}
+      />
+    )
   ) : null;
 
   return (
@@ -84,15 +99,26 @@ export function CourseDetailPage() {
         <div className="my-courses-site-header__inner">
           <Link aria-label="내 코스 목록으로" className="course-detail-back" to={state.backHref}>
             <img alt="" aria-hidden="true" src={backIcon} />
-            <span>코스 상세 분석</span>
+            <span>내 코스로</span>
           </Link>
 
           <div aria-label="코스 관리" className="course-detail-actions">
-            <Button disabled size="sm" variant="quiet">
-              편집
-            </Button>
+            {state.mockCourse ? (
+              <Button onClick={() => setEditOpen(true)} size="sm" variant="secondary">
+                편집
+              </Button>
+            ) : (
+              <Button disabled size="sm" variant="secondary">
+                편집
+              </Button>
+            )}
 
-            <Button disabled size="sm" variant="quiet">
+            <Button
+              disabled={!state.mockCourse}
+              onClick={() => state.setExportOpen(true)}
+              size="sm"
+              variant="secondary"
+            >
               내보내기
             </Button>
           </div>
@@ -112,7 +138,11 @@ export function CourseDetailPage() {
 
           {state.error.canRetry ? (
             <Button disabled={state.isFetching} onClick={state.retry} variant="secondary">
-              {state.isFetching ? '다시 불러오는 중…' : '다시 시도'}
+              {state.isMockPreviewError
+                ? '예시 상세 다시 보기'
+                : state.isFetching
+                  ? '다시 불러오는 중…'
+                  : '다시 시도'}
             </Button>
           ) : null}
 
@@ -131,7 +161,9 @@ export function CourseDetailPage() {
               <OpenLayersMap onControllerChange={setController} targetRef={mapContainerRef} />
             </div>
 
-            <span className="course-detail-map__note">{course.courseName} · 실제 경로 미제공</span>
+            <span className="course-detail-map__note">
+              {state.mockCourse?.mountainName ?? course.courseName} · 실제 경로 미제공
+            </span>
 
             <div className="course-detail-map__controls">
               <MapControls controller={controller} />
@@ -141,12 +173,21 @@ export function CourseDetailPage() {
           <section aria-label="내 코스 상세 내용" className="course-detail-content">
             <CourseDetailPanel
               course={course}
+              mockCourse={state.mockCourse}
               onTabChange={state.setTab}
               tab={state.tab}
-              overviewAnalysis={state.tab === 'overview' ? analysisPanel : null}
+              overviewAnalysis={
+                state.mockCourse ? (
+                  <MockElevationProfileSection />
+                ) : state.tab === 'overview' ? (
+                  analysisPanel
+                ) : null
+              }
               terrainContent={state.tab === 'terrain' ? analysisPanel : null}
               facilitiesContent={
-                state.tab === 'facilities' ? (
+                state.mockCourse ? (
+                  <NearbyFacilitiesPanel candidateName={state.mockCourse.name} mockData />
+                ) : state.tab === 'facilities' ? (
                   <section aria-label="주변 시설 안내" className="insights-panel">
                     <div className="insights-empty" role="status">
                       <strong>주변 시설 정보 미제공</strong>
@@ -165,6 +206,15 @@ export function CourseDetailPage() {
       )}
 
       <MyCoursesNavigation />
+      {state.mockCourse && isEditOpen ? (
+        <RouteEditDialog
+          candidate={{ name: state.mockCourse.name, memo: state.mockCourse.description }}
+          onClose={() => setEditOpen(false)}
+        />
+      ) : null}
+      {state.mockCourse && state.isExportOpen ? (
+        <CourseExportDialog courseName={state.mockCourse.name} onOpenChange={state.setExportOpen} />
+      ) : null}
     </div>
   );
 }
