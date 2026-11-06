@@ -187,6 +187,20 @@ test('오른쪽 위 배경지도 아이콘은 일반지도와 위성지도 상�
   await expect(streetMapButton.locator('svg')).toBeVisible();
   await expect(satelliteMapButton.locator('svg')).toBeVisible();
 
+  const selectedColors = await streetMapButton.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { backgroundColor: style.backgroundColor, color: style.color };
+  });
+  await streetMapButton.hover();
+  await expect
+    .poll(() =>
+      streetMapButton.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { backgroundColor: style.backgroundColor, color: style.color };
+      }),
+    )
+    .toEqual(selectedColors);
+
   await satelliteMapButton.click();
 
   if ((await satelliteMapButton.getAttribute('title')) === 'VWorld API 키가 필요합니다') {
