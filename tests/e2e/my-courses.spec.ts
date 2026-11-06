@@ -69,21 +69,31 @@ test('카드에서 상세 페이지로 진입하고 목록 조건과 뒤로가�
 
   await expect(map).toHaveAttribute('data-map-ready', 'true');
   await expect(map).toHaveAttribute('data-map-projection', 'EPSG:3857');
-  await expect(page.getByText('분석 미제공', { exact: true })).toBeVisible();
-
-  await page.getByRole('tab', { name: '지형 분석' }).click();
-  await page.getByRole('button', { name: '샘플 프로파일 보기' }).click();
-
+  await expect(page.getByRole('tab', { name: '요약' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.my-course-overview__points dl > div')).toHaveCount(2);
   await expect(page.locator('.elevation-profile__chart')).toHaveAttribute(
     'data-chart-ready',
     'true',
   );
-
+  await page.getByRole('tab', { name: '코스 분석' }).click();
+  await expect(page.getByText('604m', { exact: true })).toBeVisible();
+  await expect(page.locator('.elevation-profile__chart')).toHaveAttribute(
+    'data-chart-ready',
+    'true',
+  );
   await page.getByRole('tab', { name: '주변 시설' }).click();
-
   await expect(
     page.getByRole('heading', { name: '능선 조망 코스 · 예시 2 주변 시설' }),
   ).toBeVisible();
+  await page.getByRole('button', { name: '화장실 3' }).click();
+  await expect(page.locator('.nearby-facilities__list > li')).toHaveCount(3);
+  await expect(page.getByText('3곳 · 코스와 가까운 순', { exact: true })).toBeVisible();
+  await page
+    .locator('.nearby-facility-card')
+    .first()
+    .getByText('상세 정보', { exact: true })
+    .click();
+  await expect(page.getByText('서울 관악구 신림동 203-1', { exact: true })).toBeVisible();
 
   await page.getByRole('link', { name: '내 코스 목록으로', exact: true }).click();
 

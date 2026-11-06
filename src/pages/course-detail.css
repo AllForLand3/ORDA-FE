@@ -1,3 +1,15 @@
+.course-detail-page {
+  display: flex;
+  height: 100dvh;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.course-detail-page > .my-courses-site-header {
+  flex: 0 0 auto;
+}
+
 .course-detail-back {
   display: inline-flex;
   min-height: 2.75rem;
@@ -29,12 +41,18 @@
 }
 
 .course-detail-workspace {
+  display: flex;
   min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .course-detail-map {
   position: relative;
-  height: 9.25rem;
+  height: 12rem;
+  flex: 0 0 12rem;
   overflow: hidden;
   background: var(--color-background-muted);
 }
@@ -75,12 +93,57 @@
 
 .course-detail-content {
   min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
   padding: 0.75rem 1.125rem 1.5rem;
   background: var(--color-background-surface);
+  scrollbar-width: none;
+}
+
+.course-detail-content::-webkit-scrollbar,
+.course-detail-panel .orda-tabs__panel::-webkit-scrollbar {
+  display: none;
 }
 
 .course-detail-content .insights-panel:not(.my-course-overview__analysis .insights-panel) {
   padding-inline: 0;
+}
+
+.course-detail-panel,
+.course-detail-panel--mock {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.course-detail-panel--mock {
+  gap: 0.875rem;
+}
+
+.course-detail-panel--mock .my-courses-demo-note {
+  margin: 0;
+}
+
+.course-detail-panel > .orda-tabs {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.course-detail-panel > .orda-tabs > .orda-tabs__list {
+  flex: 0 0 auto;
+}
+
+.course-detail-panel > .orda-tabs > .orda-tabs__panel:not([hidden]) {
+  display: block;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
 }
 
 @media (min-width: 48rem) {
@@ -112,9 +175,8 @@
     min-height: 0;
     grid-column: 1;
     grid-row: 1;
-    overflow-y: auto;
+    overflow: hidden;
     overscroll-behavior: contain;
     border-right: 1px solid var(--color-border-default);
-    scrollbar-width: thin;
   }
 }

@@ -26,7 +26,11 @@ type ProfileOption = ComposeOption<
   | AriaComponentOption
 >;
 
-export function ElevationProfileChart() {
+interface ElevationProfileChartProps {
+  mockData?: boolean;
+}
+
+export function ElevationProfileChart({ mockData = false }: ElevationProfileChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,13 +39,13 @@ export function ElevationProfileChart() {
     const styles = getComputedStyle(element);
     const color = (name: string) => styles.getPropertyValue(name).trim();
     const chart = init(element, undefined, { renderer: 'svg' });
+    const seriesName = mockData ? '목데이터 고도' : '샘플 고도';
     const option: ProfileOption = {
       animation: false,
       aria: {
         enabled: true,
         label: {
-          description:
-            '실제 경로와 무관한 샘플 고도 프로파일입니다. 가로축은 거리 km, 세로축은 고도 m이며 아래 데이터 표에서 수치를 확인할 수 있습니다.',
+          description: `${mockData ? '화면 확인용 목데이터' : '실제 경로와 무관한 샘플'} 고도 프로파일입니다. 가로축은 거리 km, 세로축은 고도 m이며 아래 데이터 표에서 수치를 확인할 수 있습니다.`,
         },
       },
       textStyle: { fontFamily: styles.fontFamily },
@@ -49,7 +53,7 @@ export function ElevationProfileChart() {
       legend: {
         top: 0,
         left: 'center',
-        data: ['샘플 고도'],
+        data: [seriesName],
         icon: 'roundRect',
         itemWidth: 14,
         itemHeight: 3,
@@ -68,7 +72,7 @@ export function ElevationProfileChart() {
           if (!Array.isArray(value)) return '';
           const [distanceM, elevationM] = value;
           if (typeof distanceM !== 'number' || typeof elevationM !== 'number') return '';
-          return `샘플 거리 ${distanceM / 1000}km\n샘플 고도 ${elevationM}m`;
+          return `${mockData ? '거리' : '샘플 거리'} ${distanceM / 1000}km\n${mockData ? '고도' : '샘플 고도'} ${elevationM}m`;
         },
       },
       xAxis: {
@@ -101,7 +105,7 @@ export function ElevationProfileChart() {
       series: [
         {
           type: 'line',
-          name: '샘플 고도',
+          name: seriesName,
           data: SAMPLE_ELEVATION_PROFILE.map((point) => [point.distanceM, point.elevationM]),
           smooth: 0.25,
           showSymbol: false,
@@ -144,21 +148,25 @@ export function ElevationProfileChart() {
       delete element.dataset.chartReady;
       delete element.dataset.chartWidth;
     };
-  }, []);
+  }, [mockData]);
 
   return (
     <figure className="elevation-profile">
       <div
-        aria-label="샘플 고도 프로파일, 선택 코스와 무관함. 가로축 거리 km, 세로축 고도 m. 아래 표에서 수치를 확인할 수 있습니다."
+        aria-label={`${mockData ? '목데이터' : '샘플'} 고도 프로파일. 가로축 거리 km, 세로축 고도 m. 아래 표에서 수치를 확인할 수 있습니다.`}
         className="elevation-profile__chart"
         ref={chartRef}
         role="img"
       />
-      <figcaption>샘플 고도 · 실제 코스 분석이 아닙니다.</figcaption>
+      <figcaption>
+        {mockData
+          ? '화면 확인용 목데이터 · 실제 API 연결 시 교체됩니다.'
+          : '샘플 고도 · 실제 코스 분석이 아닙니다.'}
+      </figcaption>
       <details className="elevation-profile__table">
-        <summary>샘플 데이터 표 보기</summary>
+        <summary>{mockData ? '고도 데이터 표 보기' : '샘플 데이터 표 보기'}</summary>
         <table>
-          <caption>도식용 샘플 거리·고도</caption>
+          <caption>{mockData ? '목데이터 거리·고도' : '도식용 샘플 거리·고도'}</caption>
           <thead>
             <tr>
               <th scope="col">거리 (m)</th>

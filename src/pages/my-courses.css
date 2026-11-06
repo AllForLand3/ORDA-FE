@@ -5,11 +5,13 @@
   background: var(--color-background-default);
 }
 
-html:has(.my-courses-page) {
+html:has(.my-courses-page),
+html:has(.course-detail-page) {
   scrollbar-width: none;
 }
 
-html:has(.my-courses-page)::-webkit-scrollbar {
+html:has(.my-courses-page)::-webkit-scrollbar,
+html:has(.course-detail-page)::-webkit-scrollbar {
   display: none;
 }
 

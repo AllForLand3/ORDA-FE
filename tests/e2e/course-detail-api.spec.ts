@@ -103,16 +103,15 @@ test('RESOURCE_NOT_FOUND 상세 응답도 재시도 없는 코스 없음 안내�
   await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toHaveCount(0);
 });
 
-test('예시 ID를 실제 상세 API에 전송하지 않는다', async ({ page }) => {
+test('예시 ID는 Mock 상세를 표시하고 실제 상세 API에 전송하지 않는다', async ({ page }) => {
   const requests: string[] = [];
   await page.route('**/api/courses/**', async (route) => {
     requests.push(route.request().url());
     await route.abort();
   });
   await page.goto('/my-courses/example-ridge-1');
-  await expect(
-    page.getByRole('heading', { name: '코스 주소를 확인해주세요', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: '능선 조망 코스', exact: true })).toBeVisible();
+  await expect(page.getByText('5.8km', { exact: true })).toBeVisible();
   expect(requests).toEqual([]);
 });
 

@@ -3,6 +3,9 @@ import { useParams, useSearchParams } from 'react-router-dom';
 
 import type { ApiErrorResponse } from '@/shared/types/api';
 
+import { MOCK_MY_COURSES } from '../mocks/my-courses';
+import type { MockMyCourse } from '../mocks/my-courses';
+import type { CourseDetailResponse } from '../types/course';
 import { isValidCourseId, useCourseDetailQuery } from './useCourseDetailQuery';
 
 type CourseDetailTab = 'overview' | 'terrain' | 'facilities';
@@ -11,6 +14,19 @@ interface CourseDetailError {
   title: string;
   message: string;
   canRetry: boolean;
+}
+
+function toCourseDetailResponse(course: MockMyCourse): CourseDetailResponse {
+  return {
+    courseId: course.id,
+    mountainId: course.mountainName,
+    courseName: course.name,
+    memo: course.description,
+    createType: course.category === 'imported' ? 'IMPORT' : 'SAVE',
+    revNo: 0,
+    geometry: { type: 'LineString', coordinates: [] },
+    lengthM: course.distanceM,
+  };
 }
 
 /** 상세 조회 오류를 사용자 안내와 수동 재시도 가능 여부로 변환한다. */
@@ -77,6 +93,9 @@ export function useCourseDetailState(userId: string | undefined) {
   const { courseId } = useParams();
   const [params, setParams] = useSearchParams();
   const query = useCourseDetailQuery(courseId, userId);
+  const mockCourse = MOCK_MY_COURSES.find((item) => item.id === courseId);
+  const mockDetail = mockCourse ? toCourseDetailResponse(mockCourse) : undefined;
+  const isMockPreviewError = Boolean(mockDetail) && params.get('preview') === 'error';
 
   const tabParam = params.get('tab');
   const tab: CourseDetailTab =
@@ -84,30 +103,71 @@ export function useCourseDetailState(userId: string | undefined) {
 
   const listParams = new URLSearchParams(params.get('list') ?? '');
   const backHref = `/my-courses${listParams.size ? `?${listParams}` : ''}`;
+  const editHref = `/my-courses/${encodeURIComponent(courseId ?? '')}/edit?${new URLSearchParams({
+    list: params.get('list') ?? '',
+    tab,
+  })}`;
 
-  const invalidId = !isValidCourseId(courseId);
+  const invalidId = !mockDetail && !isValidCourseId(courseId);
 
-  const error: CourseDetailError | null = invalidId
+  const error: CourseDetailError | null = isMockPreviewError
     ? {
-        title: '코스 주소를 확인해주세요',
-        message: '올바른 코스 주소로 다시 접속해주세요.',
-        canRetry: false,
+        title: '코스 상세를 표시하지 못했어요',
+        message: '오류 UI 데모입니다. 실제 서버 요청이 실패한 상태는 아닙니다.',
+        canRetry: true,
       }
-    : query.isError
-      ? getCourseDetailError(query.error)
-      : null;
+    : invalidId
+      ? {
+          title: courseId ? '코스를 찾을 수 없어요' : '코스 주소를 확인해주세요',
+          message: courseId
+            ? '삭제되었거나 접근할 수 없는 코스입니다.'
+            : '올바른 코스 주소로 다시 접속해주세요.',
+          canRetry: false,
+        }
+      : query.isError
+        ? getCourseDetailError(query.error)
+        : null;
 
   return {
-    course: error ? undefined : query.data,
+    course: error ? undefined : (mockDetail ?? query.data),
+    mockCourse,
+    isMock: Boolean(mockDetail),
+    isMockPreviewError,
     tab,
     backHref,
+    editHref,
     error,
+    isExportOpen: Boolean(mockDetail) && params.get('export') === '1',
 
-    isLoading: !invalidId && query.isPending,
+    isLoading: !mockDetail && !invalidId && query.isPending,
     isFetching: query.isFetching,
 
     retry: () => {
+      if (isMockPreviewError) {
+        setParams(
+          (current) => {
+            const next = new URLSearchParams(current);
+            next.delete('preview');
+            return next;
+          },
+          { replace: true },
+        );
+        return;
+      }
+
       void query.refetch();
+    },
+
+    setExportOpen: (open: boolean) => {
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          if (open) next.set('export', '1');
+          else next.delete('export');
+          return next;
+        },
+        { replace: true },
+      );
     },
 
     setTab: (value: string) => {
