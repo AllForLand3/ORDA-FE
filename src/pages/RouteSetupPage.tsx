@@ -7,6 +7,7 @@ import {
   MOUNTAIN_MOCKS,
   MountainHeader,
   isValidMountainCoordinate,
+  isValidMountainId,
   useMountainDetailQuery,
 } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
@@ -26,23 +27,28 @@ export function RouteSetupPage() {
   const [searchParams] = useSearchParams();
   const mountainId = searchParams.get('mountainId');
   const fallbackMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
-  const usesApiMountain = Boolean(mountainId && !fallbackMountain);
+  const usesApiMountain = mountainId !== null && !fallbackMountain;
+  const hasInvalidMountainId = usesApiMountain && !isValidMountainId(mountainId);
   const mountainDetailQuery = useMountainDetailQuery(
-    mountainId && !fallbackMountain ? mountainId : null,
+    usesApiMountain && isValidMountainId(mountainId) ? mountainId : null,
   );
   const selectedMountainName = mountainDetailQuery.data?.mountainName ?? fallbackMountain?.name;
   const selectedMountainCoordinates =
     mountainDetailQuery.data?.geometry?.coordinates ?? fallbackMountain?.coordinates;
-  const isMountainLocationPending = usesApiMountain && mountainDetailQuery.isPending;
+  const isMountainLocationPending =
+    usesApiMountain && !hasInvalidMountainId && mountainDetailQuery.isPending;
   const hasMountainLocationError =
     usesApiMountain &&
-    (mountainDetailQuery.isError ||
+    (hasInvalidMountainId ||
+      mountainDetailQuery.isError ||
       (Boolean(mountainDetailQuery.data) &&
         !isValidMountainCoordinate(selectedMountainCoordinates)));
-  const canRenderMap =
+  const canConfigure =
     !usesApiMountain ||
     Boolean(
-      mountainDetailQuery.data?.serviceAvailable &&
+      mountainDetailQuery.isSuccess &&
+      !mountainDetailQuery.isError &&
+      mountainDetailQuery.data.serviceAvailable === true &&
       isValidMountainCoordinate(selectedMountainCoordinates),
     );
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -106,12 +112,12 @@ export function RouteSetupPage() {
         }
         mapContainerRef={mapContainerRef}
         mapContent={
-          canRenderMap ? (
+          canConfigure ? (
             <OpenLayersMap
               additionalLayers={layers}
               initialCenter={selectedMountainCoordinates}
               onMapClick={(coordinate) => {
-                if (state.step !== 'locations') return;
+                if (!canConfigure || state.step !== 'locations') return;
                 if (state.searchRole && state.isMapSelectionMode) {
                   state.setPendingCoordinate(state.searchRole, coordinate);
                 }
@@ -125,9 +131,11 @@ export function RouteSetupPage() {
               role={isMountainLocationPending ? 'status' : 'alert'}
             >
               <strong>
-                {isMountainLocationPending
-                  ? '산 위치를 확인하는 중이에요.'
-                  : '산 위치를 표시할 수 없어요.'}
+                {hasInvalidMountainId
+                  ? '산 ID가 올바르지 않아요.'
+                  : isMountainLocationPending
+                    ? '산 위치를 확인하는 중이에요.'
+                    : '산 위치를 표시할 수 없어요.'}
               </strong>
               <span>
                 {hasMountainLocationError
@@ -140,8 +148,24 @@ export function RouteSetupPage() {
         mapControls={<MapControls controller={mapController} mountainName={selectedMountainName} />}
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
         mobilePanelSwipeToClose
-        panel={<RouteSetupPanel state={state} />}
-        panelFooter={<RouteSetupFooter state={state} />}
+        panel={
+          <fieldset
+            aria-label="코스 설정 입력"
+            className="route-setup-gate"
+            disabled={!canConfigure}
+          >
+            <RouteSetupPanel state={state} />
+          </fieldset>
+        }
+        panelFooter={
+          <fieldset
+            aria-label="코스 설정 단계 이동"
+            className="route-setup-gate"
+            disabled={!canConfigure}
+          >
+            <RouteSetupFooter state={state} />
+          </fieldset>
+        }
         panelCloseText="접기"
         panelLabel="코스 탐색 설정"
         panelSize="content"

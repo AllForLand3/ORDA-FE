@@ -272,6 +272,11 @@ test('출발지와 도착지 없이 조건 단계로 직접 진입하면 탐색�
 });
 
 test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다', async ({ page }) => {
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    }),
+  );
   await page.setViewportSize({ width: 1024, height: 768 });
 
   const readTypography = async (selectors: {

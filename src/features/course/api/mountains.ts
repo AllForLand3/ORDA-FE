@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/axios';
+import { isValidMountainId } from '../utils/mountainId';
 
 import type {
   MountainDetail,
@@ -16,15 +17,23 @@ export async function getMountains(
   return response.data;
 }
 
+function getMountainPath(mountainId: string) {
+  if (!isValidMountainId(mountainId)) {
+    throw new TypeError('유효한 산 ID가 필요합니다.');
+  }
+
+  return `/mountains/${encodeURIComponent(mountainId)}`;
+}
+
 export async function getMountain(mountainId: string): Promise<MountainDetail> {
-  const response = await apiClient.get<MountainDetail>(`/mountains/${mountainId}`);
+  const response = await apiClient.get<MountainDetail>(getMountainPath(mountainId));
 
   return response.data;
 }
 
 export async function getServiceArea(mountainId: string): Promise<ServiceAreaFeatureCollection> {
   const response = await apiClient.get<ServiceAreaFeatureCollection>(
-    `/mountains/${mountainId}/service-area`,
+    `${getMountainPath(mountainId)}/service-area`,
   );
 
   return response.data;
