@@ -23,100 +23,8 @@
   scrollbar-width: thin;
 }
 
-.route-results-header {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
-.route-results-header__brand,
-.route-results-header__context {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.route-results-header__logo {
-  display: grid;
-  width: 2.125rem;
-  height: 2.1875rem;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: 0.625rem;
-  background: var(--color-background-surface);
-}
-
-.route-results-header__logo img {
-  width: 1.5rem;
-  height: auto;
-}
-
-.route-results-header__back,
-.route-results-header__login {
-  display: inline-flex;
-  min-height: 2.75rem;
-  align-items: center;
-  padding-inline: 0.75rem;
-  border-radius: 9999px;
-  background: var(--color-background-surface);
-  color: var(--color-text-link);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.route-results-header__login {
-  margin-left: auto;
-}
-
-.route-results-header__my-courses {
-  display: none;
-}
-
-.route-results-header__location {
-  display: inline-flex;
-  min-height: 2.375rem;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 0.875rem;
-  border-radius: 9999px;
-  background: var(--color-background-surface);
-  font-size: 0.8125rem;
-  font-weight: 700;
-}
-
-.route-results-header__location small {
-  border-left: 1px solid var(--color-border-default);
-  padding-left: 0.625rem;
-  color: var(--color-text-secondary);
-  font-size: 0.6875rem;
-  font-weight: 400;
-}
-
-.route-results-header__preview select {
-  min-height: 2.375rem;
-  max-width: 9rem;
-  padding: 0.375rem 0.5rem;
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-input);
-  background: var(--color-background-surface);
-  color: var(--color-text-primary);
-  font-size: 0.75rem;
-}
-
-.route-results-header__note {
-  align-self: flex-start;
-  margin: -0.25rem 0 0;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  background: var(--color-background-surface);
-  color: var(--color-text-secondary);
-  font-size: 0.6875rem;
-}
-
 .route-results-page .orda-map-layout__controls {
-  inset-block-start: 8.5rem;
+  inset-block-start: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.5rem);
 }
 
 /* 하단 패널이 실제 지도 확대 버튼과 OSM 저작권을 가리지 않도록 배치한다. */
@@ -127,7 +35,7 @@
 }
 
 .route-results-page .orda-map-layout__map-surface .ol-attribution {
-  inset-block-start: 9rem;
+  inset-block-start: 4rem;
   inset-block-end: auto;
   inset-inline-start: 1rem;
   inset-inline-end: auto;
@@ -168,40 +76,6 @@
     .orda-responsive-panel[data-panel-size='expanded']
     .orda-responsive-panel__surface {
     height: 100%;
-  }
-
-  .route-results-header {
-    align-items: center;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .route-results-header__brand {
-    flex: 1;
-  }
-
-  .route-results-header__login {
-    margin-left: 0;
-  }
-
-  .route-results-header__my-courses {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    padding-inline: 0.875rem;
-    border: 1px solid var(--color-border-default);
-    border-radius: 9999px;
-    background: var(--color-background-surface);
-    color: var(--color-text-primary);
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .route-results-header__note {
-    display: none;
   }
 
   .route-results-page .orda-map-layout__controls {
