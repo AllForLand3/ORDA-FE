@@ -21,7 +21,7 @@ import { CourseDetailPanel, MyCoursesNavigation, useCourseDetailState } from '@/
 
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
-import { CourseExportDialog } from '@/features/route';
+import { CourseExportDialog, RouteEditDialog } from '@/features/route';
 
 import '@/features/analysis/analysis.css';
 import '@/features/course/components/my-courses.css';
@@ -39,6 +39,7 @@ export function CourseDetailPage() {
   const mapRegionRef = useRef<HTMLElement>(null);
 
   const [controller, setController] = useState<MapController | null>(null);
+  const [isEditOpen, setEditOpen] = useState(false);
 
   const course = state.course;
 
@@ -103,12 +104,9 @@ export function CourseDetailPage() {
 
           <div aria-label="코스 관리" className="course-detail-actions">
             {state.mockCourse ? (
-              <Link
-                className="orda-button orda-button--secondary orda-button--sm"
-                to={state.editHref}
-              >
+              <Button onClick={() => setEditOpen(true)} size="sm" variant="secondary">
                 편집
-              </Link>
+              </Button>
             ) : (
               <Button disabled size="sm" variant="secondary">
                 편집
@@ -208,6 +206,12 @@ export function CourseDetailPage() {
       )}
 
       <MyCoursesNavigation />
+      {state.mockCourse && isEditOpen ? (
+        <RouteEditDialog
+          candidate={{ name: state.mockCourse.name, memo: state.mockCourse.description }}
+          onClose={() => setEditOpen(false)}
+        />
+      ) : null}
       {state.mockCourse && state.isExportOpen ? (
         <CourseExportDialog courseName={state.mockCourse.name} onOpenChange={state.setExportOpen} />
       ) : null}

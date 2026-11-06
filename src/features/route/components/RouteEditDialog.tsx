@@ -6,8 +6,10 @@ import { Button, Dialog, TextArea, TextField } from '@/components/ui';
 
 import type { MockRouteCandidate } from '../mocks/route-results';
 
+import '../route-results.css';
+
 interface RouteEditDialogProps {
-  candidate: MockRouteCandidate;
+  candidate: Pick<MockRouteCandidate, 'name' | 'memo'>;
   onClose: () => void;
 }
 
@@ -31,10 +33,14 @@ export function RouteEditDialog({ candidate, onClose }: RouteEditDialogProps) {
               <img alt="" aria-hidden="true" src={deleteIcon} />
               삭제
             </Button>
-            <Button onClick={onClose} variant="secondary">
+            <Button className="route-edit-dialog__cancel" onClick={onClose} variant="secondary">
               취소
             </Button>
-            <Button aria-describedby="route-edit-demo-note" disabled>
+            <Button
+              aria-describedby="route-edit-demo-note"
+              className="route-edit-dialog__save"
+              disabled
+            >
               <img alt="" aria-hidden="true" src={archiveIcon} />
               저장
             </Button>

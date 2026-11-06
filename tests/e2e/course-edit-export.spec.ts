@@ -51,8 +51,8 @@ test('예시 코스 이름·메모를 편집하고 화면 내 적용·초기화�
 });
 
 test('변경 중 취소·브라우저 뒤로가기·새로고침은 유실 확인을 제공한다', async ({ page }) => {
-  await page.goto('/my-courses/example-ridge-1');
-  await page.getByRole('link', { name: '편집', exact: true }).click();
+  await page.goto('/my-courses');
+  await page.getByRole('article').first().getByRole('link', { name: '편집', exact: true }).click();
   const name = page.getByRole('textbox', { name: '코스 이름' });
   await name.fill('버릴 변경');
   await page.getByRole('link', { name: '취소', exact: true }).click();
@@ -68,7 +68,7 @@ test('변경 중 취소·브라우저 뒤로가기·새로고침은 유실 확�
   await page.getByRole('link', { name: '취소', exact: true }).click();
   await leave.getByRole('button', { name: '변경 버리고 나가기' }).click();
   await expect(page).toHaveURL(/example-ridge-1(?:\?|$)/);
-  await page.getByRole('link', { name: '편집', exact: true }).click();
+  await page.goto('/my-courses/example-ridge-1/edit');
   await name.fill('새로고침하면 사라짐');
   await page.getByRole('button', { name: '패널 접기' }).click();
   await page.getByRole('link', { name: '코스 편집', exact: true }).click();

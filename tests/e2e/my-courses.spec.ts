@@ -65,12 +65,46 @@ test('카드에서 상세 페이지로 진입하고 목록 조건과 뒤로가�
   await expect(page).toHaveURL(/\/my-courses\/example-ridge-2/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('능선 조망 코스 · 예시 2');
   await expect(page.getByText('내 코스로', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: '편집', exact: true })).toHaveClass(
-    /orda-button--secondary/,
-  );
+  const editButton = page.getByRole('button', { name: '편집', exact: true });
+  await expect(editButton).toHaveClass(/orda-button--secondary/);
   await expect(page.getByRole('button', { name: '내보내기', exact: true })).toHaveClass(
     /orda-button--secondary/,
   );
+  const detailUrl = page.url();
+  await editButton.click();
+  const editDialog = page.getByRole('dialog', { name: /코스 편집/ });
+  await expect(editDialog).toBeVisible();
+  await expect(editDialog.getByRole('textbox', { name: '코스 이름' })).toHaveValue(
+    '능선 조망 코스 · 예시 2',
+  );
+  await expect(editDialog.getByRole('textbox', { name: '메모', exact: true })).toHaveValue(
+    '전망이 좋은 능선을 따라 걷는 코스입니다.',
+  );
+  await expect(editDialog.getByRole('button', { name: '삭제', exact: true })).toHaveCSS(
+    'color',
+    'rgb(228, 87, 61)',
+  );
+  await expect(editDialog.getByRole('button', { name: '취소', exact: true })).toHaveCSS(
+    'min-height',
+    '36px',
+  );
+  const dialogStyles = await editDialog.evaluate((dialog) => {
+    const nameShell = dialog.querySelector('.orda-input-shell');
+    const memo = dialog.querySelector('.orda-text-area');
+    return {
+      nameBorder: nameShell ? getComputedStyle(nameShell).borderTopColor : '',
+      memoBorder: memo ? getComputedStyle(memo).borderTopColor : '',
+      handleDisplay: getComputedStyle(
+        dialog.querySelector('.orda-dialog__surface') as Element,
+        '::before',
+      ).display,
+    };
+  });
+  expect(dialogStyles.memoBorder).toBe(dialogStyles.nameBorder);
+  expect(dialogStyles.handleDisplay).toBe('none');
+  await expect(page).toHaveURL(detailUrl);
+  await editDialog.getByRole('button', { name: '코스 편집 닫기' }).click();
+  await expect(editDialog).not.toBeVisible();
 
   const map = page.locator('.course-detail-map .orda-map-layout__map-surface');
 
