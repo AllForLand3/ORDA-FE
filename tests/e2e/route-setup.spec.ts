@@ -47,7 +47,9 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await expect(next).toBeEnabled();
   await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
-  await expect(page.getByText('예시 장소 · 실제 경로 추천 미연결')).toBeVisible();
+  await expect(
+    page.getByText('출발지와 도착지를 각각 선택하면 다음 단계로 갈 수 있어요.'),
+  ).toBeVisible();
 
   await next.click();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
@@ -91,6 +93,75 @@ test('선택한 산 좌표를 코스 설정 지도의 초기 중심으로 사용
 
   await expect(map).toHaveAttribute('data-map-ready', 'true');
   await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
+});
+
+test('API 산 ID로 상세 정보를 조회해 코스 설정 지도에 반영한다', async ({ page }) => {
+  let authorization: string | undefined;
+  let releaseDetail: (() => void) | undefined;
+  const detailLoading = new Promise<void>((resolve) => {
+    releaseDetail = resolve;
+  });
+  await page.route('**/api/mountains/42', async (route) => {
+    authorization = route.request().headers().authorization;
+    await detailLoading;
+    await route.fulfill({
+      json: {
+        mountainId: '42',
+        mountainName: '북한산',
+        sourceMountainCode: 'MNT-042',
+        sourceOldMountainCode: null,
+        serviceAvailable: true,
+        addressLabel: '서울특별시 강북구',
+        provinceName: '서울특별시',
+        districtName: '강북구',
+        elevationMeters: 836,
+        geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
+      },
+    });
+  });
+
+  await page.goto('/routes/setup?mountainId=42');
+
+  const map = page.locator('.orda-map-layout__map-surface');
+  await expect(page.getByText('산 위치를 확인하는 중이에요.')).toBeVisible();
+  await expect(map).not.toHaveAttribute('data-map-ready', 'true');
+  await expect(page.getByRole('button', { name: '현재 위치로 이동' })).toBeDisabled();
+
+  releaseDetail?.();
+  await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
+  await expect(page.getByRole('group', { name: '지도 컨트롤' })).toContainText('북한산');
+  expect(authorization).toBe('Bearer e2e-access-token');
+});
+
+test('서비스 불가 산 ID로 코스 설정에 직접 접근하면 산 선택 화면으로 돌아간다', async ({
+  page,
+}) => {
+  await page.route('**/api/mountains/43', async (route) => {
+    await route.fulfill({
+      json: {
+        mountainId: '43',
+        mountainName: '서비스 준비 산',
+        sourceMountainCode: 'MNT-043',
+        sourceOldMountainCode: null,
+        serviceAvailable: false,
+        addressLabel: '서울특별시',
+        provinceName: '서울특별시',
+        districtName: null,
+        elevationMeters: 500,
+        geometry: { type: 'Point', coordinates: [126.98, 37.56] },
+      },
+    });
+  });
+  await page.route('**/api/mountains?*', async (route) => {
+    await route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    });
+  });
+
+  await page.goto('/routes/setup?mountainId=43');
+
+  await expect(page).toHaveURL(/\/mountains$/);
+  await expect(page.getByRole('heading', { name: '어느 산으로 갈까요?' })).toBeVisible();
 });
 
 test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지 않는다', async ({ page }) => {
@@ -201,6 +272,11 @@ test('출발지와 도착지 없이 조건 단계로 직접 진입하면 탐색�
 });
 
 test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다', async ({ page }) => {
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    }),
+  );
   await page.setViewportSize({ width: 1024, height: 768 });
 
   const readTypography = async (selectors: {
@@ -298,12 +374,67 @@ test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다
 });
 
 test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', async ({ page }) => {
+  const mountain = {
+    mountainId: '42',
+    mountainName: '북한산',
+    addressLabel: '서울특별시 강북구',
+    provinceName: '서울특별시',
+    districtName: '강북구',
+    elevationMeters: 836,
+    geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
+  };
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [mountain], page: 0, size: 10, totalElements: 1, totalPages: 1 },
+    }),
+  );
+  await page.route('**/api/mountains/42', (route) =>
+    route.fulfill({
+      json: {
+        ...mountain,
+        sourceMountainCode: null,
+        sourceOldMountainCode: null,
+        serviceAvailable: true,
+      },
+    }),
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/mountains');
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+  await page.locator('.mountain-card').filter({ hasText: '북한산' }).click();
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
   await page.getByRole('button', { name: '코스 탐색 설정' }).click();
-  await expect(page).toHaveURL(/\/routes\/setup/);
+  await expect(page).toHaveURL(/\/routes\/setup\?mountainId=42$/);
   await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-center',
+    '126.978000,37.658630',
+  );
 });
+
+for (const coordinates of [null, [200, 37]]) {
+  test(`산 좌표가 ${coordinates ? '잘못되면' : '없으면'} 임의 위치에 지도를 생성하지 않는다`, async ({
+    page,
+  }) => {
+    await page.route('**/api/mountains/42', (route) =>
+      route.fulfill({
+        json: {
+          mountainId: '42',
+          mountainName: '위치 없는 산',
+          serviceAvailable: true,
+          geometry: coordinates ? { type: 'Point', coordinates } : null,
+        },
+      }),
+    );
+    await page.goto('/routes/setup?mountainId=42');
+    await expect(page.getByRole('alert')).toContainText('산 위치를 표시할 수 없어요.');
+    await expect(page.locator('.orda-map-layout__map-surface')).not.toHaveAttribute(
+      'data-map-ready',
+      'true',
+    );
+    await expect(page.getByRole('button', { name: '현재 위치로 이동' })).toBeDisabled();
+  });
+}
 
 test('설정된 출발지도 지도에서 새 좌표로 다시 선택할 수 있다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });

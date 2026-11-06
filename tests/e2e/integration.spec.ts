@@ -51,6 +51,12 @@ for (const viewport of [
           await installAuthenticatedSession(context);
         }
         const page = await context.newPage();
+        await page.route('**/api/mountains?*', async (route) => {
+          expect(route.request().method()).toBe('GET');
+          await route.fulfill({
+            json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+          });
+        });
         page.on('pageerror', (error) => errors.push(error.message));
         page.on('request', (request) => {
           if (isDomainApiRequest(request.url())) requests.push(request.url());
@@ -100,6 +106,12 @@ for (const viewport of [
       });
     }
     expect(errors).toEqual([]);
-    expect(requests).toEqual([]);
+    // 산 목록은 실제 API를 사용한다. 그 외 도메인 요청은 여전히 허용하지 않는다.
+    expect(requests.length).toBeGreaterThanOrEqual(1);
+    for (const request of requests) {
+      const url = new URL(request);
+      expect(url.pathname).toBe('/api/mountains');
+      expect(Object.fromEntries(url.searchParams)).toEqual({ page: '0', size: '10' });
+    }
   });
 }

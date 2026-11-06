@@ -2,11 +2,17 @@ import { expect, isDomainApiRequest, test } from '../fixtures/authenticatedTest'
 
 test('마이페이지는 로그인 사용자 정보를 표시하고 로그아웃한다', async ({ page }) => {
   const requests: string[] = [];
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    }),
+  );
   page.on('request', (request) => {
     if (isDomainApiRequest(request.url())) requests.push(request.url());
   });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/mountains');
+  await expect(page.getByText('검색 결과가 없어요.')).toBeVisible();
   await page.getByRole('link', { name: '마이페이지로 이동' }).click();
   await expect(page).toHaveURL('/my-page');
   await expect(page.getByRole('heading', { name: '마이페이지', exact: true })).toBeVisible();
@@ -45,7 +51,12 @@ test('마이페이지는 로그인 사용자 정보를 표시하고 로그아웃
       })),
     )
     .toEqual({ localToken: null, sessionToken: null });
-  expect(requests).toEqual([]);
+  expect(
+    requests.map((request) => {
+      const url = new URL(request);
+      return `${url.pathname}${url.search}`;
+    }),
+  ).toEqual(['/api/mountains?page=0&size=10']);
 });
 
 test('모바일·PC 내비게이션은 구현된 화면을 연결하고 404를 유지한다', async ({ page }) => {
