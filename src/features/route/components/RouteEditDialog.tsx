@@ -22,6 +22,7 @@ export function RouteEditDialog({ candidate, onClose }: RouteEditDialogProps) {
     <div className="route-edit-dialog">
       <Dialog
         closeLabel="코스 편집 닫기"
+        eyebrow="COURSE EDITOR"
         footer={
           <>
             <Button

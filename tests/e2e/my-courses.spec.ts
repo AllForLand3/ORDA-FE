@@ -188,7 +188,7 @@ test('뒤로가기와 앞으로가기로 변경된 검색어를 입력창과 목
   await expect(search).toHaveValue('예시 4');
 });
 
-test('검색 디바운스 전에도 카드 링크에 현재 검색어를 보존한다', async ({ page }) => {
+test('검색 디바운스 전에도 상세 링크와 편집 모달에 현재 목록 상태를 보존한다', async ({ page }) => {
   await page.clock.install();
   await page.goto('/my-courses');
 
@@ -197,14 +197,15 @@ test('검색 디바운스 전에도 카드 링크에 현재 검색어를 보존�
 
   const card = page.getByRole('article');
   const detailHref = await card.getByRole('link', { name: '코스 상세 보기' }).getAttribute('href');
-  const editHref = await card.getByRole('link', { name: '편집' }).getAttribute('href');
+  expect(detailHref).not.toBeNull();
+  const list = new URL(detailHref!, 'http://localhost').searchParams.get('list');
+  expect(new URLSearchParams(list ?? '').get('q')).toBe('예시 2');
 
-  for (const href of [detailHref, editHref]) {
-    expect(href).not.toBeNull();
-
-    const list = new URL(href!, 'http://localhost').searchParams.get('list');
-    expect(new URLSearchParams(list ?? '').get('q')).toBe('예시 2');
-  }
+  await card.getByRole('button', { name: '편집', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: /코스 편집/ })).toBeVisible();
+  await expect(page).toHaveURL(/\/my-courses\?q=/);
+  expect(new URL(page.url()).searchParams.get('q')).toBe('예시 2');
+  await page.getByRole('button', { name: '코스 편집 닫기' }).click();
 });
 
 test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 안내만 제공한다', async ({ page }) => {
@@ -220,8 +221,8 @@ test('빈 목록·목록 오류·잘못된 상세 ID를 구분하고 업로드 �
   await expect(upload).toBeFocused();
 
   const firstCard = page.getByRole('article').first();
-  const edit = firstCard.getByRole('link', { name: '편집', exact: true });
-  const exportCourse = firstCard.getByRole('link', { name: '내보내기', exact: true });
+  const edit = firstCard.getByRole('button', { name: '편집', exact: true });
+  const exportCourse = firstCard.getByRole('button', { name: '내보내기', exact: true });
   const remove = firstCard.getByRole('button', { name: '삭제', exact: true });
 
   await expect(remove).toHaveAttribute('aria-disabled', 'true');
