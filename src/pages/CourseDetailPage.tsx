@@ -98,14 +98,19 @@ export function CourseDetailPage() {
         <div className="my-courses-site-header__inner">
           <Link aria-label="내 코스 목록으로" className="course-detail-back" to={state.backHref}>
             <img alt="" aria-hidden="true" src={backIcon} />
-            <span>코스 상세 분석</span>
+            <span>내 코스로</span>
           </Link>
 
           <div aria-label="코스 관리" className="course-detail-actions">
             {state.mockCourse ? (
-              <Link to={state.editHref}>편집</Link>
+              <Link
+                className="orda-button orda-button--secondary orda-button--sm"
+                to={state.editHref}
+              >
+                편집
+              </Link>
             ) : (
-              <Button disabled size="sm" variant="quiet">
+              <Button disabled size="sm" variant="secondary">
                 편집
               </Button>
             )}
@@ -114,7 +119,7 @@ export function CourseDetailPage() {
               disabled={!state.mockCourse}
               onClick={() => state.setExportOpen(true)}
               size="sm"
-              variant="quiet"
+              variant="secondary"
             >
               내보내기
             </Button>

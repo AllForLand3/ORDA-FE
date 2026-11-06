@@ -71,14 +71,10 @@ html:has(.course-detail-page)::-webkit-scrollbar {
   text-decoration: none;
 }
 
-.my-courses-site-header__login svg {
-  display: none;
-  width: 1.375rem;
-  height: 1.375rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 1.6;
+.my-courses-site-header__login:hover {
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
 }
 
 .my-courses-site-header__actions {
@@ -203,10 +199,6 @@ html:has(.course-detail-page)::-webkit-scrollbar {
     color: var(--color-text-primary);
     font-size: 0.875rem;
     font-weight: 700;
-  }
-
-  .my-courses-site-header__login svg {
-    display: block;
   }
 
   .my-courses-site-header__my-courses {

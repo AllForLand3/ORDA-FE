@@ -64,6 +64,13 @@ test('카드에서 상세 페이지로 진입하고 목록 조건과 뒤로가�
   await page.getByRole('link', { name: '능선 조망 코스 · 예시 2', exact: true }).click();
   await expect(page).toHaveURL(/\/my-courses\/example-ridge-2/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('능선 조망 코스 · 예시 2');
+  await expect(page.getByText('내 코스로', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: '편집', exact: true })).toHaveClass(
+    /orda-button--secondary/,
+  );
+  await expect(page.getByRole('button', { name: '내보내기', exact: true })).toHaveClass(
+    /orda-button--secondary/,
+  );
 
   const map = page.locator('.course-detail-map .orda-map-layout__map-surface');
 
