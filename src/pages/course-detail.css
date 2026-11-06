@@ -34,7 +34,7 @@
 
 .course-detail-map {
   position: relative;
-  height: 8.625rem;
+  height: 9.25rem;
   overflow: hidden;
   background: var(--color-background-muted);
 }

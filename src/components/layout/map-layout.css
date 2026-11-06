@@ -1,5 +1,6 @@
 .orda-map-layout {
   --orda-bottom-navigation-height: 0px;
+  --orda-mobile-map-clearance: 13.75rem;
 
   position: relative;
   display: flex;
@@ -118,7 +119,7 @@
   inset-inline: 0;
   inset-block-end: var(--orda-bottom-navigation-height);
   display: flex;
-  max-height: calc(100% - 10.25rem - var(--orda-bottom-navigation-height));
+  max-height: calc(100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height));
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--color-border-default);
@@ -135,7 +136,7 @@
 }
 
 .orda-responsive-panel[data-panel-size='expanded'] .orda-responsive-panel__surface {
-  height: calc(100% - 10.25rem - var(--orda-bottom-navigation-height));
+  height: calc(100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height));
 }
 
 .orda-responsive-panel__toggle {
@@ -257,9 +258,11 @@
   .orda-responsive-panel[data-mobile-resizable='true'] .orda-responsive-panel__surface {
     --orda-panel-compact-height: min(
       22.375rem,
-      calc(100% - 10.25rem - var(--orda-bottom-navigation-height))
+      calc(100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height))
     );
-    --orda-panel-expanded-height: calc(100% - 10.25rem - var(--orda-bottom-navigation-height));
+    --orda-panel-expanded-height: calc(
+      100% - var(--orda-mobile-map-clearance) - var(--orda-bottom-navigation-height)
+    );
     --orda-panel-target-height: var(--orda-panel-compact-height);
 
     height: clamp(

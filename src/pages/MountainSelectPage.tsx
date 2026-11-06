@@ -30,6 +30,7 @@ export function MountainSelectPage() {
   const markerLayer = useMountainMarkerLayer(selectedMountainId);
   const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
   const initialMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === DEFAULT_MOUNTAIN_ID);
+  const selectedMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === selectedMountainId);
 
   const handleMountainSelect = (mountainId: string | null) => {
     const nextMountainId = mountainId === selectedMountainId ? null : mountainId;
@@ -64,7 +65,7 @@ export function MountainSelectPage() {
           targetRef={mapContainerRef}
         />
       }
-      mapControls={<MapControls controller={mapController} />}
+      mapControls={<MapControls controller={mapController} mountainName={selectedMountain?.name} />}
       mapLabel="산 선택 지도"
       panel={
         <MountainSelectionPanel

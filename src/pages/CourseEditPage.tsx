@@ -59,7 +59,9 @@ function CourseEditWorkspace({ courseId }: { courseId: string | undefined }) {
             </span>
           </>
         }
-        mapControls={<MapControls controller={controller} />}
+        mapControls={
+          <MapControls controller={controller} mountainName={state.course.mountainName} />
+        }
         mapLabel="편집 배경 지도, 실제 경로 미제공"
         panel={<CourseEditPanel state={state} />}
         panelLabel="코스 편집 입력"
