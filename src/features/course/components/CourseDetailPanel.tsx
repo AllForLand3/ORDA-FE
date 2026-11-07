@@ -49,6 +49,12 @@ export function CourseDetailPanel({
 }: CourseDetailPanelProps) {
   const overview = (
     <div className="my-course-overview">
+      {!mockCourse ? (
+        <section aria-label="코스 메모">
+          <h2>메모</h2>
+          <p className="course-detail-memo">{course.memo ?? '등록된 메모가 없습니다.'}</p>
+        </section>
+      ) : null}
       {mockCourse ? (
         <Card className="my-course-overview__points" padding="sm">
           <h2>주요 지점</h2>
@@ -170,8 +176,12 @@ export function CourseDetailPanel({
                 {mockCourse.category === 'saved' ? '저장 예시' : '가져오기 예시'} |{' '}
                 {mockCourse.description}
               </>
+            ) : course.createType === 'IMPORT' ? (
+              '가져온 코스'
+            ) : course.createType === 'DRAW' ? (
+              '직접 그린 코스'
             ) : (
-              course.memo?.trim() || '등록된 메모가 없어요.'
+              '저장된 코스'
             )}
           </p>
         </div>

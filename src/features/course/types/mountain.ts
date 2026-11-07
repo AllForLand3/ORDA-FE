@@ -70,3 +70,6 @@ export interface ServiceAreaFeatureCollection {
   type: 'FeatureCollection';
   features: ServiceAreaFeature[];
 }
+
+export type ImportMountain = Pick<MountainListItem, 'mountainId' | 'mountainName'>;
+export type ImportMountainPage = PageResponse<MountainListItem>;

@@ -11,8 +11,12 @@ import type {
 
 export async function getMountains(
   params: MountainSearchParams = {},
+  signal?: AbortSignal,
 ): Promise<PageResponse<MountainListItem>> {
-  const response = await apiClient.get<PageResponse<MountainListItem>>('/mountains', { params });
+  const response = await apiClient.get<PageResponse<MountainListItem>>('/mountains', {
+    params,
+    signal,
+  });
 
   return response.data;
 }
@@ -37,4 +41,8 @@ export async function getServiceArea(mountainId: string): Promise<ServiceAreaFea
   );
 
   return response.data;
+}
+
+export function getImportMountains(page: number, signal?: AbortSignal) {
+  return getMountains({ page, size: 100 }, signal);
 }

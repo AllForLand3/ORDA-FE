@@ -13,6 +13,7 @@ import View from 'ol/View.js';
 import { fromLonLat, toLonLat } from 'ol/proj.js';
 import { unByKey } from 'ol/Observable.js';
 import type { EventsKey } from 'ol/events.js';
+import type { Extent } from 'ol/extent.js';
 
 import { GWANAKSAN_SUMMIT } from '../constants';
 
@@ -33,6 +34,10 @@ export interface OpenLayersMapProps {
   additionalLayers?: BaseLayer[];
   initialCenter?: LongitudeLatitude | null;
   initialZoom?: number;
+  /** 이미 EPSG:3857로 변환된 경로의 범위. 최초 표시 시 전체 경로를 맞춘다. */
+  initialExtent?: Extent;
+  /** 경로에 맞출 때 지도 위를 덮는 패널의 실제 영역을 제외한다. */
+  fitObstructionRef?: RefObject<HTMLElement | null>;
   onMapClick?: (coordinate: LongitudeLatitude) => void;
   onControllerChange?: (controller: MapController | null) => void;
   targetRef: RefObject<HTMLDivElement | null>;
@@ -61,6 +66,8 @@ export function OpenLayersMap({
   additionalLayers = EMPTY_LAYERS,
   initialCenter = GWANAKSAN_SUMMIT,
   initialZoom = INITIAL_ZOOM,
+  initialExtent,
+  fitObstructionRef,
   onMapClick,
   onControllerChange,
   targetRef,
@@ -150,8 +157,32 @@ export function OpenLayersMap({
       target.dataset.mapViewRevision = String(viewRevision);
       refreshMapState();
     };
+    let userAdjustedView = false;
+    let hasFittedExtent = false;
+    const markUserAdjustedView = () => {
+      userAdjustedView = true;
+    };
+    const fitInitialExtent = () => {
+      if (!initialExtent || userAdjustedView || (hasFittedExtent && !fitObstructionRef)) return;
+      const mapRect = target.getBoundingClientRect();
+      if (mapRect.width === 0 || mapRect.height === 0) return;
+      const panelRect = fitObstructionRef?.current?.getBoundingClientRect();
+      const overlaps =
+        panelRect &&
+        panelRect.width > 0 &&
+        panelRect.height > 0 &&
+        panelRect.left < mapRect.right &&
+        panelRect.right > mapRect.left &&
+        panelRect.top < mapRect.bottom &&
+        panelRect.bottom > mapRect.top;
+      const coveredHeight = overlaps ? mapRect.bottom - Math.max(mapRect.top, panelRect.top) : 0;
+      const bottomPadding = Math.min(32 + coveredHeight, Math.max(32, mapRect.height - 64));
+      view.fit(initialExtent, { padding: [32, 32, bottomPadding, 32], maxZoom: MAX_ZOOM });
+      hasFittedExtent = true;
+    };
     const updateSize = () => {
       map.updateSize();
+      fitInitialExtent();
       refreshMapState();
     };
     const moveEndKey: EventsKey = map.on('moveend', recordViewChange);
@@ -163,7 +194,12 @@ export function OpenLayersMap({
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateSize);
 
     resizeObserver?.observe(target);
+    if (fitObstructionRef?.current) resizeObserver?.observe(fitObstructionRef.current);
     window.addEventListener('resize', updateSize);
+    // 첫 직접 조작 뒤에는 패널·화면 크기가 바뀌어도 자동 맞춤으로 시점을 덮어쓰지 않는다.
+    target.addEventListener('pointerdown', markUserAdjustedView, true);
+    target.addEventListener('wheel', markUserAdjustedView, { passive: true, capture: true });
+    target.addEventListener('keydown', markUserAdjustedView, true);
 
     const initialSizeFrame = window.requestAnimationFrame(updateSize);
     const controller: MapController = {
@@ -173,6 +209,7 @@ export function OpenLayersMap({
         }
 
         const targetZoom = Number.isFinite(zoom) ? zoom : INITIAL_ZOOM + 1;
+        markUserAdjustedView();
         view.animate({
           center: fromLonLat([...coordinate]),
           duration: 180,
@@ -204,6 +241,9 @@ export function OpenLayersMap({
       window.cancelAnimationFrame(initialSizeFrame);
       resizeObserver?.disconnect();
       window.removeEventListener('resize', updateSize);
+      target.removeEventListener('pointerdown', markUserAdjustedView, true);
+      target.removeEventListener('wheel', markUserAdjustedView, true);
+      target.removeEventListener('keydown', markUserAdjustedView, true);
       unByKey(moveEndKey);
       unByKey(mapClickKey);
       onControllerChangeRef.current?.(null);
@@ -217,7 +257,7 @@ export function OpenLayersMap({
       map.setTarget(undefined);
       map.dispose();
     };
-  }, [additionalLayers, initialCenter, initialZoom, targetRef]);
+  }, [additionalLayers, initialCenter, initialExtent, initialZoom, targetRef, fitObstructionRef]);
 
   return null;
 }

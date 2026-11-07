@@ -47,6 +47,12 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await expect(next).toBeEnabled();
   await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
+  await expect(page.getByText('지도에서 위치를 선택하거나 검색해보세요.')).toBeVisible();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get('origin') === 'seoul-national-university-research-center' &&
+      url.searchParams.get('destination') === 'gwanaksan-yeonjudae',
+  );
   await expect(
     page.getByText('출발지와 도착지를 각각 선택하면 다음 단계로 갈 수 있어요.'),
   ).toBeVisible();

@@ -216,7 +216,7 @@ test('모바일 코스 설정의 뒤로가기는 직접 접근·검색·단계 �
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/routes/setup');
-  const back = page.getByRole('button', { name: '뒤로가기', exact: true });
+  const back = page.getByRole('button', { name: '뒤로 가기', exact: true });
   await back.click();
   await expect(page).toHaveURL('/mountains');
   const params =

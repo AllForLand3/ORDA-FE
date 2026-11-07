@@ -15,6 +15,8 @@ export interface SelectProps {
   ariaLabel: string;
   placeholder?: string;
   disabled?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
   className?: string;
 }
 
@@ -35,6 +37,8 @@ export function Select({
   ariaLabel,
   placeholder = '선택해주세요',
   disabled = false,
+  invalid = false,
+  describedBy,
   className = '',
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -177,6 +181,8 @@ export function Select({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         className={`orda-select__trigger${isOpen ? ' is-open' : ''}`}
         disabled={disabled}
         onClick={() => {

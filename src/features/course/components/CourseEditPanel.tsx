@@ -1,32 +1,31 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-
 import { Button, Dialog, TextArea, TextField } from '@/components/ui';
-
 import type { useCourseEditState } from '../hooks/useCourseEditState';
 
-interface CourseEditPanelProps {
-  state: ReturnType<typeof useCourseEditState>;
-}
+type State = ReturnType<typeof useCourseEditState>;
 
-export function CourseEditPanel({ state }: CourseEditPanelProps) {
+export function CourseEditPanel({ state, detailHref }: { state: State; detailHref: string }) {
   const formRef = useRef<HTMLFormElement>(null);
-
   return (
     <form
       className="course-edit-form"
       id="course-edit-form"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!state.apply()) formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
-      }}
       ref={formRef}
+      noValidate
+      onSubmit={async (event) => {
+        event.preventDefault();
+        await state.save();
+        window.requestAnimationFrame(() =>
+          formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+        );
+      }}
     >
       <TextField
         endAdornment={
           <Button
             aria-label="코스 이름 지우기"
+            disabled={state.pending}
             onClick={() => state.setName('')}
             size="sm"
             variant="quiet"
@@ -34,52 +33,50 @@ export function CourseEditPanel({ state }: CourseEditPanelProps) {
             <span aria-hidden="true">×</span>
           </Button>
         }
-        error={state.nameError}
         label="코스 이름"
-        maxLength={80}
-        onChange={(event) => state.setName(event.target.value)}
         required
         value={state.draft.name}
+        disabled={state.pending}
+        error={state.nameError}
+        helperText="앞뒤 공백을 제외하고 최대 100자"
+        onChange={(event) => state.setName(event.target.value)}
       />
-      <div className="course-edit-memo">
-        <TextArea
-          label="메모"
-          maxLength={1000}
-          onChange={(event) => state.setMemo(event.target.value)}
-          rows={3}
-          value={state.draft.memo}
-        />
-        <Button
-          aria-label="메모 지우기"
-          onClick={() => state.setMemo('')}
-          size="sm"
-          variant="quiet"
-        >
-          <span aria-hidden="true">×</span>
-        </Button>
-      </div>
-      <section aria-labelledby="course-edit-tools-title" className="course-edit-tools">
-        <h2 id="course-edit-tools-title">편집 도구</h2>
-        <div>
-          <p>경로 편집 도구 준비 중</p>
-          <small>지점 이동·추가·삭제는 제공하지 않습니다.</small>
-        </div>
-      </section>
-      <p className="course-edit-warning">경로를 수정하면 기존 분석 결과가 무효화됩니다.</p>
+      <TextArea
+        label="메모"
+        rows={3}
+        value={state.draft.memo}
+        disabled={state.pending}
+        error={state.memoError}
+        helperText={`${[...state.draft.memo].length} / 1000자`}
+        onChange={(event) => state.setMemo(event.target.value)}
+      />
       <p className="course-edit-note">
-        예시 입력을 편집하는 화면입니다. 저장은 현재 화면에만 적용되며, 실제 경로·분석 자료와 서버
-        저장은 연결되지 않았습니다.
+        이름과 메모만 수정할 수 있습니다. 지도는 저장된 경로를 보여줍니다.
       </p>
-      <p aria-live="polite" className="course-edit-status" role="status">
-        {state.message ||
-          (state.isDirty ? '적용하지 않은 변경이 있어요.' : '예시 입력 상태입니다.')}
+      {state.failure ? <p role="alert">{state.failure}</p> : null}
+      <p role="status" className="course-edit-status">
+        {state.pending
+          ? '처리 중입니다.'
+          : state.message ||
+            (state.isDirty ? '저장하지 않은 변경이 있습니다.' : '저장된 내용입니다.')}
       </p>
+      {state.needsReload ? (
+        <div>
+          <p>계속 저장하려면 최신 코스를 불러와야 합니다.</p>
+          <Button
+            disabled={state.pending}
+            onClick={() => state.setReloadOpen(true)}
+            variant="secondary"
+          >
+            최신 코스 불러오기
+          </Button>
+        </div>
+      ) : null}
       <div className="course-edit-secondary-actions">
-        <Link to={state.detailHref}>취소</Link>
+        <Link to={detailHref}>취소</Link>
         <Button
-          disabled={!state.canReset}
+          disabled={!state.isDirty || state.pending}
           onClick={() => state.setResetOpen(true)}
-          size="sm"
           variant="secondary"
         >
           초기화
@@ -89,45 +86,75 @@ export function CourseEditPanel({ state }: CourseEditPanelProps) {
   );
 }
 
-// 접힌 패널 안에 있으면 native dialog도 숨겨지므로 페이지에서 패널의 형제로 배치한다.
-export function CourseEditDialogs({ state }: CourseEditPanelProps) {
+export function CourseEditDialogs({ state }: { state: State }) {
   return (
     <>
       <Dialog
-        description="처음 표시한 예시 코스 이름과 메모로 되돌립니다. 서버 자료는 변경하지 않습니다."
+        open={state.resetOpen}
+        onOpenChange={state.setResetOpen}
+        title="입력을 초기화할까요?"
+        description="편집을 시작했거나 마지막으로 저장한 이름과 메모로 되돌립니다."
         footer={
           <>
-            <Button onClick={() => state.setResetOpen(false)} variant="secondary">
+            <Button variant="secondary" onClick={() => state.setResetOpen(false)}>
               계속 편집
             </Button>
             <Button onClick={state.reset}>초기화</Button>
           </>
         }
-        onOpenChange={state.setResetOpen}
-        open={state.resetOpen}
-        title="입력을 초기화할까요?"
       >
-        <p>현재 입력은 지워집니다.</p>
+        <p>저장하지 않은 입력은 사라집니다.</p>
       </Dialog>
       <Dialog
-        description="적용하지 않은 변경이 사라집니다. 서버에 저장된 내용은 없습니다."
+        open={state.reloadOpen}
+        onOpenChange={state.setReloadOpen}
+        title="최신 코스를 불러올까요?"
+        description="현재 입력을 버리고 서버의 최신 이름과 메모로 다시 시작합니다."
         footer={
           <>
-            <Button onClick={() => state.blocker.reset?.()} variant="secondary">
+            <Button variant="secondary" onClick={() => state.setReloadOpen(false)}>
               계속 편집
             </Button>
-            <Button onClick={() => state.blocker.proceed?.()} variant="danger">
+            <Button
+              onClick={() => {
+                void state.reload();
+              }}
+              variant="danger"
+            >
+              입력 버리고 불러오기
+            </Button>
+          </>
+        }
+      >
+        <p>현재 입력을 서버에 덮어쓰지 않습니다.</p>
+      </Dialog>
+      <Dialog
+        open={state.blocker.state === 'blocked'}
+        onOpenChange={(open) => {
+          if (!open) state.blocker.reset?.();
+        }}
+        title="편집을 나갈까요?"
+        description={
+          state.pending
+            ? '저장 처리 중입니다. 완료된 뒤 이동해주세요.'
+            : '저장하지 않은 변경이 사라집니다.'
+        }
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => state.blocker.reset?.()}>
+              계속 편집
+            </Button>
+            <Button
+              disabled={state.pending}
+              variant="danger"
+              onClick={() => state.blocker.proceed?.()}
+            >
               변경 버리고 나가기
             </Button>
           </>
         }
-        onOpenChange={(open) => {
-          if (!open) state.blocker.reset?.();
-        }}
-        open={state.blocker.state === 'blocked'}
-        title="편집을 나갈까요?"
       >
-        <p>입력한 내용을 유지하려면 계속 편집해주세요.</p>
+        <p>입력을 유지하려면 계속 편집해주세요.</p>
       </Dialog>
     </>
   );

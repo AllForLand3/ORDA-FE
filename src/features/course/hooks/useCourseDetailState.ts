@@ -6,7 +6,8 @@ import type { ApiErrorResponse } from '@/shared/types/api';
 import { MOCK_MY_COURSES } from '../mocks/my-courses';
 import type { MockMyCourse } from '../mocks/my-courses';
 import type { CourseDetailResponse } from '../types/course';
-import { isValidCourseId, useCourseDetailQuery } from './useCourseDetailQuery';
+
+import { useCourseQuery } from './useCourseQuery';
 
 type CourseDetailTab = 'overview' | 'terrain' | 'facilities';
 
@@ -89,10 +90,10 @@ function getCourseDetailError(error: unknown): CourseDetailError {
 }
 
 /** 실제 상세 조회와 URL의 탭·목록 복귀 조건을 조합해 페이지 상태를 제공한다. */
-export function useCourseDetailState(userId: string | undefined) {
+export function useCourseDetailState(editing = false) {
   const { courseId } = useParams();
   const [params, setParams] = useSearchParams();
-  const query = useCourseDetailQuery(courseId, userId);
+  const query = useCourseQuery(courseId ?? '', editing);
   const mockCourse = MOCK_MY_COURSES.find((item) => item.id === courseId);
   const mockDetail = mockCourse ? toCourseDetailResponse(mockCourse) : undefined;
   const isMockPreviewError = Boolean(mockDetail) && params.get('preview') === 'error';
@@ -102,13 +103,17 @@ export function useCourseDetailState(userId: string | undefined) {
     tabParam === 'terrain' || tabParam === 'facilities' ? tabParam : 'overview';
 
   const listParams = new URLSearchParams(params.get('list') ?? '');
+  const listPage = params.get('listPage');
+  if (!listParams.size && listPage && /^[1-9]\d*$/.test(listPage) && Number(listPage) <= 2147483647)
+    listParams.set('page', listPage);
   const backHref = `/my-courses${listParams.size ? `?${listParams}` : ''}`;
-  const editHref = `/my-courses/${encodeURIComponent(courseId ?? '')}/edit?${new URLSearchParams({
-    list: params.get('list') ?? '',
-    tab,
-  })}`;
+  const editParams = new URLSearchParams({ tab });
+  if (params.has('list')) editParams.set('list', params.get('list') ?? '');
+  if (listPage && /^[1-9]\d*$/.test(listPage) && Number(listPage) <= 2147483647)
+    editParams.set('listPage', listPage);
+  const editHref = `/my-courses/${encodeURIComponent(courseId ?? '')}/edit?${editParams}`;
 
-  const invalidId = !mockDetail && !isValidCourseId(courseId);
+  const invalidId = !mockDetail && !query.isValidId;
 
   const error: CourseDetailError | null = isMockPreviewError
     ? {
@@ -129,7 +134,12 @@ export function useCourseDetailState(userId: string | undefined) {
         : null;
 
   return {
-    course: error ? undefined : (mockDetail ?? query.data),
+    course: error ? undefined : (mockDetail ?? query.data?.course),
+    snapshot: mockDetail ? undefined : query.data,
+    isUnavailable: Boolean(error),
+    errorTitle: error?.title ?? '',
+    errorMessage: error?.message ?? '',
+    canRetry: error?.canRetry ?? false,
     mockCourse,
     isMock: Boolean(mockDetail),
     isMockPreviewError,
