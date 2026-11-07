@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 
 import { getCourseFacilities, getCourseSpots } from '../api/nearby';
 import type {
@@ -38,13 +39,23 @@ export interface CourseNearbySummary {
 }
 
 export const nearbyQueryKeys = {
-  course: (courseId: string, params: CourseNearbyParams) =>
-    ['analysis', 'course-nearby', courseId, params.revNo ?? null, params.radiusM ?? null] as const,
+  course: (
+    courseId: string,
+    params: CourseNearbyParams,
+    userId: string | undefined,
+    token: string | null,
+  ) =>
+    ['analysis', 'course-nearby', userId, token, courseId, params.revNo, params.radiusM] as const,
 };
 
 /** BE 코스 ID(양의 정수 문자열)인지 확인한다. 예시 코스 ID는 조회하지 않는다. */
 export function isServerCourseId(courseId: string | null | undefined): courseId is string {
-  return typeof courseId === 'string' && /^[1-9]\d{0,18}$/.test(courseId);
+  return (
+    typeof courseId === 'string' &&
+    /^\d+$/.test(courseId) &&
+    BigInt(courseId) > 0n &&
+    BigInt(courseId) <= 9223372036854775807n
+  );
 }
 
 function toSummary(
@@ -57,7 +68,7 @@ function toSummary(
   const shelter = spots.dataAvailable ? (spots.counts.REST ?? 0) : null;
 
   const places: NearbyPlace[] = [
-    ...facilities.items.map((item) => ({
+    ...(facilities.dataAvailable ? facilities.items : []).map((item) => ({
       key: `facility-${item.facilityId}`,
       kind: item.type,
       facilityId: item.facilityId,
@@ -67,7 +78,7 @@ function toSummary(
       distanceM: item.distanceM,
     })),
     // 산림청 지점은 이름이 없어 원본 분류명(예: 벤치)을 이름으로 쓰고 메모는 상세에 둔다.
-    ...spots.items
+    ...(spots.dataAvailable ? spots.items : [])
       .filter((item) => item.tags.some((tag) => tag.tag === 'REST'))
       .map((item) => ({
         key: `spot-${item.spotId}`,
@@ -98,23 +109,48 @@ function toSummary(
 export function useCourseNearby(
   courseId: string | null | undefined,
   params: CourseNearbyParams = {},
+  userId?: string,
 ) {
-  const enabled = isServerCourseId(courseId);
+  const token = useAccessToken();
+  const requestParams = { revNo: params.revNo, radiusM: params.radiusM ?? 200 };
+  const enabled = Boolean(
+    userId &&
+    token &&
+    isServerCourseId(courseId) &&
+    Number.isInteger(requestParams.revNo) &&
+    (requestParams.revNo ?? 0) > 0 &&
+    Number.isInteger(requestParams.radiusM) &&
+    requestParams.radiusM >= 1 &&
+    requestParams.radiusM <= 500,
+  );
 
   return useQuery({
-    queryKey: nearbyQueryKeys.course(enabled ? courseId : '', params),
-    queryFn: async () => {
+    queryKey: nearbyQueryKeys.course(enabled ? (courseId ?? '') : '', requestParams, userId, token),
+    queryFn: async ({ signal }) => {
       if (!isServerCourseId(courseId)) {
         throw new Error('조회할 수 없는 코스 ID입니다.');
       }
       const [spots, facilities] = await Promise.all([
-        getCourseSpots(courseId, params),
-        getCourseFacilities(courseId, params),
+        getCourseSpots(courseId, requestParams, signal),
+        getCourseFacilities(courseId, requestParams, signal),
       ]);
+      if (
+        [spots, facilities].some(
+          (response) =>
+            response.courseId !== courseId ||
+            response.revNo !== requestParams.revNo ||
+            response.radiusM !== requestParams.radiusM,
+        )
+      ) {
+        throw new Error('주변 정보의 응답 조건이 요청과 일치하지 않습니다.');
+      }
       return toSummary(spots, facilities);
     },
     enabled,
     staleTime: 60 * 1000,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
     // 400·404·409 같은 요청 오류는 다시 보내도 결과가 같으므로 재시도하지 않는다.
     retry: (failureCount, error) =>
       !(axios.isAxiosError(error) && error.response && error.response.status < 500) &&

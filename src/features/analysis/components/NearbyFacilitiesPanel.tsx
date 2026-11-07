@@ -2,29 +2,111 @@ import { useState } from 'react';
 
 import { Badge, Card } from '@/components/ui';
 
-import { isServerCourseId } from '../hooks/useCourseNearby';
-import { FACILITY_PREVIEW_STATES, SAMPLE_FACILITIES } from '../mocks/facilities';
+import {
+  COURSE_DETAIL_MOCK_FACILITIES,
+  FACILITY_PREVIEW_STATES,
+  SAMPLE_FACILITIES,
+} from '../mocks/facilities';
 
 import { CourseNearbyFacilities } from './CourseNearbyFacilities';
+import type { useCourseNearby } from '../hooks/useCourseNearby';
 
 interface NearbyFacilitiesPanelProps {
   candidateName: string | null;
-  /** 저장된 코스의 BE ID. 있으면 실제 조회 결과를, 없거나 예시 ID면 기존 예시 화면을 보여 준다. */
-  courseId?: string;
-  revNo?: number;
+  mockData?: boolean;
+  nearby?: ReturnType<typeof useCourseNearby>;
 }
+
+const FACILITY_FILTERS = [
+  { label: '전체', count: 7 },
+  { label: '화장실', count: 3 },
+  { label: '주차장', count: 2 },
+  { label: '쉼터', count: 2 },
+] as const;
+
+type FacilityFilter = (typeof FACILITY_FILTERS)[number]['label'];
 
 export function NearbyFacilitiesPanel({
   candidateName,
-  courseId,
-  revNo,
+  mockData = false,
+  nearby,
 }: NearbyFacilitiesPanelProps) {
   const [preview, setPreview] = useState('sample');
+  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>('전체');
 
-  if (isServerCourseId(courseId)) {
-    return (
-      <CourseNearbyFacilities candidateName={candidateName} courseId={courseId} revNo={revNo} />
+  if (mockData) {
+    const filteredFacilities = COURSE_DETAIL_MOCK_FACILITIES.filter(
+      (facility) => facilityFilter === '전체' || facility.category === facilityFilter,
     );
+
+    return (
+      <section
+        aria-label="주변 시설 정보"
+        className="nearby-facilities nearby-facilities--mock insights-panel"
+      >
+        <header className="insights-panel__heading">
+          <div>
+            <h2>{candidateName} 주변 시설</h2>
+            <p>목데이터 7곳 · 코스와 가까운 순</p>
+          </div>
+        </header>
+
+        <div aria-label="시설 유형" className="nearby-facilities__filters" role="group">
+          {FACILITY_FILTERS.map((filter) => (
+            <button
+              aria-pressed={facilityFilter === filter.label}
+              className={facilityFilter === filter.label ? 'is-active' : undefined}
+              key={filter.label}
+              onClick={() => setFacilityFilter(filter.label)}
+              type="button"
+            >
+              {filter.label} {filter.count}
+            </button>
+          ))}
+        </div>
+
+        <div className="nearby-facilities__result-heading">
+          <strong>{facilityFilter === '전체' ? '전체 시설' : facilityFilter}</strong>
+          <span>{filteredFacilities.length}곳 · 코스와 가까운 순</span>
+        </div>
+
+        <ul aria-label="코스 주변 목데이터 시설" className="nearby-facilities__list">
+          {filteredFacilities.map((facility) => (
+            <li key={facility.id}>
+              <Card className="nearby-facility-card" padding="sm">
+                <div className="nearby-facility-card__heading">
+                  <h3>{facility.name}</h3>
+                  <span className="nearby-facility-card__category">{facility.category}</span>
+                </div>
+                <p>
+                  {facility.distance} · {facility.hours}
+                </p>
+                <details>
+                  <summary>상세 정보</summary>
+                  <dl className="nearby-facility-card__summary">
+                    {[
+                      { label: '주소', value: facility.address },
+                      { label: '운영 시간', value: facility.hours },
+                      { label: '이용 정보', value: facility.access },
+                      { label: '코스 거리', value: facility.distance },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <dt>{item.label}</dt>
+                        <dd>{item.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  if (nearby) {
+    return <CourseNearbyFacilities candidateName={candidateName} query={nearby} />;
   }
 
   return (

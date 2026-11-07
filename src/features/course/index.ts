@@ -3,13 +3,21 @@ export { MountainHeader } from './components/MountainHeader';
 export { MountainSearchBar } from './components/MountainSearchBar';
 export type { MountainSearchBarProps } from './components/MountainSearchBar';
 export { MountainSelectionPanel } from './components/MountainSelectionPanel';
-export type {
-  MountainSelectionPanelProps,
-  MountainSort,
-} from './components/MountainSelectionPanel';
+export type { MountainSelectionPanelProps } from './components/MountainSelectionPanel';
 export { useMountainMarkerLayer } from './hooks/useMountainMarkerLayer';
+export { isValidMountainCoordinate } from './utils/mountainCoordinates';
+export { isValidMountainId } from './utils/mountainId';
+export { useMountainDetailQuery } from './hooks/useMountainDetailQuery';
+export { useMountainsQuery } from './hooks/useMountainsQuery';
+export { useServiceAreaQuery } from './hooks/useServiceAreaQuery';
 export { DEFAULT_MOUNTAIN_ID, MOUNTAIN_MOCKS } from './mocks/mountains';
 export type { MountainDifficulty, MountainRegion, MountainSummary } from './mocks/mountains';
+export type {
+  MountainDetail,
+  MountainListItem,
+  MountainSearchParams,
+  ServiceAreaFeatureCollection,
+} from './types/mountain';
 export { MyCoursesNavigation } from './components/MyCoursesNavigation';
 export { MyCoursesPanel } from './components/MyCoursesPanel';
 export { CourseDetailPanel } from './components/CourseDetailPanel';
@@ -17,3 +25,10 @@ export { useMyCoursesState } from './hooks/useMyCoursesState';
 export { useCourseDetailState } from './hooks/useCourseDetailState';
 export { CourseEditDialogs, CourseEditPanel } from './components/CourseEditPanel';
 export { useCourseEditState } from './hooks/useCourseEditState';
+export { useCourseQuery } from './hooks/useCourseQuery';
+export { useCourseLayer } from './hooks/useCourseLayer';
+export type { CourseSnapshot } from './types/course';
+export { useCourseDeleteState } from './hooks/useCourseDeleteState';
+export { CourseDeleteDialog } from './components/CourseDeleteDialog';
+export { useCourseImportState } from './hooks/useCourseImportState';
+export { CourseImportPanel, CourseImportExitDialog } from './components/CourseImportPanel';

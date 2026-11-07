@@ -16,8 +16,7 @@ const KIND_LABELS: Record<NearbyPlaceKind, string> = {
 
 interface CourseNearbyFacilitiesProps {
   candidateName: string | null;
-  courseId: string;
-  revNo?: number;
+  query: ReturnType<typeof useCourseNearby>;
 }
 
 function formatDistance(distanceM: number): string {
@@ -93,19 +92,16 @@ function emptyMessage(summary: CourseNearbySummary): { title: string; descriptio
 }
 
 /** 실제 코스의 주변 화장실·주차장·쉼터를 BE 조회 결과(I-01·I-02)로 표시한다. */
-export function CourseNearbyFacilities({
-  candidateName,
-  courseId,
-  revNo,
-}: CourseNearbyFacilitiesProps) {
-  const query = useCourseNearby(courseId, { revNo });
+export function CourseNearbyFacilities({ candidateName, query }: CourseNearbyFacilitiesProps) {
   const title = candidateName ? `${candidateName} 주변 시설` : '주변 시설';
 
   if (query.isPending) {
     return (
       <section aria-label="주변 시설 정보" className="nearby-facilities insights-panel">
         <div className="insights-empty" role="status">
-          주변 시설을 불러오고 있어요.
+          {query.fetchStatus === 'idle'
+            ? '주변 시설 조회 조건을 확인할 수 없어요.'
+            : '주변 시설을 불러오고 있어요.'}
         </div>
       </section>
     );

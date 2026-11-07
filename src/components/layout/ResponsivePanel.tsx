@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { PointerEvent, ReactNode } from 'react';
+import type { PointerEvent, ReactNode, RefObject } from 'react';
 
 import './map-layout.css';
 
@@ -14,6 +14,7 @@ export interface ResponsivePanelProps {
   mobileResizable?: boolean;
   mobileSwipeToClose?: boolean;
   size?: 'content' | 'expanded';
+  surfaceRef?: RefObject<HTMLElement | null>;
 }
 
 export function ResponsivePanel({
@@ -27,10 +28,12 @@ export function ResponsivePanel({
   mobileResizable = false,
   mobileSwipeToClose = false,
   size = 'content',
+  surfaceRef: externalSurfaceRef,
 }: ResponsivePanelProps) {
   const effectiveCloseText = closeText ?? (mobileResizable ? '접기' : '패널 접기');
   const [isExpanded, setIsExpanded] = useState(false);
-  const surfaceRef = useRef<HTMLElement>(null);
+  const internalSurfaceRef = useRef<HTMLElement>(null);
+  const surfaceRef = externalSurfaceRef ?? internalSurfaceRef;
   const dragRef = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
   const suppressClickRef = useRef(false);
   const hasMobileDragHandle = mobileResizable || mobileSwipeToClose;

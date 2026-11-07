@@ -1,13 +1,8 @@
-
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 
-import type {
-  MapController,
-  BaseMapType,
-  LongitudeLatitude,
-} from './OpenLayersMap';
+import type { MapController, BaseMapType, LongitudeLatitude } from './OpenLayersMap';
 
 import gpsIcon from '@/assets/icons/gps.svg';
 
@@ -27,11 +22,7 @@ function StreetMapIcon() {
         strokeLinejoin="round"
         strokeWidth="1.7"
       />
-      <path
-        d="M8.5 3v15.5M15.5 5.5V21"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
+      <path d="M8.5 3v15.5M15.5 5.5V21" stroke="currentColor" strokeWidth="1.7" />
     </svg>
   );
 }
@@ -39,13 +30,7 @@ function StreetMapIcon() {
 function SatelliteMapIcon() {
   return (
     <svg aria-hidden="true" fill="none" height="24" viewBox="0 0 24 24" width="24">
-      <circle
-        cx="12"
-        cy="12"
-        r="4.25"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
+      <circle cx="12" cy="12" r="4.25" stroke="currentColor" strokeWidth="1.7" />
       <path
         d="M4.2 15.2c-1.6-1.6.5-6.2 4.7-10.4M19.8 8.8c1.6 1.6-.5 6.2-4.7 10.4M8.8 19.8c-1.6 1.6-6.2-.5-4.6-4.6M15.2 4.2c1.6-1.6 6.2.5 4.6 4.6"
         stroke="currentColor"
@@ -92,10 +77,7 @@ function getGeolocationErrorMessage(error: GeolocationPositionError): string {
   }
 }
 
-export function MapControls({
-  controller,
-  mountainName,
-}: MapControlsProps) {
+export function MapControls({ controller, mountainName }: MapControlsProps) {
   const [baseMap, setBaseMap] = useState<BaseMapType>('street');
   const [isLocating, setIsLocating] = useState(false);
   const [status, setStatus] = useState('');
@@ -178,9 +160,7 @@ export function MapControls({
 
     setBaseMap(nextBaseMap);
     setStatus(
-      nextBaseMap === 'satellite'
-        ? '위성지도로 전환했습니다.'
-        : '일반지도로 전환했습니다.',
+      nextBaseMap === 'satellite' ? '위성지도로 전환했습니다.' : '일반지도로 전환했습니다.',
     );
   };
 
@@ -194,69 +174,67 @@ export function MapControls({
         </div>
       )}
 
-      <Button
-        aria-label={isLocating ? '현재 위치 확인 중' : '현재 위치로 이동'}
-        title={isLocating ? '위치 확인 중' : '현재 위치로 이동'}
-        className="orda-map-controls__button"
-        disabled={!controller || isLocating}
-        onClick={handleLocate}
-        size="sm"
-        variant="secondary"
-      >
-        <span
-          aria-hidden="true"
-          className={`orda-map-controls__icon${isLocating ? ' is-locating' : ''}`}
-          style={{ maskImage: `url("${gpsIcon}")` }}
-        />
-      </Button>
-
-      <div
-        aria-label="배경지도 선택"
-        className="orda-map-controls__map-type-switcher"
-        role="group"
-      >
-        <button
-          aria-label="일반지도 보기"
-          aria-pressed={baseMap === 'street'}
-          className="orda-map-controls__map-type-button"
-          disabled={!controller}
-          onClick={() => handleBaseMapChange('street')}
-          title="일반지도"
-          type="button"
+      <div className="orda-map-controls__tools">
+        <div
+          aria-label="배경지도 선택"
+          className="orda-map-controls__map-type-switcher"
+          role="group"
         >
-          <StreetMapIcon />
-        </button>
+          <button
+            aria-label="일반지도 보기"
+            aria-pressed={baseMap === 'street'}
+            className="orda-map-controls__map-type-button"
+            disabled={!controller}
+            onClick={() => handleBaseMapChange('street')}
+            title="일반지도"
+            type="button"
+          >
+            <StreetMapIcon />
+          </button>
 
-        <button
-          aria-label="위성지도 보기"
-          aria-pressed={baseMap === 'satellite'}
-          className="orda-map-controls__map-type-button"
-          disabled={!controller}
-          onClick={() => handleBaseMapChange('satellite')}
-          title={
-            controller?.isBaseMapAvailable('satellite') === false
-              ? 'VWorld API 키가 필요합니다'
-              : '위성지도'
-          }
-          type="button"
+          <button
+            aria-label="위성지도 보기"
+            aria-pressed={baseMap === 'satellite'}
+            className="orda-map-controls__map-type-button"
+            disabled={!controller}
+            onClick={() => handleBaseMapChange('satellite')}
+            title={
+              controller?.isBaseMapAvailable('satellite') === false
+                ? 'VWorld API 키가 필요합니다'
+                : '위성지도'
+            }
+            type="button"
+          >
+            <SatelliteMapIcon />
+          </button>
+        </div>
+
+        <a
+          aria-label="관악산 3D 지도 보기"
+          className="orda-map-controls__terrain-link"
+          href={terrain3DHref}
         >
-          <SatelliteMapIcon />
-        </button>
+          3D
+        </a>
+
+        <Button
+          aria-label={isLocating ? '현재 위치 확인 중' : '현재 위치로 이동'}
+          title={isLocating ? '위치 확인 중' : '현재 위치로 이동'}
+          className="orda-map-controls__button"
+          disabled={!controller || isLocating}
+          onClick={handleLocate}
+          size="sm"
+          variant="secondary"
+        >
+          <span
+            aria-hidden="true"
+            className={`orda-map-controls__icon${isLocating ? ' is-locating' : ''}`}
+            style={{ maskImage: `url("${gpsIcon}")` }}
+          />
+        </Button>
       </div>
 
-      <a
-        aria-label="관악산 3D 지도 보기"
-        className="orda-map-controls__terrain-link"
-        href={terrain3DHref}
-      >
-        3D
-      </a>
-
-      <p
-        aria-live="polite"
-        className="orda-map-controls__status"
-        role="status"
-      >
+      <p aria-live="polite" className="orda-map-controls__status" role="status">
         {status}
       </p>
     </div>

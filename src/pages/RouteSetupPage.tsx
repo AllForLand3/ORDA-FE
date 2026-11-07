@@ -3,7 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
-import { MOUNTAIN_MOCKS, MountainHeader } from '@/features/course';
+import {
+  MOUNTAIN_MOCKS,
+  MountainHeader,
+  isValidMountainCoordinate,
+  isValidMountainId,
+  useMountainDetailQuery,
+} from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
 import {
@@ -20,7 +26,34 @@ export function RouteSetupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mountainId = searchParams.get('mountainId');
-  const selectedMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
+  const fallbackMountain = MOUNTAIN_MOCKS.find((mountain) => mountain.id === mountainId);
+  const usesApiMountain = mountainId !== null && !fallbackMountain;
+  const hasInvalidMountainId = usesApiMountain && !isValidMountainId(mountainId);
+  const mountainDetailQuery = useMountainDetailQuery(
+    usesApiMountain && isValidMountainId(mountainId) ? mountainId : null,
+  );
+  const selectedMountainName = mountainDetailQuery.data?.mountainName ?? fallbackMountain?.name;
+  const selectedMountainCoordinates =
+    mountainDetailQuery.data?.geometry?.coordinates ?? fallbackMountain?.coordinates;
+  const isMountainLocationPending =
+    usesApiMountain &&
+    !hasInvalidMountainId &&
+    (mountainDetailQuery.isPending || mountainDetailQuery.isFetching);
+  const hasMountainLocationError =
+    usesApiMountain &&
+    (hasInvalidMountainId ||
+      mountainDetailQuery.isError ||
+      (Boolean(mountainDetailQuery.data) &&
+        !isValidMountainCoordinate(selectedMountainCoordinates)));
+  const canConfigure =
+    !usesApiMountain ||
+    Boolean(
+      mountainDetailQuery.isSuccess &&
+      !mountainDetailQuery.isFetching &&
+      !mountainDetailQuery.isError &&
+      mountainDetailQuery.data.serviceAvailable === true &&
+      isValidMountainCoordinate(selectedMountainCoordinates),
+    );
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const state = useRouteSetupState();
@@ -46,6 +79,29 @@ export function RouteSetupPage() {
     }
   }, [focusedPlace, mapController]);
 
+  useEffect(() => {
+    if (!focusedPlace && selectedMountainCoordinates) {
+      mapController?.centerOn(selectedMountainCoordinates, 14);
+    }
+  }, [focusedPlace, mapController, selectedMountainCoordinates]);
+
+  useEffect(() => {
+    if (
+      usesApiMountain &&
+      mountainDetailQuery.isSuccess &&
+      !mountainDetailQuery.isFetching &&
+      mountainDetailQuery.data?.serviceAvailable === false
+    ) {
+      navigate('/mountains', { replace: true });
+    }
+  }, [
+    usesApiMountain,
+    mountainDetailQuery.isSuccess,
+    mountainDetailQuery.isFetching,
+    mountainDetailQuery.data,
+    navigate,
+  ]);
+
   return (
     <div className="route-setup-page">
       <MapPageLayout
@@ -70,26 +126,60 @@ export function RouteSetupPage() {
         }
         mapContainerRef={mapContainerRef}
         mapContent={
-          <OpenLayersMap
-            additionalLayers={layers}
-            initialCenter={selectedMountain?.coordinates}
-            onMapClick={(coordinate) => {
-              if (state.step !== 'locations') return;
-              if (state.searchRole && state.isMapSelectionMode) {
-                state.setPendingCoordinate(state.searchRole, coordinate);
-              }
-            }}
-            onControllerChange={setMapController}
-            targetRef={mapContainerRef}
-          />
+          canConfigure ? (
+            <OpenLayersMap
+              additionalLayers={layers}
+              initialCenter={selectedMountainCoordinates}
+              onMapClick={(coordinate) => {
+                if (!canConfigure || state.step !== 'locations') return;
+                if (state.searchRole && state.isMapSelectionMode) {
+                  state.setPendingCoordinate(state.searchRole, coordinate);
+                }
+              }}
+              onControllerChange={setMapController}
+              targetRef={mapContainerRef}
+            />
+          ) : (
+            <div
+              className="orda-map-layout__placeholder"
+              role={isMountainLocationPending ? 'status' : 'alert'}
+            >
+              <strong>
+                {hasInvalidMountainId
+                  ? '산 ID가 올바르지 않아요.'
+                  : isMountainLocationPending
+                    ? '산 위치를 확인하는 중이에요.'
+                    : '산 위치를 표시할 수 없어요.'}
+              </strong>
+              <span>
+                {hasMountainLocationError
+                  ? '산 선택 화면으로 돌아가 다시 선택해 주세요.'
+                  : '잠시만 기다려 주세요.'}
+              </span>
+            </div>
+          )
         }
-        mapControls={
-          <MapControls controller={mapController} mountainName={selectedMountain?.name} />
-        }
+        mapControls={<MapControls controller={mapController} mountainName={selectedMountainName} />}
         mapLabel="예시 출발지와 도착지를 표시하는 지도"
         mobilePanelSwipeToClose
-        panel={<RouteSetupPanel state={state} />}
-        panelFooter={<RouteSetupFooter state={state} />}
+        panel={
+          <fieldset
+            aria-label="코스 설정 입력"
+            className="route-setup-gate"
+            disabled={!canConfigure}
+          >
+            <RouteSetupPanel state={state} />
+          </fieldset>
+        }
+        panelFooter={
+          <fieldset
+            aria-label="코스 설정 단계 이동"
+            className="route-setup-gate"
+            disabled={!canConfigure}
+          >
+            <RouteSetupFooter state={state} />
+          </fieldset>
+        }
         panelCloseText="접기"
         panelLabel="코스 탐색 설정"
         panelSize="content"

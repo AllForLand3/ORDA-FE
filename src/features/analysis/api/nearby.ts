@@ -10,10 +10,11 @@ import type {
 export async function getCourseSpots(
   courseId: string,
   params: CourseNearbyParams = {},
+  signal?: AbortSignal,
 ): Promise<NearbySpotsResponse> {
   const response = await apiClient.get<NearbySpotsResponse>(
     `/courses/${encodeURIComponent(courseId)}/spots`,
-    { params },
+    { params, signal },
   );
 
   return response.data;
@@ -22,18 +23,23 @@ export async function getCourseSpots(
 export async function getCourseFacilities(
   courseId: string,
   params: CourseNearbyParams = {},
+  signal?: AbortSignal,
 ): Promise<NearbyFacilitiesResponse> {
   const response = await apiClient.get<NearbyFacilitiesResponse>(
     `/courses/${encodeURIComponent(courseId)}/facilities`,
-    { params },
+    { params, signal },
   );
 
   return response.data;
 }
 
-export async function getFacility(facilityId: string): Promise<FacilityDetailResponse> {
+export async function getFacility(
+  facilityId: string,
+  signal?: AbortSignal,
+): Promise<FacilityDetailResponse> {
   const response = await apiClient.get<FacilityDetailResponse>(
     `/facilities/${encodeURIComponent(facilityId)}`,
+    { signal },
   );
 
   return response.data;

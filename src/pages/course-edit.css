@@ -87,6 +87,11 @@
   flex-direction: column;
   gap: 1.25rem;
 }
+
+.course-import-filename {
+  overflow-wrap: anywhere;
+}
+
 .course-edit-form .orda-field {
   gap: 0.5rem;
 }
