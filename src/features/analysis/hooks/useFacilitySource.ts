@@ -5,14 +5,15 @@ import { useAccessToken } from '@/shared/hooks/useAccessToken';
 import { getFacility } from '../api/nearby';
 
 export const facilityQueryKeys = {
-  detail: (facilityId: string) => ['analysis', 'facility', facilityId] as const,
+  detail: (facilityId: string, token: string | null) =>
+    ['analysis', 'facility', token, facilityId] as const,
 };
 
 /** 시설 상세(I-04)에서 출처 제공기관을 조회한다. 상세를 펼쳤을 때만 요청한다. */
 export function useFacilitySource(facilityId: string | null, enabled: boolean) {
   const token = useAccessToken();
   return useQuery({
-    queryKey: facilityQueryKeys.detail(facilityId ?? ''),
+    queryKey: facilityQueryKeys.detail(facilityId ?? '', token),
     queryFn: async ({ signal }) => {
       if (facilityId === null) {
         throw new Error('조회할 시설이 없습니다.');

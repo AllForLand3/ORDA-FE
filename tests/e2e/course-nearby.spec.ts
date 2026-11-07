@@ -3,6 +3,7 @@ import { authenticatedUser, expect, test } from '../fixtures/authenticatedTest';
 import { courseListDetail } from '../fixtures/courseList';
 
 const id = courseListDetail.courseId;
+const partialNotice = '일부 자료를 확인하지 못해 목록이 주변 시설 전체가 아닐 수 있어요.';
 const base = { courseId: id, revNo: 1, radiusM: 200, dataAvailable: true };
 const spots = {
   ...base,
@@ -82,6 +83,7 @@ test('실제 ID·버전·반경으로 한 번 조회하고 집계·거리순·�
     '실제 주차장',
   ]);
   await expect(region).toContainText('경로 반경 200m · 거리순');
+  await expect(region.getByText(partialNotice, { exact: true })).toHaveCount(0);
   expect(sourceGets).toBe(0);
   await region.getByText('시설 상세 보기', { exact: true }).nth(1).click();
   await expect(region.getByText('원본 쉼터 메모', { exact: true })).toBeVisible();
@@ -108,6 +110,7 @@ for (const available of [true, false]) {
         route.fulfill({ json: { ...base, dataAvailable: available, counts: {}, items: [] } }),
       );
     const region = await openFacilities(page);
+    await expect(region.getByText(partialNotice, { exact: true })).toHaveCount(0);
     await expect(
       region.getByText(available ? '표시할 시설이 없어요' : '시설 자료가 아직 없어요', {
         exact: true,
@@ -130,10 +133,23 @@ test('시설 자료만 없으면 쉼터와 계단은 유지하고 시설 합계�
   );
   const region = await openFacilities(page);
   await expect(region.getByRole('heading', { level: 3 })).toHaveText(['벤치']);
+  await expect(region.getByRole('status')).toHaveText(partialNotice);
   await page.getByRole('tab', { name: '코스 비교', exact: true }).click();
   await expect(page.getByLabel('코스 주변 집계')).toContainText(
     '계단 관련 지점2곳주변 시설정보 없음',
   );
+});
+
+test('쉼터 자료만 없으면 실제 시설 목록과 부분 자료 안내를 함께 표시한다', async ({ page }) => {
+  await page.route(`**/api/courses/${id}/spots?*`, (route) =>
+    route.fulfill({ json: { ...base, dataAvailable: false, counts: {}, items: [] } }),
+  );
+  const region = await openFacilities(page);
+  await expect(region.getByRole('heading', { level: 3 })).toHaveText([
+    '실제 화장실',
+    '실제 주차장',
+  ]);
+  await expect(region.getByRole('status')).toHaveText(partialNotice);
 });
 
 for (const [status, code, title] of [
@@ -213,6 +229,22 @@ test('계정 전환 중 이전 결과를 숨기고 같은 코스 ID도 새 세�
   const authentication = new Promise<void>((resolve) => {
     release = resolve;
   });
+  let releaseSource = () => {};
+  const nextSource = new Promise<void>((resolve) => {
+    releaseSource = resolve;
+  });
+  let sourceGetsA = 0;
+  let sourceGetsB = 0;
+  await page.route('**/api/facilities/61', async (route) => {
+    const changed = route.request().headers().authorization === 'Bearer next-nearby-account';
+    if (changed) {
+      sourceGetsB++;
+      await nextSource;
+    } else sourceGetsA++;
+    await route.fulfill({
+      json: { facilityId: '61', source: { provider: changed ? 'B 제공기관' : 'A 제공기관' } },
+    });
+  });
   await page.route('**/api/auth/me', async (route) => {
     const changed = route.request().headers().authorization === 'Bearer next-nearby-account';
     if (changed) await authentication;
@@ -238,6 +270,13 @@ test('계정 전환 중 이전 결과를 숨기고 같은 코스 ID도 새 세�
   );
   const region = await openFacilities(page);
   await expect(region.getByRole('heading', { name: 'A 시설' })).toBeVisible();
+  const sourceToggle = region.getByText('시설 상세 보기', { exact: true }).first();
+  await sourceToggle.click();
+  await expect(region.getByText('A 제공기관', { exact: true })).toBeVisible();
+  await sourceToggle.click();
+  await sourceToggle.click();
+  await expect(region.getByText('A 제공기관', { exact: true })).toBeVisible();
+  expect(sourceGetsA).toBe(1);
   const other = await context.newPage();
   await other.route('**/api/auth/me', (route) => route.fulfill({ json: authenticatedUser }));
   try {
@@ -248,8 +287,17 @@ test('계정 전환 중 이전 결과를 숨기고 같은 코스 ID도 새 세�
     release();
     await expect(region.getByRole('heading', { name: 'B 시설' })).toBeVisible();
     await expect(region.getByRole('heading', { name: 'A 시설' })).toHaveCount(0);
+    await sourceToggle.click();
+    await expect.poll(() => sourceGetsB).toBe(1);
+    await expect(region.getByText('불러오는 중', { exact: true })).toBeVisible();
+    await expect(page.getByText('A 제공기관', { exact: true })).toHaveCount(0);
+    releaseSource();
+    await expect(region.getByText('B 제공기관', { exact: true })).toBeVisible();
+    expect(sourceGetsA).toBe(1);
+    expect(sourceGetsB).toBe(1);
   } finally {
     release();
+    releaseSource();
     await other.close();
   }
 });

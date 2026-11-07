@@ -135,6 +135,13 @@ export function CourseNearbyFacilities({ candidateName, query }: CourseNearbyFac
         <p className="insights-note">{`경로 반경 ${summary.radiusM}m · 거리순`}</p>
       </header>
 
+      {summary.places.length > 0 &&
+      (!summary.facilityDataAvailable || !summary.spotDataAvailable) ? (
+        <p className="insights-note" role="status">
+          일부 자료를 확인하지 못해 목록이 주변 시설 전체가 아닐 수 있어요.
+        </p>
+      ) : null}
+
       {summary.places.length === 0 ? (
         <div className="insights-empty" role="status">
           <strong>{empty.title}</strong>
