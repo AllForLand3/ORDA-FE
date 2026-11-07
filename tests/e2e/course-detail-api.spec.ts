@@ -228,7 +228,7 @@ test('조회 중 상태를 표시하고 문자열 ID·인증·서버 값과 투�
   await expect(page.getByRole('region', { name: '코스 고도 분석' })).toBeVisible();
   await expect(page.getByRole('button', { name: '샘플 프로파일 보기' })).toHaveCount(0);
   await page.getByRole('tab', { name: '주변 시설' }).click();
-  await expect(page.getByText('주변 시설 정보 미제공', { exact: true })).toBeVisible();
+  await expect(page.getByText('표시할 시설이 없어요', { exact: true })).toBeVisible();
 });
 
 test('서버 실패 후 수동 재시도로 복구하고 목록과 상세 사이를 이동한다', async ({ page }) => {

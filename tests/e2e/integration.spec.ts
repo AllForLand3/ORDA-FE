@@ -74,6 +74,20 @@ for (const viewport of [
           ) {
             listRequests.push(request.url());
             expect(request.headers().authorization).toBe('Bearer e2e-access-token');
+          } else if (
+            (screen.key === 'course-detail' || screen.key === 'course-facilities') &&
+            request.method() === 'GET' &&
+            ['spots', 'facilities'].some(
+              (resource) =>
+                new URL(request.url()).pathname ===
+                `/api/courses/${courseListDetail.courseId}/${resource}`,
+            )
+          ) {
+            expect(request.headers().authorization).toBe('Bearer e2e-access-token');
+            expect(Object.fromEntries(new URL(request.url()).searchParams)).toEqual({
+              revNo: String(courseListDetail.revNo),
+              radiusM: '200',
+            });
           } else requests.push(request.url());
         });
         try {
@@ -142,7 +156,7 @@ for (const viewport of [
       });
     }
     expect(errors).toEqual([]);
-    // 산 목록은 실제 API를 사용한다. 그 외 도메인 요청은 여전히 허용하지 않는다.
+    // 위에서 검증한 코스 조회 외에는 산 목록 API만 허용한다.
     expect(requests.length).toBeGreaterThanOrEqual(1);
     for (const request of requests) {
       const url = new URL(request);

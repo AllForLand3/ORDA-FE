@@ -8,9 +8,13 @@ import {
   SAMPLE_FACILITIES,
 } from '../mocks/facilities';
 
+import { CourseNearbyFacilities } from './CourseNearbyFacilities';
+import type { useCourseNearby } from '../hooks/useCourseNearby';
+
 interface NearbyFacilitiesPanelProps {
   candidateName: string | null;
   mockData?: boolean;
+  nearby?: ReturnType<typeof useCourseNearby>;
 }
 
 const FACILITY_FILTERS = [
@@ -25,6 +29,7 @@ type FacilityFilter = (typeof FACILITY_FILTERS)[number]['label'];
 export function NearbyFacilitiesPanel({
   candidateName,
   mockData = false,
+  nearby,
 }: NearbyFacilitiesPanelProps) {
   const [preview, setPreview] = useState('sample');
   const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>('전체');
@@ -98,6 +103,10 @@ export function NearbyFacilitiesPanel({
         </ul>
       </section>
     );
+  }
+
+  if (nearby) {
+    return <CourseNearbyFacilities candidateName={candidateName} query={nearby} />;
   }
 
   return (

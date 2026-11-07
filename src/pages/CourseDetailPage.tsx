@@ -11,6 +11,7 @@ import {
   TerrainAnalysisPanel,
   terrainAnalysisConfig,
   useTerrainAnalysis,
+  useCourseNearby,
 } from '@/features/analysis';
 
 import type { TerrainAnalysisConditions } from '@/features/analysis';
@@ -54,6 +55,11 @@ function CourseDetailWorkspace() {
   const [isEditOpen, setEditOpen] = useState(false);
 
   const course = state.course;
+  const nearby = useCourseNearby(
+    !state.isMock && !state.error ? course?.courseId : undefined,
+    { revNo: course?.revNo },
+    currentUser?.userId,
+  );
   const deletion = useCourseDeleteState(state.backHref);
   const courseLayer = useCourseLayer(state.isMock ? undefined : course?.geometry);
   const targetRef = mapContainerRef;
@@ -233,6 +239,13 @@ function CourseDetailWorkspace() {
             <CourseDetailPanel
               course={course}
               mockCourse={state.mockCourse}
+              nearbyCounts={
+                state.isMock
+                  ? undefined
+                  : nearby.isSuccess && !nearby.isFetching
+                    ? nearby.data
+                    : null
+              }
               onTabChange={state.setTab}
               tab={state.tab}
               overviewAnalysis={
@@ -247,12 +260,7 @@ function CourseDetailWorkspace() {
                 state.mockCourse ? (
                   <NearbyFacilitiesPanel candidateName={state.mockCourse.name} mockData />
                 ) : state.tab === 'facilities' ? (
-                  <section aria-label="주변 시설 안내" className="insights-panel">
-                    <div className="insights-empty" role="status">
-                      <strong>주변 시설 정보 미제공</strong>
-                      <p>이 코스의 주변 시설 정보가 아직 연결되지 않았어요.</p>
-                    </div>
-                  </section>
+                  <NearbyFacilitiesPanel candidateName={course.courseName} nearby={nearby} />
                 ) : null
               }
             />
