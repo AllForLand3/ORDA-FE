@@ -29,6 +29,7 @@ interface TerrainAnalysisPanelProps {
   };
 }
 
+/** 목데이터 코스의 분석 화면 또는 실제 분석과 구분된 예시 차트·미제공 안내를 표시한다. */
 export function TerrainAnalysisPanel({ candidateName, mockData }: TerrainAnalysisPanelProps) {
   const [showSample, setShowSample] = useState(false);
 

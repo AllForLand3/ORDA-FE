@@ -43,6 +43,7 @@ export function CourseDetailPage() {
   return <CourseDetailWorkspace key={courseId} />;
 }
 
+/** 코스별 지도·탭을 조합하고 예시 코스와 실제 API 분석의 표시 경로를 구분한다. */
 function CourseDetailWorkspace() {
   const { currentUser } = useAuth();
   const state = useCourseDetailState();
