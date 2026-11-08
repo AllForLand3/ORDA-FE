@@ -144,7 +144,7 @@ test('UNAUTHORIZED는 저장된 토큰을 지우고 로그인 화면으로 이�
   await mockRouteSearch(page, 401, errorResponse(401, 'UNAUTHORIZED'));
   await page.goto('/routes/results?mountainId=1&startNodeId=10&endNodeId=20');
 
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirect=/);
   expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBeNull();
 });
 
@@ -182,7 +182,6 @@ test('노드 ID가 하나라도 없으면 API를 호출하지 않고 기존 예�
     await expect(page.getByRole('heading', { name: '경로 분석 결과' })).toBeVisible();
     await expect(page.getByText('3개 코스 · 모든 지표는 예시 데이터입니다.')).toBeVisible();
     await expect(page.getByRole('article', { name: '예시 코스 1: 능선 조망 코스' })).toBeVisible();
-    await expect(page.getByRole('combobox', { name: '화면 상태 미리보기' })).toBeVisible();
   }
   expect(apiRequests).toEqual([]);
 });

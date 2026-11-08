@@ -5,13 +5,16 @@ import backIcon from '@/assets/course/course-back.svg';
 import { Button, Dialog, TextField } from '@/components/ui';
 
 import avatar from '../assets/profile-avatar.svg';
-import { MOCK_PROFILE } from '../mocks/profile';
+import { useAuth } from '../providers/authContext';
 import '../profile.css';
 
 export function ProfileEditScreen() {
-  const [name, setName] = useState<string>(MOCK_PROFILE.name);
-  const isDirty = name !== MOCK_PROFILE.name;
+  const { currentUser } = useAuth();
+  const initialNickname = currentUser?.nickname ?? '';
+  const [nickname, setNickname] = useState(initialNickname);
+  const isDirty = nickname !== initialNickname;
   const blocker = useBlocker(isDirty);
+
   useBeforeUnload(
     useCallback(
       (event: BeforeUnloadEvent) => {
@@ -31,45 +34,57 @@ export function ProfileEditScreen() {
             <Link aria-label="마이페이지로 돌아가기" to="/my-page">
               <img alt="" aria-hidden="true" src={backIcon} />
             </Link>
-            <h1>내 정보 수정</h1>
+            <div>
+              <span>MY PROFILE</span>
+              <h1>내 정보 수정</h1>
+            </div>
           </div>
           <Button aria-describedby="profile-edit-unavailable" disabled size="sm">
             저장
           </Button>
         </header>
-        <img alt="예시 프로필 아이콘" className="profile-edit-avatar" src={avatar} />
-        <div className="profile-edit-fields">
-          <TextField
-            label="이름"
-            maxLength={80}
-            onChange={(event) => setName(event.target.value)}
-            value={name}
-          />
-          <TextField
-            disabled
-            helperText="이메일은 변경할 수 없습니다"
-            label="이메일"
-            type="email"
-            value={MOCK_PROFILE.email}
-          />
-          <section aria-labelledby="profile-edit-undecided" className="profile-edit-undecided">
-            <h2 id="profile-edit-undecided">편집 도구</h2>
-            <p>추가 입력 항목은 아직 확정되지 않았습니다. 현재는 이름 입력만 확인할 수 있습니다.</p>
-          </section>
-          <p className="profile-demo-note" id="profile-edit-unavailable">
-            예시 입력입니다. 실제 프로필 조회·수정은 연결되지 않아 저장할 수 없습니다.
-          </p>
-        </div>
+
+        <section aria-label="프로필 정보" className="profile-edit-card">
+          <div className="profile-edit-card__user">
+            <img alt="" aria-hidden="true" className="profile-edit-avatar" src={avatar} />
+            <div>
+              <strong>{currentUser?.nickname ?? '사용자'}</strong>
+              <span>{currentUser?.loginId ?? '-'}</span>
+            </div>
+          </div>
+
+          <div className="profile-edit-fields">
+            <TextField
+              autoComplete="nickname"
+              helperText="2~10자, 한글·영문·숫자를 사용할 수 있어요."
+              label="닉네임"
+              maxLength={10}
+              onChange={(event) => setNickname(event.target.value)}
+              value={nickname}
+            />
+            <TextField
+              disabled
+              helperText="아이디는 변경할 수 없습니다."
+              label="아이디"
+              value={currentUser?.loginId ?? ''}
+            />
+          </div>
+        </section>
+
+        <p className="profile-edit-notice" id="profile-edit-unavailable">
+          프로필 수정 API 연결 후 변경한 정보를 저장할 수 있습니다.
+        </p>
       </main>
+
       <Dialog
-        description="입력한 예시 이름이 사라집니다. 실제 계정은 변경되지 않았습니다."
+        description="변경한 닉네임이 저장되지 않고 사라집니다."
         footer={
           <>
             <Button onClick={() => blocker.reset?.()} variant="secondary">
-              계속 보기
+              계속 수정하기
             </Button>
             <Button onClick={() => blocker.proceed?.()} variant="danger">
-              입력 버리고 나가기
+              나가기
             </Button>
           </>
         }
@@ -79,7 +94,7 @@ export function ProfileEditScreen() {
         open={blocker.state === 'blocked'}
         title="내 정보 수정을 나갈까요?"
       >
-        <p>현재 입력은 저장되지 않았습니다.</p>
+        <p>현재 변경 사항은 저장되지 않았습니다.</p>
       </Dialog>
     </div>
   );

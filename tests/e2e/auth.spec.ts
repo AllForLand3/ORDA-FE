@@ -128,6 +128,49 @@ test('만료된 저장 토큰은 제거하고 로그인 화면으로 이동한�
   expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBeNull();
 });
 
+test('이전 토큰 요청의 401 응답은 새로 저장된 토큰을 제거하지 않는다', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('orda.accessToken', 'old-access-token');
+  });
+
+  let releaseResponse: (() => void) | undefined;
+  const responseRelease = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+  let requestStarted: ((authorization: string | undefined) => void) | undefined;
+  const requestAuthorization = new Promise<string | undefined>((resolve) => {
+    requestStarted = resolve;
+  });
+
+  await page.route('**/api/auth/me', async (route) => {
+    requestStarted?.(route.request().headers().authorization);
+    await responseRelease;
+    await route.fulfill({
+      status: 401,
+      json: {
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: '인증이 필요합니다.',
+      },
+    });
+  });
+
+  const navigation = page.goto('/mountains');
+
+  await expect(requestAuthorization).resolves.toBe('Bearer old-access-token');
+  await page.evaluate(() => {
+    localStorage.setItem('orda.accessToken', 'new-access-token');
+  });
+
+  const response = page.waitForResponse('**/api/auth/me');
+  releaseResponse?.();
+  await Promise.all([navigation, response]);
+
+  expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBe(
+    'new-access-token',
+  );
+});
+
 test('회원가입은 유효성 검증과 약관 동의 후 API를 호출한다', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });
 

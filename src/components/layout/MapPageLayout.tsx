@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import type { ReactNode, Ref } from 'react';
+import type { ReactNode, Ref, RefObject } from 'react';
 
 import { ResponsivePanel } from '@/components/layout/ResponsivePanel';
 
@@ -14,11 +14,14 @@ export interface MapPageLayoutProps {
   mapLabel?: string;
   onPanelOpenChange?: (isOpen: boolean) => void;
   mobilePanelResizable?: boolean;
+  mobilePanelSwipeToClose?: boolean;
   panel: ReactNode;
+  panelCloseText?: string;
   panelFooter?: ReactNode;
   panelLabel?: string;
   panelOpen?: boolean;
   panelSize?: 'content' | 'expanded';
+  panelSurfaceRef?: RefObject<HTMLElement | null>;
 }
 
 export function MapPageLayout({
@@ -32,11 +35,14 @@ export function MapPageLayout({
   mapLabel = '지도 영역',
   onPanelOpenChange,
   mobilePanelResizable = false,
+  mobilePanelSwipeToClose = false,
   panel,
+  panelCloseText,
   panelFooter,
   panelLabel = '지도 작업 패널',
   panelOpen,
   panelSize = 'content',
+  panelSurfaceRef,
 }: MapPageLayoutProps) {
   const [internalPanelOpen, setInternalPanelOpen] = useState(defaultPanelOpen);
   const panelId = useId();
@@ -64,7 +70,10 @@ export function MapPageLayout({
           label={panelLabel}
           onOpenChange={handlePanelOpenChange}
           mobileResizable={mobilePanelResizable}
+          mobileSwipeToClose={mobilePanelSwipeToClose}
+          closeText={panelCloseText}
           size={panelSize}
+          surfaceRef={panelSurfaceRef}
         >
           {panel}
         </ResponsivePanel>

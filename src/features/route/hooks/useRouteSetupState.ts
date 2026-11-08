@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { MOUNTAIN_MOCKS, isValidMountainId } from '@/features/course';
+
 import { ROUTE_MVP_MOUNTAIN_ID } from '../constants';
 
 import {
@@ -32,6 +34,15 @@ const NODE_PARAM = { origin: 'originNode', destination: 'destinationNode' } as c
 function readNodeId(value: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+// 산 선택 화면에서 넘어온 API 산 ID로 탐색한다. 산 ID가 없거나 예시 산이면 관악산으로 탐색하고,
+// 형식이 잘못된 ID면 스냅과 탐색을 하지 않는다.
+function resolveRouteMountainId(value: string | null) {
+  if (value === null || MOUNTAIN_MOCKS.some((mountain) => mountain.id === value)) {
+    return ROUTE_MVP_MOUNTAIN_ID;
+  }
+  return isValidMountainId(value) ? value : null;
 }
 
 function getPlace(id: string | null): RoutePlace | null {
@@ -74,7 +85,7 @@ export function useRouteSetupState() {
   // 확정한 장소에 연결된 등산로 노드 ID다. 장소 없이 남은 노드 ID는 쓰지 않는다.
   const originNodeId = origin ? readNodeId(params.get(NODE_PARAM.origin)) : null;
   const destinationNodeId = destination ? readNodeId(params.get(NODE_PARAM.destination)) : null;
-  const mountainId = ROUTE_MVP_MOUNTAIN_ID;
+  const mountainId = resolveRouteMountainId(params.get('mountainId'));
   const pendingSnap = useRouteSnap(mountainId, pendingPlace?.coordinates ?? null);
   // 확정한 지점의 스냅 위치 표시용이다. 노드에 연결된 지점만 조회하고, 확인 단계와 같은 캐시를 써서
   // 새로고침했을 때만 다시 요청한다. 탐색에 쓰는 노드 ID는 URL 값이 기준이다.
@@ -87,7 +98,8 @@ export function useRouteSetupState() {
     originNodeId && destinationNodeId && originNodeId === destinationNodeId,
   );
   const hasBothNodes = Boolean(origin && destination && originNodeId && destinationNodeId);
-  const canSearch = hasBothNodes && !isSameNode && origin?.id !== destination?.id;
+  const canSearch =
+    mountainId !== null && hasBothNodes && !isSameNode && origin?.id !== destination?.id;
   const searchFor = params.get('searchFor');
   const searchRole: RoutePointRole | null =
     searchFor === 'origin' || searchFor === 'destination' ? searchFor : null;
@@ -99,10 +111,10 @@ export function useRouteSetupState() {
     : 'beginner';
   const priorities = params.has('priorities')
     ? readTokenList<RoutePriority>(params.get('priorities'), ROUTE_PRIORITIES)
-    : (['distance', 'fewer-stairs'] satisfies RoutePriority[]);
+    : [];
   const facilities = params.has('facilities')
     ? readTokenList<RouteFacility>(params.get('facilities'), ROUTE_FACILITIES)
-    : (['restroom', 'shelter'] satisfies RouteFacility[]);
+    : [];
 
   const update = (mutate: (next: URLSearchParams) => void, replace = true) => {
     setParams(
@@ -128,7 +140,7 @@ export function useRouteSetupState() {
   ]) {
     searchParams.delete(key);
   }
-  if (canSearch && originNodeId && destinationNodeId) {
+  if (canSearch && mountainId && originNodeId && destinationNodeId) {
     searchParams.set('mountainId', mountainId);
     searchParams.set('startNodeId', originNodeId);
     searchParams.set('endNodeId', destinationNodeId);
@@ -236,20 +248,22 @@ export function useRouteSetupState() {
     setDifficulty: (value: RouteDifficulty) => update((next) => next.set('level', value)),
     togglePriority: (value: RoutePriority) =>
       update((next) => {
-        const selected = readTokenList<RoutePriority>(next.get('priorities'), ROUTE_PRIORITIES);
-        const result = selected.includes(value)
-          ? selected.filter((item) => item !== value)
-          : [...selected, value];
-        if (result.length) next.set('priorities', result.join(','));
+        const selected = new Set(
+          readTokenList<RoutePriority>(next.get('priorities'), ROUTE_PRIORITIES),
+        );
+        if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
+        if (selected.size) next.set('priorities', [...selected].join(','));
         else next.delete('priorities');
       }),
     toggleFacility: (value: RouteFacility) =>
       update((next) => {
-        const selected = readTokenList<RouteFacility>(next.get('facilities'), ROUTE_FACILITIES);
-        const result = selected.includes(value)
-          ? selected.filter((item) => item !== value)
-          : [...selected, value];
-        if (result.length) next.set('facilities', result.join(','));
+        const selected = new Set(
+          readTokenList<RouteFacility>(next.get('facilities'), ROUTE_FACILITIES),
+        );
+        if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
+        if (selected.size) next.set('facilities', [...selected].join(','));
         else next.delete('facilities');
       }),
   };

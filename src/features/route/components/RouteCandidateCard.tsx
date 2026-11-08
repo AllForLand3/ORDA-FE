@@ -1,12 +1,10 @@
-import counterOne from '@/assets/route/counter-one.svg';
-import counterTwo from '@/assets/route/counter-two.svg';
 import downloadIcon from '@/assets/route/download.svg';
 import editIcon from '@/assets/route/edit.svg';
 import facilityIcon from '@/assets/route/facility.svg';
 import hikingIcon from '@/assets/route/hiking.svg';
-import selectedIcon from '@/assets/route/selected.svg';
+import selectedIcon from '@/assets/icons/selected.svg';
 import stairsIcon from '@/assets/route/stairs.svg';
-import unselectedIcon from '@/assets/route/unselected.svg';
+import unselectedIcon from '@/assets/icons/unselected.svg';
 import { Badge, Button, Card } from '@/components/ui';
 
 import { getMockRouteMetrics } from '../mocks/route-results';
@@ -19,7 +17,6 @@ interface RouteCandidateCardProps {
   selected: boolean;
   onSelect: () => void;
   onEdit?: () => void;
-  onExport?: () => void;
 }
 
 const MISSING_VALUE = '정보 없음';
@@ -52,7 +49,6 @@ export function RouteCandidateCard({
   selected,
   onSelect,
   onEdit,
-  onExport,
 }: RouteCandidateCardProps) {
   const isMock = candidate.source === 'mock';
   const labelPrefix = isMock ? '예시 코스' : '경로 후보';
@@ -70,13 +66,9 @@ export function RouteCandidateCard({
         onClick={onSelect}
         type="button"
       >
-        {index < 2 ? (
-          <img alt="" aria-hidden="true" src={index === 0 ? counterOne : counterTwo} />
-        ) : (
-          <span aria-hidden="true" className="route-candidate__number">
-            {index + 1}
-          </span>
-        )}
+        <span aria-hidden="true" className="route-candidate__number">
+          {index + 1}
+        </span>
         <span className="route-candidate__heading">
           <strong>{candidate.name}</strong>
           <span className="route-candidate__tags">
@@ -129,28 +121,13 @@ export function RouteCandidateCard({
               <img alt="" aria-hidden="true" src={editIcon} />
               코스 편집
             </Button>
-            <Button onClick={onExport} size="sm" variant="quiet">
+            <Button size="sm" variant="quiet">
               <img alt="" aria-hidden="true" src={downloadIcon} />
-              내보내기
+              저장하기
             </Button>
           </div>
         </div>
       ) : null}
-
-      <details className="route-candidate__details">
-        <summary>상세보기</summary>
-        {isMock ? (
-          <>
-            <p>거리·시간·누적 상승·난이도·시설 수는 모두 디자인 확인용 예시입니다.</p>
-            <p>실제 등산로, 경로 선형과 분석 자료는 제공되지 않았습니다.</p>
-          </>
-        ) : (
-          <>
-            <p>거리와 예상 시간은 서버 경로 탐색 결과입니다.</p>
-            <p>누적 상승·난이도·계단·시설 정보는 아직 제공되지 않습니다.</p>
-          </>
-        )}
-      </details>
     </Card>
   );
 }

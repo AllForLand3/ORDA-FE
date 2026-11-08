@@ -1,37 +1,20 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
-import { Button, Dialog } from '@/components/ui';
+import logoMark from '@/assets/home/logo-mark.png';
+import { Button } from '@/components/ui';
 import { clearAccessToken } from '@/lib/accessToken';
 
-import accountIcon from '../assets/profile-account.svg';
 import avatar from '../assets/profile-avatar.svg';
-import downloadIcon from '../assets/profile-download.svg';
 import logoutIcon from '../assets/profile-logout.svg';
-import mountain from '../assets/profile-mountain.png';
 import nextIcon from '../assets/profile-next.svg';
-import settingsIcon from '../assets/profile-settings.svg';
 import { useAuth } from '../providers/authContext';
 import '../profile.css';
-
-const NOTICES = {
-  downloads: {
-    title: '다운로드 파일 준비 중',
-    message:
-      '아직 생성하거나 다운로드한 파일이 없습니다. GPX·GeoJSON 내보내기는 형식 선택 UI만 제공합니다.',
-  },
-  settings: {
-    title: '앱 설정 준비 중',
-    message: '설정 항목과 저장 정책이 확정되지 않았습니다. 현재 변경할 수 있는 설정은 없습니다.',
-  },
-};
 
 export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
-  const [notice, setNotice] = useState<keyof typeof NOTICES | null>(null);
-  const activeNotice = notice ? NOTICES[notice] : null;
 
   function logout() {
     clearAccessToken();
@@ -41,69 +24,66 @@ export function ProfileScreen({ navigation }: { navigation: ReactNode }) {
 
   return (
     <div className="profile-page">
-      <div className="profile-hero">
-        <img alt="" aria-hidden="true" className="profile-hero__image" src={mountain} />
-        <header>
-          <h1>마이페이지</h1>
-          <p>내 정보를 관리해보세요</p>
-        </header>
-      </div>
+      <header className="my-courses-site-header">
+        <div className="my-courses-site-header__inner">
+          <Link
+            aria-label="ORDA 산 탐색으로 이동"
+            className="my-courses-site-header__logo"
+            to="/mountains"
+          >
+            <img alt="" src={logoMark} />
+            <span>ORDA</span>
+          </Link>
+          <div className="my-courses-site-header__actions">
+            <Link className="my-courses-site-header__my-courses" to="/my-courses">
+              내 코스
+            </Link>
+            <Link aria-current="page" className="my-courses-site-header__login" to="/my-page">
+              마이페이지
+            </Link>
+          </div>
+        </div>
+      </header>
+
       <main className="profile-main">
-        <Link className="profile-summary" to="/my-page/edit">
-          <img alt="" aria-hidden="true" src={avatar} />
-          <span>
-            <strong>{currentUser?.nickname ?? '사용자'}</strong>
-            <small>{currentUser?.loginId}</small>
-          </span>
-          <img alt="" aria-hidden="true" src={nextIcon} />
-        </Link>
-        <nav aria-label="마이페이지 메뉴" className="profile-menu">
-          <Link to="/my-page/edit">
-            <img alt="" aria-hidden="true" src={accountIcon} />
+        <header className="profile-heading">
+          <span>MY PAGE</span>
+          <h1>마이페이지</h1>
+          <p>계정 정보를 확인하고 관리할 수 있어요.</p>
+        </header>
+
+        <section aria-labelledby="profile-information-title" className="profile-information">
+          <div className="profile-information__heading">
+            <div>
+              <h2 id="profile-information-title">내 정보</h2>
+              <p>현재 로그인된 계정 정보입니다.</p>
+            </div>
+          </div>
+
+          <div className="profile-information__user">
+            <img alt="" aria-hidden="true" src={avatar} />
+            <div>
+              <strong>{currentUser?.nickname ?? '사용자'}</strong>
+              <span>{currentUser?.loginId ?? '-'}</span>
+            </div>
+          </div>
+
+          <Link className="profile-information__edit" to="/my-page/edit">
             <span>
               <strong>내 정보 수정</strong>
-              <small>프로필, 이메일, 소개 등</small>
+              <small>닉네임과 계정 정보를 확인해보세요.</small>
             </span>
             <img alt="" aria-hidden="true" src={nextIcon} />
           </Link>
-          <button onClick={() => setNotice('downloads')} type="button">
-            <img alt="" aria-hidden="true" src={downloadIcon} />
-            <span>
-              <strong>다운로드 파일</strong>
-              <small>내보낸 GPX, GeoJSON 파일</small>
-            </span>
-            <img alt="" aria-hidden="true" src={nextIcon} />
-          </button>
-          <button onClick={() => setNotice('settings')} type="button">
-            <img alt="" aria-hidden="true" src={settingsIcon} />
-            <span>
-              <strong>앱 설정</strong>
-            </span>
-            <img alt="" aria-hidden="true" src={nextIcon} />
-          </button>
-        </nav>
-        <Button className="profile-logout" fullWidth onClick={logout}>
+        </section>
+
+        <Button className="profile-logout" variant="quiet" fullWidth onClick={logout}>
           <img alt="" aria-hidden="true" src={logoutIcon} />
           로그아웃
         </Button>
-        <p className="profile-demo-note">프로필 수정 기능은 아직 연결되지 않았습니다.</p>
       </main>
-      {navigation}
-      <Dialog
-        description={activeNotice?.message}
-        footer={
-          <Button onClick={() => setNotice(null)} variant="secondary">
-            닫기
-          </Button>
-        }
-        onOpenChange={(open) => {
-          if (!open) setNotice(null);
-        }}
-        open={Boolean(activeNotice)}
-        title={activeNotice?.title ?? '기능 안내'}
-      >
-        {notice === 'downloads' ? <Link to="/my-courses">내 코스에서 내보내기 UI 확인</Link> : null}
-      </Dialog>
+
+      <div className="profile-mobile-navigation">{navigation}</div>
     </div>
   );
 }

@@ -28,6 +28,7 @@ export type {
 } from './types/route-search';
 export type { RouteSearchCandidateView } from './types/route-candidate-view';
 export { CourseExportDialog } from './components/CourseExportDialog';
+export { RouteEditDialog } from './components/RouteEditDialog';
 export { RESULT_PREVIEW_STATES, useRouteResultsState } from './hooks/useRouteResultsState';
 export type { RouteSetupStep } from './hooks/useRouteSetupState';
 export { ROUTE_PLACE_MOCKS } from './mocks/route-setup';

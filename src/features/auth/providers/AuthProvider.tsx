@@ -1,12 +1,12 @@
-import { useSyncExternalStore, type PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 
-import { getAccessToken, subscribeToAccessToken } from '@/lib/accessToken';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 
 import { useCurrentUserQuery } from '../hooks/useCurrentUserQuery';
 import { AuthContext, type AuthContextValue } from './authContext';
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const accessToken = useSyncExternalStore(subscribeToAccessToken, getAccessToken, () => null);
+  const accessToken = useAccessToken();
   const hasAccessToken = accessToken !== null;
   const currentUserQuery = useCurrentUserQuery(hasAccessToken);
   const value: AuthContextValue = {

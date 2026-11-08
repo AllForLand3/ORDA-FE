@@ -1,7 +1,9 @@
+
 import { createBrowserRouter } from 'react-router-dom';
 
 import { ProtectedRoute, PublicOnlyRoute } from '@/features/auth';
 import { HomeRedirect } from '@/features/auth/components/HomeRedirect';
+
 import { LoginPage } from '@/pages/LoginPage';
 import { MountainSelectPage } from '@/pages/MountainSelectPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -11,6 +13,7 @@ import { RouteResultsPage } from '@/pages/RouteResultsPage';
 import { MyCoursesPage } from '@/pages/MyCoursesPage';
 import { CourseDetailPage } from '@/pages/CourseDetailPage';
 import { CourseEditPage } from '@/pages/CourseEditPage';
+import { CourseImportPage } from '@/pages/CourseImportPage';
 import { MyPage } from '@/pages/MyPage';
 import { ProfileEditPage } from '@/pages/ProfileEditPage';
 
@@ -40,6 +43,12 @@ export const router = createBrowserRouter([
         element: <MountainSelectPage />,
       },
       {
+        path: '/terrain-3d',
+        lazy: async () => ({
+          Component: (await import('@/pages/Terrain3DPage')).Terrain3DPage,
+        }),
+      },
+      {
         path: '/routes/setup',
         element: <RouteSetupPage />,
       },
@@ -50,6 +59,10 @@ export const router = createBrowserRouter([
       {
         path: '/my-courses',
         element: <MyCoursesPage />,
+      },
+      {
+        path: '/my-courses/import',
+        element: <CourseImportPage />,
       },
       {
         path: '/my-courses/:courseId',

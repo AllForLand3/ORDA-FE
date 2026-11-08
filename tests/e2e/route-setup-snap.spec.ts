@@ -163,6 +163,8 @@ test('지도 선택 좌표를 스냅해 노드 ID로 경로를 탐색하고 결�
   await page.getByRole('radio', { name: /중급/ }).click();
   await page.getByRole('button', { name: /다음/ }).click();
   await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
+  await page.getByRole('button', { name: /거리 우선/ }).click();
+  await page.getByRole('button', { name: /쉼터/ }).click();
   await expect(
     page.getByRole('note').filter({ hasText: '현재는 거리 우선으로만 탐색해요' }),
   ).toBeVisible();
@@ -181,8 +183,8 @@ test('지도 선택 좌표를 스냅해 노드 ID로 경로를 탐색하고 결�
   // 수준·탐색 기준·비교 정보는 API로 보내지 않는다.
   expect(searchRequests).toEqual([{ mountainId: '2', startNodeId: '931', endNodeId: '932' }]);
 
-  // 조건 변경으로 돌아오면 선택한 지점과 노드가 유지된다.
-  await page.getByRole('link', { name: '← 조건 변경' }).click();
+  // 뒤로 돌아오면 선택한 지점과 노드가 유지된다.
+  await page.goBack();
   await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
   await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeEnabled();
 });
@@ -209,7 +211,7 @@ test('UNAUTHORIZED는 저장된 토큰을 지우고 로그인 화면으로 이�
   await openMapSelection(page, '출발지');
   await page.locator(MAP_SURFACE).click({ position: ORIGIN_TAP });
 
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirect=/);
   expect(await page.evaluate(() => localStorage.getItem('orda.accessToken'))).toBeNull();
 });
 

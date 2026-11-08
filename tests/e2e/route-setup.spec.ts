@@ -27,6 +27,10 @@ async function mockSnap(page: Page) {
   );
 }
 
+const selectedPlaces =
+  'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
+const selectedNodes = 'originNode=101&destinationNode=102';
+
 test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서 상태를 유지한다', async ({ page }) => {
   await mockSnap(page);
   await page.setViewportSize({ width: 440, height: 956 });
@@ -46,7 +50,9 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('searchbox', { name: '출발지 검색' }).fill('서울대');
   await page.getByRole('button', { name: /서울대 건설환경종합연구소 앞/ }).click();
   await expect(page.getByText('이 예시 장소를 출발지로 설정할까요?')).toBeVisible();
+  await page.screenshot({ path: 'test-results/route-setup-place-confirmation-440.png' });
   await page.getByRole('button', { name: '출발지로 설정' }).click();
+  await page.screenshot({ path: 'test-results/route-setup-selected-origin-440.png' });
 
   await page.getByRole('button', { name: '도착지를 검색해주세요' }).click();
   await page.getByRole('searchbox', { name: '도착지 검색' }).fill('연주대');
@@ -63,24 +69,34 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await page.getByRole('button', { name: /관악산 서울대입구/ }).click();
   await page.getByRole('button', { name: '도착지로 설정' }).click();
   await expect(page.getByRole('button', { name: /관악산 서울대입구/ })).toBeVisible();
-  await page.getByRole('button', { name: '도착지 선택 해제' }).click();
-  await expect(next).toBeDisabled();
-  await page.getByRole('button', { name: '도착지를 검색해주세요' }).click();
+  await page.getByRole('button', { name: /관악산 서울대입구/ }).click();
   await page.getByRole('searchbox', { name: '도착지 검색' }).fill('연주대');
   await page.getByRole('button', { name: /관악산 연주대/ }).click();
   await page.getByRole('button', { name: '도착지로 설정' }).click();
   await expect(next).toBeEnabled();
+  await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
+  await expect(page.getByText('지도에서 위치를 선택하거나 검색해보세요.')).toBeVisible();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get('origin') === 'seoul-national-university-research-center' &&
+      url.searchParams.get('destination') === 'gwanaksan-yeonjudae',
+  );
   await expect(
-    page.getByText('검색 장소는 예시 · 선택 위치를 등산로 지점에 연결해요'),
+    page.getByText('출발지와 도착지를 각각 선택하면 다음 단계로 갈 수 있어요.'),
   ).toBeVisible();
 
   await next.click();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/route-setup-difficulty-default-440.png' });
   await page.getByRole('radio', { name: /중급/ }).click();
+  await page.screenshot({ path: 'test-results/route-setup-difficulty-selected-440.png' });
   await page.getByRole('button', { name: '다음', exact: false }).click();
   await expect(page.getByRole('heading', { name: '어떤 코스를 원하시나요?' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeEnabled();
-  await expect(page.getByText(/현재는 거리 우선으로만 탐색해요/)).toBeVisible();
+  await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeDisabled();
+  await expect(
+    page.getByText('탐색 기준과 비교 정보를 각각 하나 이상 선택해주세요.'),
+  ).toBeVisible();
 
   await page.goBack();
   await expect(page.getByRole('heading', { name: '나의 등산 수준' })).toBeVisible();
@@ -89,6 +105,98 @@ test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서
   await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
   await expect(page.getByRole('button', { name: /서울대 건설환경종합연구소 앞/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /관악산 연주대/ })).toBeVisible();
+});
+
+test('선택된 등산 수준 카드는 포커스 시 기본 녹색 단일 테두리를 유지한다', async ({ page }) => {
+  await page.goto(`/routes/setup?${selectedPlaces}&step=difficulty&level=intermediate`);
+
+  const intermediate = page.getByRole('radio', { name: /중급/ });
+  const intermediateCard = intermediate.locator('..');
+
+  await expect(intermediate).toBeChecked();
+  await expect(intermediateCard).toHaveCSS('border-color', 'rgb(0, 143, 104)');
+  await intermediate.focus();
+  await expect(intermediateCard).toHaveCSS('border-width', '2px');
+  await expect(intermediateCard).toHaveCSS('border-color', 'rgb(0, 143, 104)');
+  await expect(intermediateCard).toHaveCSS('outline-style', 'none');
+});
+
+test('선택한 산 좌표를 코스 설정 지도의 초기 중심으로 사용한다', async ({ page }) => {
+  await page.goto('/routes/setup?mountainId=bukhansan');
+
+  const map = page.locator('.orda-map-layout__map-surface');
+
+  await expect(map).toHaveAttribute('data-map-ready', 'true');
+  await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
+});
+
+test('API 산 ID로 상세 정보를 조회해 코스 설정 지도에 반영한다', async ({ page }) => {
+  let authorization: string | undefined;
+  let releaseDetail: (() => void) | undefined;
+  const detailLoading = new Promise<void>((resolve) => {
+    releaseDetail = resolve;
+  });
+  await page.route('**/api/mountains/42', async (route) => {
+    authorization = route.request().headers().authorization;
+    await detailLoading;
+    await route.fulfill({
+      json: {
+        mountainId: '42',
+        mountainName: '북한산',
+        sourceMountainCode: 'MNT-042',
+        sourceOldMountainCode: null,
+        serviceAvailable: true,
+        addressLabel: '서울특별시 강북구',
+        provinceName: '서울특별시',
+        districtName: '강북구',
+        elevationMeters: 836,
+        geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
+      },
+    });
+  });
+
+  await page.goto('/routes/setup?mountainId=42');
+
+  const map = page.locator('.orda-map-layout__map-surface');
+  await expect(page.getByText('산 위치를 확인하는 중이에요.')).toBeVisible();
+  await expect(map).not.toHaveAttribute('data-map-ready', 'true');
+  await expect(page.getByRole('button', { name: '현재 위치로 이동' })).toBeDisabled();
+
+  releaseDetail?.();
+  await expect(map).toHaveAttribute('data-map-center', '126.978000,37.658630');
+  await expect(page.getByRole('group', { name: '지도 컨트롤' })).toContainText('북한산');
+  expect(authorization).toBe('Bearer e2e-access-token');
+});
+
+test('서비스 불가 산 ID로 코스 설정에 직접 접근하면 산 선택 화면으로 돌아간다', async ({
+  page,
+}) => {
+  await page.route('**/api/mountains/43', async (route) => {
+    await route.fulfill({
+      json: {
+        mountainId: '43',
+        mountainName: '서비스 준비 산',
+        sourceMountainCode: 'MNT-043',
+        sourceOldMountainCode: null,
+        serviceAvailable: false,
+        addressLabel: '서울특별시',
+        provinceName: '서울특별시',
+        districtName: null,
+        elevationMeters: 500,
+        geometry: { type: 'Point', coordinates: [126.98, 37.56] },
+      },
+    });
+  });
+  await page.route('**/api/mountains?*', async (route) => {
+    await route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    });
+  });
+
+  await page.goto('/routes/setup?mountainId=43');
+
+  await expect(page).toHaveURL(/\/mountains$/);
+  await expect(page.getByRole('heading', { name: '어느 산으로 갈까요?' })).toBeVisible();
 });
 
 test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지 않는다', async ({ page }) => {
@@ -126,7 +234,9 @@ test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지
     }
     if (viewport.width >= 768) {
       expect(geometry.mapLeft).toBeGreaterThanOrEqual(geometry.panelRight - 1);
-      await expect(page.getByText('코스 탐색 설정', { exact: true }).last()).toBeVisible();
+      await expect(page.getByRole('link', { name: 'ORDA 산 탐색으로 이동' })).toBeVisible();
+      await expect(page.getByRole('link', { name: '내 코스', exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: '마이페이지로 이동' })).toBeVisible();
       if (viewport.width === 1024) {
         await page.screenshot({ path: 'test-results/route-setup-1024.png' });
       }
@@ -145,18 +255,230 @@ test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지
   await expect(page.getByRole('button', { name: /위험 관련 지점/ })).toBeVisible();
 });
 
-test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/mountains');
-  await page.getByRole('button', { name: '코스 탐색 설정' }).click();
-  await expect(page).toHaveURL(/\/routes\/setup/);
-  await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
+test('탐색 기준과 비교 정보는 기본 선택 없이 항목별로 독립 선택한다', async ({ page }) => {
+  await mockSnap(page);
+  await page.goto(`/routes/setup?${selectedPlaces}&${selectedNodes}&step=conditions`);
+
+  const distance = page.getByRole('button', { name: /거리 우선/ });
+  const gentleSlope = page.getByRole('button', { name: /완만한 경사/ });
+  const restroom = page.getByRole('button', { name: /화장실/ });
+  const shelter = page.getByRole('button', { name: /쉼터/ });
+  const explore = page.getByRole('button', { name: '맞춤 경로 탐색하기' });
+
+  await expect(distance).toHaveAttribute('aria-pressed', 'false');
+  await expect(gentleSlope).toHaveAttribute('aria-pressed', 'false');
+  await expect(restroom).toHaveAttribute('aria-pressed', 'false');
+  await expect(shelter).toHaveAttribute('aria-pressed', 'false');
+  await expect(explore).toBeDisabled();
+  await expect(distance.locator('.route-setup-priority__icon')).toHaveCSS(
+    'background-color',
+    'rgb(75, 87, 82)',
+  );
+
+  await distance.click();
+  await expect(distance).toHaveAttribute('aria-pressed', 'true');
+  await expect(explore).toBeDisabled();
+  await expect(distance.locator('.route-setup-priority__icon')).toHaveCSS(
+    'background-color',
+    'rgb(0, 143, 104)',
+  );
+  await gentleSlope.click();
+  await expect(distance).toHaveAttribute('aria-pressed', 'true');
+  await expect(gentleSlope).toHaveAttribute('aria-pressed', 'true');
+  await distance.click();
+  await expect(distance).toHaveAttribute('aria-pressed', 'false');
+  await expect(gentleSlope).toHaveAttribute('aria-pressed', 'true');
+
+  await restroom.click();
+  await expect(restroom).toHaveAttribute('aria-pressed', 'true');
+  await expect(explore).toBeEnabled();
+  await shelter.click();
+  await expect(restroom).toHaveAttribute('aria-pressed', 'true');
+  await expect(shelter).toHaveAttribute('aria-pressed', 'true');
+  await restroom.click();
+  await expect(restroom).toHaveAttribute('aria-pressed', 'false');
+  await expect(shelter).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('지도에서 지정한 좌표는 예시 장소와 구분해 출발지 후보로 확인한다', async ({ page }) => {
-  await mockSnap(page);
+test('출발지와 도착지 없이 조건 단계로 직접 진입하면 탐색할 수 없다', async ({ page }) => {
+  await page.goto('/routes/setup?step=conditions&priorities=gentle-slope&facilities=shelter');
+
+  await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeDisabled();
+  await expect(page.getByText('출발지와 도착지를 먼저 선택해주세요.')).toBeVisible();
+});
+
+test('웹 패널의 접기 문구와 제목 체계는 산 탐색과 동일하다', async ({ page }) => {
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+    }),
+  );
+  await page.setViewportSize({ width: 1024, height: 768 });
+
+  const readTypography = async (selectors: {
+    description: string;
+    eyebrow: string;
+    title: string;
+  }) =>
+    page.evaluate(({ description, eyebrow, title }) => {
+      const eyebrowElement = document.querySelector(eyebrow);
+      const titleElement = document.querySelector(title);
+      const descriptionElement = document.querySelector(description);
+      if (!eyebrowElement || !titleElement || !descriptionElement) return null;
+
+      const eyebrowBox = eyebrowElement.getBoundingClientRect();
+      const titleBox = titleElement.getBoundingClientRect();
+      const descriptionBox = descriptionElement.getBoundingClientRect();
+
+      return {
+        descriptionFontSize: getComputedStyle(descriptionElement).fontSize,
+        eyebrowFontSize: getComputedStyle(eyebrowElement).fontSize,
+        eyebrowTitleGap: titleBox.top - eyebrowBox.bottom,
+        titleDescriptionGap: descriptionBox.top - titleBox.bottom,
+        titleFontSize: getComputedStyle(titleElement).fontSize,
+      };
+    }, selectors);
+
+  await page.goto('/mountains');
+  await expect(page.getByRole('heading', { name: '어느 산으로 갈까요?' })).toBeVisible();
+  const mountainCloseFontSize = await page
+    .getByRole('button', { name: '패널 접기' })
+    .evaluate((button) => getComputedStyle(button).fontSize);
+  const mountainCloseBox = await page.getByRole('button', { name: '패널 접기' }).boundingBox();
+  const mountainTypography = await readTypography({
+    description: '.mountain-selection__description',
+    eyebrow: '.mountain-selection__eyebrow',
+    title: '.mountain-selection__intro h1',
+  });
+
+  await page.goto('/routes/setup');
+  await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
+  const routeTypography = await readTypography({
+    description: '.route-setup-panel__description',
+    eyebrow: '.route-setup-panel__eyebrow',
+    title: '.route-setup-panel__title',
+  });
+
+  expect(routeTypography).toEqual(mountainTypography);
+  const routeClose = page.getByRole('button', { name: '패널 접기' });
+  const routeCloseBox = await routeClose.boundingBox();
+  const routeEyebrowBox = await page.locator('.route-setup-panel__eyebrow').boundingBox();
+  const routeDescriptionBox = await page.locator('.route-setup-panel__description').boundingBox();
+  const routeStepBox = await page.locator('.route-setup-panel__step-count').boundingBox();
+  if (!routeEyebrowBox || !routeDescriptionBox || !routeStepBox) {
+    throw new Error('맞춤 경로 패널 머리말을 찾을 수 없습니다.');
+  }
+  await expect(routeClose).toHaveText('접기');
+  await expect(routeClose).toHaveCSS('font-size', mountainCloseFontSize);
+  expect(routeCloseBox).toEqual(mountainCloseBox);
+  expect(
+    Math.abs(
+      routeStepBox.y +
+        routeStepBox.height / 2 -
+        (routeEyebrowBox.y + routeDescriptionBox.y + routeDescriptionBox.height) / 2,
+    ),
+  ).toBeLessThan(2);
+  await routeClose.hover();
+  await expect(routeClose).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(routeClose).toHaveCSS('text-decoration-line', 'underline');
+  await routeClose.click();
+  await expect(page.getByRole('complementary', { name: '코스 탐색 설정' })).not.toBeVisible();
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await expect(page.getByRole('complementary', { name: '코스 탐색 설정' })).toBeVisible();
+
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/routes/setup');
+  const mobilePanel = page.getByRole('complementary', { name: '코스 탐색 설정' });
+  const swipeHandle = page.getByRole('button', { name: '패널을 아래로 밀어 접기' });
+  await expect(page.getByRole('button', { name: '패널 접기' })).not.toBeVisible();
+  await swipeHandle.click();
+  await expect(mobilePanel).toBeVisible();
+
+  const handleBox = await swipeHandle.boundingBox();
+  if (!handleBox) throw new Error('모바일 패널 드래그 손잡이를 찾을 수 없습니다.');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    handleBox.x + handleBox.width / 2,
+    handleBox.y + handleBox.height / 2 + 100,
+    { steps: 10 },
+  );
+  await page.mouse.up();
+  await expect(mobilePanel).not.toBeVisible();
+  await page.getByRole('button', { name: '패널 펼치기' }).click();
+  await expect(mobilePanel).toBeVisible();
+});
+
+test('산 선택 화면에서 코스 탐색 설정으로 이동할 수 있다', async ({ page }) => {
+  const mountain = {
+    mountainId: '42',
+    mountainName: '북한산',
+    addressLabel: '서울특별시 강북구',
+    provinceName: '서울특별시',
+    districtName: '강북구',
+    elevationMeters: 836,
+    geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
+  };
+  await page.route('**/api/mountains?*', (route) =>
+    route.fulfill({
+      json: { items: [mountain], page: 0, size: 10, totalElements: 1, totalPages: 1 },
+    }),
+  );
+  await page.route('**/api/mountains/42', (route) =>
+    route.fulfill({
+      json: {
+        ...mountain,
+        sourceMountainCode: null,
+        sourceOldMountainCode: null,
+        serviceAvailable: true,
+      },
+    }),
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/mountains');
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeDisabled();
+  await page.locator('.mountain-card').filter({ hasText: '북한산' }).click();
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
+  await page.getByRole('button', { name: '코스 탐색 설정' }).click();
+  await expect(page).toHaveURL(/\/routes\/setup\?mountainId=42$/);
+  await expect(page.getByRole('heading', { name: '출발지와 도착지' })).toBeVisible();
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-center',
+    '126.978000,37.658630',
+  );
+});
+
+for (const coordinates of [null, [200, 37]]) {
+  test(`산 좌표가 ${coordinates ? '잘못되면' : '없으면'} 임의 위치에 지도를 생성하지 않는다`, async ({
+    page,
+  }) => {
+    await page.route('**/api/mountains/42', (route) =>
+      route.fulfill({
+        json: {
+          mountainId: '42',
+          mountainName: '위치 없는 산',
+          serviceAvailable: true,
+          geometry: coordinates ? { type: 'Point', coordinates } : null,
+        },
+      }),
+    );
+    await page.goto('/routes/setup?mountainId=42');
+    await expect(page.getByRole('alert')).toContainText('산 위치를 표시할 수 없어요.');
+    await expect(page.locator('.orda-map-layout__map-surface')).not.toHaveAttribute(
+      'data-map-ready',
+      'true',
+    );
+    await expect(page.getByRole('button', { name: '현재 위치로 이동' })).toBeDisabled();
+  });
+}
+
+test('설정된 출발지도 지도에서 새 좌표로 다시 선택할 수 있다', async ({ page }) => {
+  await mockSnap(page);
+  await page.setViewportSize({ width: 440, height: 956 });
+  await page.goto(`/routes/setup?${selectedPlaces}&${selectedNodes}`);
+
+  await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();
   await page.getByRole('button', { name: '출발지 지도에서 선택' }).click();
   await expect(
     page.getByRole('status').filter({ hasText: '지도를 눌러 출발지를 선택해주세요.' }),
@@ -167,4 +489,6 @@ test('지도에서 지정한 좌표는 예시 장소와 구분해 출발지 후�
   await expect(page.getByText('사용자 지정 위치 · 주소 정보 없음')).toBeVisible();
   await page.getByRole('button', { name: '출발지로 설정' }).click();
   await expect(page.getByText('지도에서 직접 선택')).toBeVisible();
+  await expect(page.getByRole('button', { name: /관악산 연주대/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /다음/ })).toBeEnabled();
 });

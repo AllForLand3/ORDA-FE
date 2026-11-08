@@ -10,28 +10,44 @@ import { Fill, Icon, Stroke, Style, Text } from 'ol/style.js';
 import goldPin from '@/assets/course/mountain-pin-gold.svg';
 import greenPin from '@/assets/course/mountain-pin-green.svg';
 
-import { MOUNTAIN_MOCKS } from '../mocks/mountains';
+import type { MountainListItem } from '../types/mountain';
+import { isValidMountainCoordinate } from '../utils/mountainCoordinates';
 
-export function useMountainMarkerLayer(selectedMountainId: string | null) {
+export function useMountainMarkerLayer(
+  mountains: MountainListItem[],
+  selectedMountain: MountainListItem | null,
+) {
+  const markerMountains = useMemo(() => {
+    if (!selectedMountain) return mountains;
+    return [
+      ...mountains.filter((mountain) => mountain.mountainId !== selectedMountain.mountainId),
+      selectedMountain,
+    ];
+  }, [mountains, selectedMountain]);
+
   const layer = useMemo(() => {
     const styles = new Map<string, Style>();
 
-    const getStyle = (mountain: (typeof MOUNTAIN_MOCKS)[number], isSelected: boolean) => {
-      const cacheKey = `${mountain.id}:${isSelected}`;
+    const getStyle = (
+      mountainId: string,
+      mountainName: string,
+      elevationMeters: number | null,
+      isSelected: boolean,
+    ) => {
+      const cacheKey = `${mountainId}:${mountainName}:${elevationMeters ?? ''}:${isSelected}`;
       const cachedStyle = styles.get(cacheKey);
 
       if (cachedStyle) {
         return cachedStyle;
       }
 
-      const pin = mountain.id === 'cheonggyesan' ? goldPin : greenPin;
       const style = new Style({
         image: new Icon({
           anchor: [0.5, 1],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: isSelected ? 1.08 : 1,
-          src: pin,
+          src: isSelected ? goldPin : greenPin,
         }),
         text: new Text({
           backgroundFill: new Fill({ color: '#123d32' }),
@@ -39,7 +55,10 @@ export function useMountainMarkerLayer(selectedMountainId: string | null) {
           offsetX: 34,
           offsetY: -18,
           padding: [4, 7, 4, 7],
-          text: `${mountain.name}\n${mountain.elevationMeters}m`,
+          text:
+            elevationMeters === null
+              ? mountainName
+              : `${mountainName}\n${elevationMeters.toLocaleString('ko-KR')}m`,
           textAlign: 'left',
           textBaseline: 'middle',
           fill: new Fill({ color: '#ffffff' }),
@@ -53,38 +72,52 @@ export function useMountainMarkerLayer(selectedMountainId: string | null) {
     };
 
     return new VectorLayer({
-      source: new VectorSource({
-        features: MOUNTAIN_MOCKS.map((mountain) => {
-          const feature = new Feature({
-            geometry: new Point(fromLonLat([...mountain.coordinates], 'EPSG:3857')),
-            mountainId: mountain.id,
-            isSelected: false,
-          });
-          feature.setId(mountain.id);
-
-          return feature;
-        }),
-      }),
+      source: new VectorSource(),
       style: (feature) => {
         const mountainId = feature.get('mountainId');
-        const mountain = MOUNTAIN_MOCKS.find((item) => item.id === mountainId);
+        const mountainName = feature.get('mountainName');
+        const elevationMeters = feature.get('elevationMeters');
 
-        if (!mountain) {
+        if (typeof mountainId !== 'string' || typeof mountainName !== 'string') {
           return undefined;
         }
 
-        return getStyle(mountain, Boolean(feature.get('isSelected')));
+        return getStyle(
+          mountainId,
+          mountainName,
+          typeof elevationMeters === 'number' ? elevationMeters : null,
+          Boolean(feature.get('isSelected')),
+        );
       },
       zIndex: 10,
     });
   }, []);
 
   useEffect(() => {
-    layer.getSource()?.forEachFeature((feature) => {
-      feature.set('isSelected', feature.getId() === selectedMountainId);
+    const source = layer.getSource();
+    const features = markerMountains.flatMap((mountain) => {
+      const coordinate = mountain.geometry?.coordinates;
+
+      if (!coordinate || !isValidMountainCoordinate(coordinate)) {
+        return [];
+      }
+
+      const feature = new Feature({
+        geometry: new Point(fromLonLat([...coordinate], 'EPSG:3857')),
+        mountainId: mountain.mountainId,
+        mountainName: mountain.mountainName,
+        elevationMeters: mountain.elevationMeters,
+        isSelected: mountain.mountainId === selectedMountain?.mountainId,
+      });
+      feature.setId(mountain.mountainId);
+
+      return [feature];
     });
+
+    source?.clear();
+    source?.addFeatures(features);
     layer.changed();
-  }, [layer, selectedMountainId]);
+  }, [layer, markerMountains, selectedMountain]);
 
   return layer;
 }
