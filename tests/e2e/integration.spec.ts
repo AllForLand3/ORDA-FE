@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { installAuthenticatedSession, isDomainApiRequest } from '../fixtures/authenticatedTest';
+import { courseListDetail } from '../fixtures/courseList';
 
 const selectedPlaces =
   'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
@@ -18,9 +19,9 @@ const screens = [
   { key: 'terrain', path: '/routes/results?tab=terrain' },
   { key: 'facilities', path: '/routes/results?tab=facilities' },
   { key: 'my-courses', path: '/my-courses' },
-  { key: 'course-detail', path: '/my-courses/example-ridge-1' },
-  { key: 'course-edit', path: '/my-courses/example-ridge-1/edit' },
-  { key: 'course-export', path: '/my-courses/example-ridge-1?export=1' },
+  { key: 'course-detail', path: `/my-courses/${courseListDetail.courseId}` },
+  { key: 'course-edit', path: `/my-courses/${courseListDetail.courseId}/edit` },
+  { key: 'course-facilities', path: `/my-courses/${courseListDetail.courseId}?tab=facilities` },
   { key: 'profile', path: '/my-page' },
   { key: 'profile-edit', path: '/my-page/edit' },
   { key: '404', path: '/not-a-real-page' },
@@ -51,14 +52,61 @@ for (const viewport of [
           await installAuthenticatedSession(context);
         }
         const page = await context.newPage();
+        await page.route(`**/api/courses/${courseListDetail.courseId}`, (route) =>
+          route.fulfill({ json: courseListDetail, headers: { ETag: '"v1"' } }),
+        );
+        const listRequests: string[] = [];
+        await page.route('**/api/mountains?*', async (route) => {
+          expect(route.request().method()).toBe('GET');
+          await route.fulfill({
+            json: { items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 },
+          });
+        });
         page.on('pageerror', (error) => errors.push(error.message));
         page.on('request', (request) => {
-          if (isDomainApiRequest(request.url())) requests.push(request.url());
+          if (!isDomainApiRequest(request.url())) return;
+          if (
+            (screen.key === 'my-courses' || screen.key.startsWith('course-')) &&
+            request.method() === 'GET' &&
+            ['/api/courses', `/api/courses/${courseListDetail.courseId}`].includes(
+              new URL(request.url()).pathname,
+            )
+          ) {
+            listRequests.push(request.url());
+            expect(request.headers().authorization).toBe('Bearer e2e-access-token');
+          } else if (
+            (screen.key === 'course-detail' || screen.key === 'course-facilities') &&
+            request.method() === 'GET' &&
+            ['spots', 'facilities'].some(
+              (resource) =>
+                new URL(request.url()).pathname ===
+                `/api/courses/${courseListDetail.courseId}/${resource}`,
+            )
+          ) {
+            expect(request.headers().authorization).toBe('Bearer e2e-access-token');
+            expect(Object.fromEntries(new URL(request.url()).searchParams)).toEqual({
+              revNo: String(courseListDetail.revNo),
+              radiusM: '200',
+            });
+          } else requests.push(request.url());
         });
         try {
           await page.goto(screen.path);
           await page.reload();
           await expect(page.getByRole('main')).toBeVisible();
+          if (screen.key === 'course-edit') {
+            await expect(page.getByRole('textbox', { name: '코스 이름', exact: true })).toHaveValue(
+              courseListDetail.courseName,
+            );
+          } else if (screen.key.startsWith('course-')) {
+            await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+              courseListDetail.courseName,
+            );
+          }
+          if (screen.key === 'my-courses') {
+            await expect(page.getByRole('article')).toHaveCount(2);
+            expect(listRequests.length).toBeGreaterThan(0);
+          }
           await page.evaluate(() => document.fonts.ready);
           expect(
             await page.locator('body').evaluate((element) => getComputedStyle(element).fontFamily),
@@ -77,17 +125,25 @@ for (const viewport of [
               `${screen.key}: panel overflow`,
             ).toBe(true);
           }
-          const imageIssues = await page
-            .locator('img:visible')
-            .evaluateAll((images) =>
-              images
-                .filter(
-                  (image) =>
-                    image instanceof HTMLImageElement && (!image.complete || !image.naturalWidth),
-                )
-                .map((image) => image.getAttribute('src')),
-            );
-          expect(imageIssues, `${screen.key}: assets`).toEqual([]);
+          await expect
+            .poll(
+              () =>
+                page
+                  .locator('img:visible')
+                  .evaluateAll((images) =>
+                    images
+                      .filter(
+                        (image) =>
+                          image instanceof HTMLImageElement &&
+                          (!image.complete || !image.naturalWidth),
+                      )
+                      .map((image) =>
+                        image instanceof HTMLImageElement ? image.currentSrc || image.src : null,
+                      ),
+                  ),
+              { message: `${screen.key}: assets`, timeout: 15_000 },
+            )
+            .toEqual([]);
           if (viewport.width === 440 || viewport.width === 1512) {
             await page.screenshot({
               path: `test-results/integration/${screen.key}-${viewport.width}.png`,
@@ -100,6 +156,12 @@ for (const viewport of [
       });
     }
     expect(errors).toEqual([]);
-    expect(requests).toEqual([]);
+    // 위에서 검증한 코스 조회 외에는 산 목록 API만 허용한다.
+    expect(requests.length).toBeGreaterThanOrEqual(1);
+    for (const request of requests) {
+      const url = new URL(request);
+      expect(url.pathname).toBe('/api/mountains');
+      expect(Object.fromEntries(url.searchParams)).toEqual({ page: '0', size: '10' });
+    }
   });
 }

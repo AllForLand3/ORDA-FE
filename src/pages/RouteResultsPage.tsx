@@ -1,15 +1,15 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import logoMark from '@/assets/home/logo-mark.png';
 import bookmarkIcon from '@/assets/route/bookmark-navigation.svg';
 import mountainIcon from '@/assets/route/mountain-navigation.svg';
 import routeIcon from '@/assets/route/route-navigation.svg';
 import { MapPageLayout } from '@/components/layout';
 import { NearbyFacilitiesPanel, TerrainAnalysisPanel } from '@/features/analysis';
+import { MountainHeader } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
-import { RESULT_PREVIEW_STATES, RouteResultsPanel, useRouteResultsState } from '@/features/route';
+import { RouteResultsPanel, useRouteResultsState } from '@/features/route';
 import '@/features/route/route-results.css';
 import '@/features/analysis/analysis.css';
 
@@ -43,52 +43,12 @@ export function RouteResultsPage() {
           </div>
         }
         bottomNavigationLabel="코스 결과 내비게이션"
-        header={
-          <div className="route-results-header">
-            <div className="route-results-header__brand">
-              <Link
-                aria-label="ORDA 산 탐색으로 이동"
-                className="route-results-header__logo"
-                to="/mountains"
-              >
-                <img alt="" src={logoMark} />
-              </Link>
-              <Link className="route-results-header__back" to={state.setupHref}>
-                ← 조건 변경
-              </Link>
-              <Link className="route-results-header__my-courses" to="/my-courses">
-                내 코스
-              </Link>
-              <Link className="route-results-header__login" to="/my-page">
-                마이페이지
-              </Link>
-            </div>
-            <div className="route-results-header__context">
-              <span className="route-results-header__location">
-                관악산 <small>예시 코스</small>
-              </span>
-              <label className="route-results-header__preview">
-                <span className="sr-only">화면 상태 미리보기</span>
-                <select
-                  onChange={(event) => state.setPreviewState(event.target.value)}
-                  value={state.previewState}
-                >
-                  {RESULT_PREVIEW_STATES.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="route-results-header__note">실제 추천·경로 선형 미제공</p>
-          </div>
-        }
+        header={<MountainHeader />}
         mapContainerRef={mapContainerRef}
         mapContent={
           <OpenLayersMap onControllerChange={setController} targetRef={mapContainerRef} />
         }
-        mapControls={<MapControls controller={controller} />}
+        mapControls={<MapControls controller={controller} mountainName="관악산" />}
         mapLabel="관악산 배경 지도, 예시 코스의 경로 선형은 제공되지 않음"
         panel={
           <RouteResultsPanel
@@ -112,6 +72,7 @@ export function RouteResultsPage() {
           />
         }
         panelLabel="예시 코스 비교 결과"
+        panelCloseText="접기"
         panelSize="expanded"
       />
     </div>

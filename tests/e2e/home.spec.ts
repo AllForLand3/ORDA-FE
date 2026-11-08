@@ -57,20 +57,21 @@ test('PC 홈은 Figma 콘텐츠·헤더·계정 메뉴를 표시하고 미완성
   await expect(page.getByText('코스 추천', { exact: true })).toBeVisible();
   await expect(page.getByText('이용 안내', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: '서비스 소개' })).toHaveCount(0);
+  await page.evaluate(() => document.fonts.ready);
 
   const logoBox = await page.getByRole('img', { name: 'ORDA 로고' }).boundingBox();
   expect(logoBox?.x).toBeCloseTo(54, 0);
-  expect(logoBox?.y).toBeCloseTo(44, 0);
-  expect(logoBox?.width).toBe(173);
-  expect(logoBox?.height).toBe(56);
+  expect(logoBox?.y).toBeCloseTo(47, 0);
+  expect(logoBox?.width).toBe(155);
+  expect(logoBox?.height).toBe(50);
 
   const primaryAction = page.getByRole('link', { name: '로그인하기' });
   await expect(primaryAction).toHaveAttribute('href', '/login');
   const actionBox = await primaryAction.boundingBox();
   expect(actionBox?.x).toBeCloseTo(70, 0);
-  expect(actionBox?.y).toBeCloseTo(614, 0);
-  expect(actionBox?.width).toBe(223);
-  expect(actionBox?.height).toBe(58);
+  expect(actionBox?.y).toBeCloseTo(593, 0);
+  expect(actionBox?.width).toBe(205);
+  expect(actionBox?.height).toBe(56);
 });
 
 test('태블릿과 PC 홈은 지정 viewport에서 가로 넘침 없이 배치된다', async ({ page }) => {
