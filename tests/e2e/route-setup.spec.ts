@@ -1,9 +1,38 @@
 import { expect, test } from '../fixtures/authenticatedTest';
+import type { Page } from '@playwright/test';
+
+// 스냅 API를 모킹한다. 예시 장소는 경도별로 서로 다른 노드, 그 외 좌표는 별도 노드로 연결한다.
+async function mockSnap(page: Page) {
+  const nodeByLongitude: Record<string, string> = {
+    '126.9518': '101',
+    '126.96444': '102',
+    '126.9523': '103',
+  };
+  await page.route(
+    (url) => url.pathname === '/api/routes/snap',
+    async (route) => {
+      const url = new URL(route.request().url());
+      const longitude = Number(url.searchParams.get('longitude'));
+      const latitude = Number(url.searchParams.get('latitude'));
+      await route.fulfill({
+        status: 200,
+        json: {
+          mountainId: '2',
+          nodeId: nodeByLongitude[String(longitude)] ?? '900',
+          distanceM: 12.4,
+          coordinates: [longitude + 0.0001, latitude + 0.0001],
+        },
+      });
+    },
+  );
+}
 
 const selectedPlaces =
   'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
+const selectedNodes = 'originNode=101&destinationNode=102';
 
 test('출발·도착 선택, 위치 확인, 조건 설정과 이전 이동에서 상태를 유지한다', async ({ page }) => {
+  await mockSnap(page);
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/routes/setup');
 
@@ -227,7 +256,8 @@ test('코스 탐색 UI는 모바일·태블릿·데스크톱 폭에서 넘치지
 });
 
 test('탐색 기준과 비교 정보는 기본 선택 없이 항목별로 독립 선택한다', async ({ page }) => {
-  await page.goto(`/routes/setup?${selectedPlaces}&step=conditions`);
+  await mockSnap(page);
+  await page.goto(`/routes/setup?${selectedPlaces}&${selectedNodes}&step=conditions`);
 
   const distance = page.getByRole('button', { name: /거리 우선/ });
   const gentleSlope = page.getByRole('button', { name: /완만한 경사/ });
@@ -443,8 +473,9 @@ for (const coordinates of [null, [200, 37]]) {
 }
 
 test('설정된 출발지도 지도에서 새 좌표로 다시 선택할 수 있다', async ({ page }) => {
+  await mockSnap(page);
   await page.setViewportSize({ width: 440, height: 956 });
-  await page.goto(`/routes/setup?${selectedPlaces}`);
+  await page.goto(`/routes/setup?${selectedPlaces}&${selectedNodes}`);
 
   await expect(page.getByRole('button', { name: '출발지 지도에서 선택' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '도착지 지도에서 선택' })).toBeEnabled();

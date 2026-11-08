@@ -57,7 +57,28 @@ export function RouteSetupPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
   const state = useRouteSetupState();
-  const markerLayer = useRouteMarkerLayer(state.origin, state.destination, state.pendingPlace);
+  const { originNodeId, destinationNodeId, originSnap, destinationSnap, pendingSnap } = state;
+  // 확정 지점은 URL의 노드 ID와 같은 스냅 결과일 때만 스냅 위치를 그린다.
+  const snapped = useMemo(
+    () => ({
+      origin:
+        originSnap.data && originSnap.data.nodeId === originNodeId
+          ? originSnap.data.coordinates
+          : null,
+      destination:
+        destinationSnap.data && destinationSnap.data.nodeId === destinationNodeId
+          ? destinationSnap.data.coordinates
+          : null,
+      pending: pendingSnap.data?.coordinates ?? null,
+    }),
+    [destinationNodeId, destinationSnap.data, originNodeId, originSnap.data, pendingSnap.data],
+  );
+  const markerLayer = useRouteMarkerLayer(
+    state.origin,
+    state.destination,
+    state.pendingPlace,
+    snapped,
+  );
   const layers = useMemo(() => [markerLayer], [markerLayer]);
   const focusedPlace = state.pendingPlace ?? state.origin ?? state.destination;
 
@@ -160,7 +181,7 @@ export function RouteSetupPage() {
           )
         }
         mapControls={<MapControls controller={mapController} mountainName={selectedMountainName} />}
-        mapLabel="예시 출발지와 도착지를 표시하는 지도"
+        mapLabel="선택한 출발지·도착지와 연결된 등산로 지점을 표시하는 지도"
         mobilePanelSwipeToClose
         panel={
           <fieldset

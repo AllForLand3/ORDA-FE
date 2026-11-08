@@ -163,15 +163,57 @@ test('모바일과 PC에서 패널·지도·에셋이 넘치지 않고 접기·�
   }
 });
 
-test('설정 화면의 예시 진입과 결과 화면 공통 헤더가 정상 동작한다', async ({ page }) => {
+test('설정 화면의 탐색 진입과 결과 화면 공통 헤더가 정상 동작한다', async ({ page }) => {
+  await page.route(
+    (url) => url.pathname === '/api/routes/snap',
+    (route) => {
+      const url = new URL(route.request().url());
+      const longitude = Number(url.searchParams.get('longitude'));
+      const latitude = Number(url.searchParams.get('latitude'));
+      return route.fulfill({
+        json: {
+          mountainId: '2',
+          nodeId: '900',
+          distanceM: 12.4,
+          coordinates: [longitude, latitude],
+        },
+      });
+    },
+  );
+  await page.route('**/api/routes/search', (route) =>
+    route.fulfill({
+      json: {
+        mountainId: '2',
+        startNodeId: '101',
+        endNodeId: '102',
+        candidates: [
+          {
+            rank: 1,
+            priorityCondition: 'DIST_FIRST',
+            lengthM: 1234.5,
+            estTimeMin: 52,
+            edgeIds: ['3'],
+            geometry: {
+              type: 'LineString',
+              coordinates: [
+                [126.9518, 37.4602],
+                [126.9644, 37.4447],
+              ],
+            },
+          },
+        ],
+      },
+    }),
+  );
   await page.goto(
-    `/routes/setup?${selectedPlaces}&step=conditions&level=intermediate&priorities=gentle-slope&facilities=shelter`,
+    `/routes/setup?${selectedPlaces}&originNode=101&destinationNode=102&step=conditions&level=intermediate&priorities=gentle-slope&facilities=shelter`,
   );
   const explore = page.getByRole('button', { name: '맞춤 경로 탐색하기' });
   await expect(explore).toBeEnabled();
   await explore.click();
   await expect(page).toHaveURL(/\/routes\/results/);
-  await expect(page.getByText('3개 코스 · 모든 지표는 예시 데이터입니다.')).toBeVisible();
+  await expect(page).toHaveURL(/startNodeId=101/);
+  await expect(page.getByRole('article', { name: /경로 후보 1/ })).toBeVisible();
   await expect(page).toHaveURL(/level=intermediate/);
   await expect(page).toHaveURL(/priorities=gentle-slope/);
   await expect(page).toHaveURL(/facilities=shelter/);

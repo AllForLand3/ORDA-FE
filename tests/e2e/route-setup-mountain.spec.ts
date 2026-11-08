@@ -2,7 +2,8 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/authenticatedTest';
 
-const places = 'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
+const places =
+  'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae&originNode=101&destinationNode=102';
 const conditions = `${places}&priorities=gentle-slope&facilities=shelter`;
 const mountain = {
   mountainId: '42',
@@ -244,6 +245,7 @@ test('Mock 산은 상세 API 없이 기존 조건 설정과 결과 이동을 유
   await expect(page.getByRole('button', { name: /거리 우선/ })).toBeEnabled();
   await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeEnabled();
   await page.getByRole('button', { name: '맞춤 경로 탐색하기' }).click();
-  await expect(page).toHaveURL(/\/routes\/results\?mountainId=bukhansan&/);
+  // 예시 산은 API 산 ID가 없어 관악산 등산로 네트워크로 탐색한다.
+  await expect(page).toHaveURL(/\/routes\/results\?.*mountainId=2(&|$)/);
   expect(requests).toEqual([]);
 });
