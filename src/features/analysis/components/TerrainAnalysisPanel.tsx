@@ -5,10 +5,20 @@ import hardIcon from '@/assets/analysis/difficulty-hard.svg';
 import mediumIcon from '@/assets/analysis/difficulty-medium.svg';
 import { Badge, Button, Card } from '@/components/ui';
 
+import { SAMPLE_ELEVATION_PROFILE } from '../mocks/terrain';
+import type { TerrainAnalysisSample } from '../types/terrainAnalysis';
 import { MockElevationProfileSection } from './MockElevationProfileSection';
 
 const ElevationProfileChart = lazy(() =>
   import('./ElevationProfileChart').then((module) => ({ default: module.ElevationProfileChart })),
+);
+
+const exampleSamples: readonly TerrainAnalysisSample[] = SAMPLE_ELEVATION_PROFILE.map(
+  (point, index) => ({
+    seqNo: index + 1,
+    distanceM: point.distanceM,
+    elevationM: point.elevationM,
+  }),
 );
 
 interface TerrainAnalysisPanelProps {
@@ -19,6 +29,7 @@ interface TerrainAnalysisPanelProps {
   };
 }
 
+/** 목데이터 코스의 분석 화면 또는 실제 분석과 구분된 예시 차트·미제공 안내를 표시한다. */
 export function TerrainAnalysisPanel({ candidateName, mockData }: TerrainAnalysisPanelProps) {
   const [showSample, setShowSample] = useState(false);
 
@@ -122,7 +133,7 @@ export function TerrainAnalysisPanel({ candidateName, mockData }: TerrainAnalysi
             </div>
           }
         >
-          <ElevationProfileChart />
+          <ElevationProfileChart samples={exampleSamples} isExample />
         </Suspense>
       ) : (
         <div className="insights-empty" role="status">

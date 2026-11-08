@@ -23,11 +23,14 @@ test('분석 결측과 독립적인 샘플을 구분하고 축·툴팁·표에 �
   await expect(chart.locator('svg')).toHaveCount(1);
   await expect(chart).toContainText('거리 (km)');
   await expect(chart).toContainText('고도 (m)');
-  await expect(chart).toContainText('샘플 고도');
+  await expect(chart.locator('..').locator('figcaption')).toHaveText(
+    '예시 고도 · 실제 코스 분석이 아닙니다.',
+  );
   const box = await chart.boundingBox();
   if (!box) throw new Error('샘플 차트가 표시되지 않았습니다.');
-  await page.mouse.move(box.x + 42 + ((box.width - 58) * 4100) / 5800, box.y + 100);
-  await expect(chart).toContainText('샘플 고도 528m');
+  await page.mouse.move(box.x + 60 + ((box.width - 84) * 4100) / 5800, box.y + 100);
+  await expect(chart).toContainText('거리 4,100 m');
+  await expect(chart).toContainText('고도 528 m');
   await expect(metrics.locator('dd')).toHaveText([
     '— 미제공 km',
     '— 미제공 m',
@@ -37,7 +40,7 @@ test('분석 결측과 독립적인 샘플을 구분하고 축·툴팁·표에 �
   await page.getByText('샘플 데이터 표 보기', { exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('columnheader', { name: '거리 (m)' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: '5800', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('cell', { name: '5,800', exact: true })).toHaveCount(1);
   expect(apiRequests).toEqual([]);
 });
 
@@ -89,7 +92,7 @@ test('활성 차트는 resize에 맞춰지고 탭 전환·화면 이탈 시 실�
   }
   const last = await chart.elementHandle();
   if (!last) throw new Error('화면 이탈 전 차트 DOM이 없습니다.');
-  await page.getByRole('link', { name: '← 조건 변경' }).click();
+  await page.getByRole('link', { name: 'ORDA 산 탐색으로 이동', exact: true }).click();
   await expect.poll(() => last.getAttribute('_echarts_instance_')).toBe('');
   await last.dispose();
 });
@@ -169,7 +172,7 @@ test('440px 원본·확장 및 PC를 캡처하고 작은 화면에서 표·시�
   }
   await page.setViewportSize({ width: 360, height: 640 });
   await page.getByText('샘플 데이터 표 보기', { exact: true }).click();
-  const lastCell = page.getByRole('cell', { name: '5800', exact: true });
+  const lastCell = page.getByRole('cell', { name: '5,800', exact: true });
   await lastCell.scrollIntoViewIfNeeded();
   await expect(lastCell).toBeVisible();
   const content = page.locator('.orda-responsive-panel__content');
