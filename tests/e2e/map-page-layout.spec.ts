@@ -191,7 +191,9 @@ test('오른쪽 위 배경지도 아이콘은 일반지도와 위성지도 상�
     const style = getComputedStyle(element);
     return { backgroundColor: style.backgroundColor, color: style.color };
   });
+
   await streetMapButton.hover();
+
   await expect
     .poll(() =>
       streetMapButton.evaluate((element) => {
@@ -216,23 +218,35 @@ test('오른쪽 위 배경지도 아이콘은 일반지도와 위성지도 상�
   }
 });
 
-test('3D 지도 버튼은 현재 위치 버튼과 동일한 hover 색상을 사용한다', async ({ page }) => {
-  const terrainButton = page.getByRole('link', { name: '관악산 3D 지도 보기' });
-  const locationButton = page.getByRole('button', { name: '현재 위치로 이동' });
+test('3D 지도 버튼은 위성지도 버튼과 동일한 hover 색상을 사용한다', async ({ page }) => {
+  const terrainButton = page.getByRole('button', {
+    name: '3D 지도 보기',
+    exact: true,
+  });
+  const satelliteButton = page.getByRole('button', {
+    name: '위성지도 보기',
+    exact: true,
+  });
+
   const readColors = (element: HTMLElement) => {
     const style = getComputedStyle(element);
     return {
       backgroundColor: style.backgroundColor,
-      borderColor: style.borderColor,
       color: style.color,
     };
   };
 
-  await locationButton.hover();
-  const locationHoverColors = await locationButton.evaluate(readColors);
+  await expect(terrainButton).toHaveAttribute('aria-pressed', 'false');
+  await expect(satelliteButton).toHaveAttribute('aria-pressed', 'false');
+
+  await satelliteButton.hover();
+  const satelliteHoverColors = await satelliteButton.evaluate(readColors);
+
   await terrainButton.hover();
 
-  await expect.poll(() => terrainButton.evaluate(readColors)).toEqual(locationHoverColors);
+  await expect
+    .poll(() => terrainButton.evaluate(readColors))
+    .toEqual(satelliteHoverColors);
 });
 
 test('현재 위치는 클릭할 때만 요청하고 성공·좌표 누락·권한 거부를 처리한다', async ({ page }) => {
@@ -263,6 +277,7 @@ test('현재 위치는 클릭할 때만 요청하고 성공·좌표 누락·권�
       value: malformedGeolocation,
     });
   });
+
   await page.reload();
   await page.getByRole('button', { name: '현재 위치로 이동' }).click();
   await expect(page.getByRole('status')).toHaveText('현재 위치 좌표를 확인하지 못했습니다.');
@@ -278,6 +293,7 @@ test('현재 위치는 클릭할 때만 요청하고 성공·좌표 누락·권�
       value: deniedGeolocation,
     });
   });
+
   await page.reload();
   await page.getByRole('button', { name: '현재 위치로 이동' }).click();
   await expect(status).toContainText('위치 권한이 거부되었습니다.');

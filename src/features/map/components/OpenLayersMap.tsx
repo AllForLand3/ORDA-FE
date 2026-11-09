@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 
 import Attribution from 'ol/control/Attribution.js';
@@ -15,6 +15,10 @@ import { unByKey } from 'ol/Observable.js';
 import type { EventsKey } from 'ol/events.js';
 import type { Extent } from 'ol/extent.js';
 
+import { InlineTerrainMap } from './InlineTerrainMap';
+import type { TerrainMapBridge } from './InlineTerrainMap';
+import type { MapViewState } from '@/shared/mapView';
+
 import { GWANAKSAN_SUMMIT } from '../constants';
 
 import 'ol/ol.css';
@@ -22,7 +26,7 @@ import 'ol/ol.css';
 import './openlayers-map.css';
 
 export type LongitudeLatitude = readonly [longitude: number, latitude: number];
-export type BaseMapType = 'street' | 'satellite';
+export type BaseMapType = 'street' | 'satellite' | 'terrain';
 
 export interface MapController {
   centerOn: (coordinate: LongitudeLatitude, zoom?: number) => boolean;
@@ -72,6 +76,9 @@ export function OpenLayersMap({
   onControllerChange,
   targetRef,
 }: OpenLayersMapProps) {
+  const [baseMap, setBaseMap] = useState<BaseMapType>('street');
+  const baseMapRef = useRef<BaseMapType>('street');
+  const [terrainBridge, setTerrainBridge] = useState<TerrainMapBridge | null>(null);
   const onControllerChangeRef = useRef(onControllerChange);
   const onMapClickRef = useRef(onMapClick);
 
@@ -104,6 +111,7 @@ export function OpenLayersMap({
           visible: false,
         })
       : null;
+
     let isActive = true;
     const view = new View({
       center: initialCenter ? fromLonLat([...initialCenter]) : undefined,
@@ -125,14 +133,27 @@ export function OpenLayersMap({
       view,
     });
 
+    const viewListeners = new Set<(state: MapViewState) => void>();
+
+    const readView = (): MapViewState | null => {
+      const center = view.getCenter();
+      const zoom = view.getZoom();
+
+      if (!center || zoom === undefined) return null;
+
+      const [longitude, latitude] = toLonLat(center, 'EPSG:3857');
+      return { center: [longitude, latitude], zoom };
+    };
+
     let viewRevision = 0;
+
     const refreshMapState = () => {
       const size = map.getSize();
       const zoom = view.getZoom();
       const center = view.getCenter();
 
       target.dataset.mapReady = 'true';
-      target.dataset.mapBaseLayer = satelliteLayer?.getVisible() ? 'satellite' : 'street';
+      target.dataset.mapBaseLayer = baseMapRef.current;
       target.dataset.mapProjection = view.getProjection().getCode();
 
       if (center) {
@@ -152,20 +173,26 @@ export function OpenLayersMap({
         target.dataset.mapSize = `${Math.round(size[0])}x${Math.round(size[1])}`;
       }
     };
+
     const recordViewChange = () => {
       viewRevision += 1;
       target.dataset.mapViewRevision = String(viewRevision);
       refreshMapState();
     };
+
     let userAdjustedView = false;
     let hasFittedExtent = false;
+
     const markUserAdjustedView = () => {
       userAdjustedView = true;
     };
+
     const fitInitialExtent = () => {
       if (!initialExtent || userAdjustedView || (hasFittedExtent && !fitObstructionRef)) return;
+
       const mapRect = target.getBoundingClientRect();
       if (mapRect.width === 0 || mapRect.height === 0) return;
+
       const panelRect = fitObstructionRef?.current?.getBoundingClientRect();
       const overlaps =
         panelRect &&
@@ -175,33 +202,65 @@ export function OpenLayersMap({
         panelRect.right > mapRect.left &&
         panelRect.top < mapRect.bottom &&
         panelRect.bottom > mapRect.top;
+
       const coveredHeight = overlaps ? mapRect.bottom - Math.max(mapRect.top, panelRect.top) : 0;
       const bottomPadding = Math.min(32 + coveredHeight, Math.max(32, mapRect.height - 64));
-      view.fit(initialExtent, { padding: [32, 32, bottomPadding, 32], maxZoom: MAX_ZOOM });
+
+      view.fit(initialExtent, {
+        padding: [32, 32, bottomPadding, 32],
+        maxZoom: MAX_ZOOM,
+      });
       hasFittedExtent = true;
     };
+
     const updateSize = () => {
       map.updateSize();
       fitInitialExtent();
       refreshMapState();
     };
+
     const moveEndKey: EventsKey = map.on('moveend', recordViewChange);
     const mapClickKey: EventsKey = map.on('singleclick', (event) => {
       const [longitude, latitude] = toLonLat(event.coordinate, 'EPSG:3857');
       onMapClickRef.current?.([longitude, latitude]);
     });
+
     const resizeObserver =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateSize);
 
     resizeObserver?.observe(target);
-    if (fitObstructionRef?.current) resizeObserver?.observe(fitObstructionRef.current);
+    if (fitObstructionRef?.current) {
+      resizeObserver?.observe(fitObstructionRef.current);
+    }
+
     window.addEventListener('resize', updateSize);
+
     // 첫 직접 조작 뒤에는 패널·화면 크기가 바뀌어도 자동 맞춤으로 시점을 덮어쓰지 않는다.
     target.addEventListener('pointerdown', markUserAdjustedView, true);
     target.addEventListener('wheel', markUserAdjustedView, { passive: true, capture: true });
     target.addEventListener('keydown', markUserAdjustedView, true);
 
     const initialSizeFrame = window.requestAnimationFrame(updateSize);
+
+    setTerrainBridge({
+      readView,
+      applyView: (state) => {
+        if (!isActive || baseMapRef.current !== 'terrain') return;
+
+        markUserAdjustedView();
+        view.cancelAnimations();
+        view.setCenter(fromLonLat([...state.center], 'EPSG:3857'));
+        view.setZoom(state.zoom);
+        refreshMapState();
+      },
+      subscribe: (listener) => {
+        viewListeners.add(listener);
+        return () => {
+          viewListeners.delete(listener);
+        };
+      },
+    });
+
     const controller: MapController = {
       centerOn: (coordinate, zoom = INITIAL_ZOOM + 1) => {
         if (!isActive || !isValidCoordinate(coordinate)) {
@@ -210,6 +269,21 @@ export function OpenLayersMap({
 
         const targetZoom = Number.isFinite(zoom) ? zoom : INITIAL_ZOOM + 1;
         markUserAdjustedView();
+
+        if (baseMapRef.current === 'terrain') {
+          const state: MapViewState = {
+            center: coordinate,
+            zoom: Math.min(MAX_ZOOM, Math.max(2, targetZoom)),
+          };
+
+          view.cancelAnimations();
+          view.setCenter(fromLonLat([...coordinate], 'EPSG:3857'));
+          view.setZoom(state.zoom);
+          refreshMapState();
+          viewListeners.forEach((listener) => listener(state));
+          return true;
+        }
+
         view.animate({
           center: fromLonLat([...coordinate]),
           duration: 180,
@@ -218,11 +292,20 @@ export function OpenLayersMap({
 
         return true;
       },
-      isBaseMapAvailable: (type) => type === 'street' || satelliteLayer !== null,
+      isBaseMapAvailable: (type) => type === 'street' || Boolean(VWORLD_KEY),
       setBaseMap: (type) => {
-        if (!isActive || (type === 'satellite' && !satelliteLayer)) {
+        if (!isActive || (type !== 'street' && !VWORLD_KEY)) {
           return false;
         }
+
+        if (type === 'terrain') {
+          if (!readView()) return false;
+          markUserAdjustedView();
+        }
+
+        view.cancelAnimations();
+        baseMapRef.current = type;
+        setBaseMap(type);
 
         const isSatellite = type === 'satellite';
         osmLayer.setVisible(!isSatellite);
@@ -238,6 +321,7 @@ export function OpenLayersMap({
 
     return () => {
       isActive = false;
+      viewListeners.clear();
       window.cancelAnimationFrame(initialSizeFrame);
       resizeObserver?.disconnect();
       window.removeEventListener('resize', updateSize);
@@ -259,5 +343,7 @@ export function OpenLayersMap({
     };
   }, [additionalLayers, initialCenter, initialExtent, initialZoom, targetRef, fitObstructionRef]);
 
-  return null;
+  return baseMap === 'terrain' && terrainBridge ? (
+    <InlineTerrainMap bridge={terrainBridge} />
+  ) : null;
 }

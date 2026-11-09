@@ -15,7 +15,29 @@ export interface TerrainProvider {
 
 export interface VWorldViewer {
   terrainProvider: TerrainProvider;
+  scene: {
+    canvas: HTMLCanvasElement;
+    globe: {
+      pick: (ray: unknown, scene: unknown) => unknown;
+      getHeight: (position: unknown) => number | undefined;
+      ellipsoid: {
+        cartesianToCartographic: (position: unknown) => {
+          longitude: number;
+          latitude: number;
+          height: number;
+        };
+      };
+    };
+  };
   camera: {
+    positionWC: unknown;
+    frustum: { fovy?: number };
+    percentageChanged: number;
+    changed: { addEventListener: (callback: () => void) => () => void };
+    moveEnd: { addEventListener: (callback: () => void) => () => void };
+    getPickRay: (position: unknown) => unknown;
+    lookAt: (target: unknown, offset: unknown) => void;
+    lookAtTransform: (transform: unknown) => void;
     flyTo: (options: {
       destination: unknown;
       orientation: { heading: number; pitch: number; roll: number };
@@ -42,8 +64,20 @@ export interface VWorldApi {
 }
 
 export interface CesiumTerrainApi {
-  Math: { toDegrees: (radians: number) => number; toRadians: (degrees: number) => number };
-  Cartesian3: { fromDegrees: (longitude: number, latitude: number, height: number) => unknown };
+  Math: {
+    toDegrees: (radians: number) => number;
+    toRadians: (degrees: number) => number;
+  };
+  Cartesian3: {
+    fromDegrees: (longitude: number, latitude: number, height?: number) => unknown;
+    distance: (left: unknown, right: unknown) => number;
+  };
+  Cartesian2: new (x: number, y: number) => unknown;
+  Cartographic: {
+    fromDegrees: (longitude: number, latitude: number) => unknown;
+  };
+  HeadingPitchRange: new (heading: number, pitch: number, range: number) => unknown;
+  Matrix4: { IDENTITY: unknown };
   HeightmapTerrainData: new (options: {
     buffer: Float32Array;
     width: number;

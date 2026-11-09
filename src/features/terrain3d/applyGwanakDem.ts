@@ -14,8 +14,7 @@ function isInsideDem(rectangle: TerrainRectangle, terrain: TerrainGrid, cesium: 
     cesium.Math.toDegrees(rectangle.north) <= north + DEGREES_EPSILON
   );
 }
-
-function sampleElevation(terrain: TerrainGrid, longitude: number, latitude: number) {
+export function sampleElevation(terrain: TerrainGrid, longitude: number, latitude: number) {
   const [west, south, east, north] = terrain.bounds;
   const column = Math.max(
     0,

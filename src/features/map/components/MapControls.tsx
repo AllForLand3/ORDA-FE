@@ -80,16 +80,27 @@ function getGeolocationErrorMessage(error: GeolocationPositionError): string {
 export function MapControls({ controller, mountainName }: MapControlsProps) {
   const [baseMap, setBaseMap] = useState<BaseMapType>('street');
   const [isLocating, setIsLocating] = useState(false);
-  const [status, setStatus] = useState('');
+  const [status, setStatusMessage] = useState('');
+  const statusTimerRef = useRef<number | undefined>(undefined);
   const requestIdRef = useRef(0);
 
-  const terrain3DHref = `/terrain-3d?from=${encodeURIComponent(
-    `${window.location.pathname}${window.location.search}${window.location.hash}`,
-  )}`;
+  const setStatus = (message: string, durationMs?: number) => {
+    window.clearTimeout(statusTimerRef.current);
+    statusTimerRef.current = undefined;
+    setStatusMessage(message);
+
+    if (durationMs !== undefined) {
+      statusTimerRef.current = window.setTimeout(() => {
+        setStatusMessage('');
+        statusTimerRef.current = undefined;
+      }, durationMs);
+    }
+  };
 
   useEffect(
     () => () => {
       requestIdRef.current += 1;
+      window.clearTimeout(statusTimerRef.current);
     },
     [],
   );
@@ -154,13 +165,22 @@ export function MapControls({ controller, mountainName }: MapControlsProps) {
     }
 
     if (!controller.setBaseMap(nextBaseMap)) {
-      setStatus('위성지도를 사용하려면 VWorld API 키를 설정해주세요.');
+      setStatus(
+        nextBaseMap === 'satellite'
+          ? '위성지도를 사용하려면 VWorld API 키를 설정해주세요.'
+          : '3D 지도를 사용하려면 지도 위치와 VWorld API 키를 확인해주세요.',
+      );
       return;
     }
 
     setBaseMap(nextBaseMap);
     setStatus(
-      nextBaseMap === 'satellite' ? '위성지도로 전환했습니다.' : '일반지도로 전환했습니다.',
+      nextBaseMap === 'terrain'
+        ? '3D 지도로 전환했습니다.'
+        : nextBaseMap === 'satellite'
+          ? '위성지도로 전환했습니다.'
+          : '일반지도로 전환했습니다.',
+      2_000,
     );
   };
 
@@ -207,15 +227,19 @@ export function MapControls({ controller, mountainName }: MapControlsProps) {
           >
             <SatelliteMapIcon />
           </button>
-        </div>
 
-        <a
-          aria-label="관악산 3D 지도 보기"
-          className="orda-map-controls__terrain-link"
-          href={terrain3DHref}
-        >
-          3D
-        </a>
+          <button
+            aria-label="3D 지도 보기"
+            aria-pressed={baseMap === 'terrain'}
+            className="orda-map-controls__map-type-button"
+            disabled={!controller}
+            onClick={() => handleBaseMapChange('terrain')}
+            title="3D 지도"
+            type="button"
+          >
+            3D
+          </button>
+        </div>
 
         <Button
           aria-label={isLocating ? '현재 위치 확인 중' : '현재 위치로 이동'}
