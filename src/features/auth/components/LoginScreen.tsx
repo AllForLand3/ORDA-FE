@@ -113,12 +113,15 @@ export function LoginScreen() {
           }
 
           // 현재 로그인한 사용자 정보 저장
-          queryClient.setQueryData<CurrentUserResponse>(authQueryKeys.currentUser, {
-            userId,
-            loginId: authenticatedLoginId,
-            nickname,
-            role,
-          });
+          queryClient.setQueryData<CurrentUserResponse>(
+            [...authQueryKeys.currentUser, accessToken],
+            {
+              userId,
+              loginId: authenticatedLoginId,
+              nickname,
+              role,
+            },
+          );
 
           // 로그인 이전 접근 경로로 이동
           navigate(destination, { replace: true });
