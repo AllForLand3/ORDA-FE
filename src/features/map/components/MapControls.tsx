@@ -80,12 +80,26 @@ function getGeolocationErrorMessage(error: GeolocationPositionError): string {
 export function MapControls({ controller, mountainName }: MapControlsProps) {
   const [baseMap, setBaseMap] = useState<BaseMapType>('street');
   const [isLocating, setIsLocating] = useState(false);
-  const [status, setStatus] = useState('');
+  const [status, setStatusMessage] = useState('');
+  const statusTimerRef = useRef<number | undefined>(undefined);
+
+  const setStatus = (message: string, durationMs?: number) => {
+    window.clearTimeout(statusTimerRef.current);
+    statusTimerRef.current = undefined;
+    setStatusMessage(message);
+    if (durationMs !== undefined) {
+      statusTimerRef.current = window.setTimeout(() => {
+        setStatusMessage('');
+        statusTimerRef.current = undefined;
+      }, durationMs);
+    }
+  };
   const requestIdRef = useRef(0);
 
   useEffect(
     () => () => {
       requestIdRef.current += 1;
+      window.clearTimeout(statusTimerRef.current);
     },
     [],
   );
@@ -165,6 +179,7 @@ export function MapControls({ controller, mountainName }: MapControlsProps) {
         : nextBaseMap === 'satellite'
           ? '위성지도로 전환했습니다.'
           : '일반지도로 전환했습니다.',
+      2_000,
     );
   };
 
