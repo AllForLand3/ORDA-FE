@@ -1,3 +1,4 @@
+import { connectMapView } from './mapViewBridge';
 import { applyGwanakDem } from './applyGwanakDem';
 import { loadGwanakDem } from './loadGwanakDem';
 import type { TerrainGrid } from './loadGwanakDem';
@@ -6,6 +7,8 @@ import './types/vworld';
 const MAP_ID = 'vworld-terrain-map';
 const SDK_TIMEOUT_MS = 30_000;
 const abortController = new AbortController();
+const embedded = new URLSearchParams(window.location.search).get('embedded') === '1';
+let disconnectView: (() => void) | undefined;
 
 interface FrameMessage {
   type: 'orda-terrain3d';
@@ -73,18 +76,23 @@ function startVWorldMap(terrain: TerrainGrid) {
           });
         }
       });
-      window.setTimeout(() => {
-        if (abortController.signal.aborted) return;
-        viewer.camera.flyTo({
-          destination: cesium.Cartesian3.fromDegrees(126.96444, 37.44472, 2200),
-          orientation: {
-            heading: 0,
-            pitch: cesium.Math.toRadians(-55),
-            roll: 0,
-          },
-          duration: 0,
-        });
-      }, 2_000);
+      if (embedded) {
+        disconnectView = connectMapView(viewer, cesium, terrain);
+        window.clearTimeout(timeout);
+        report({ type: 'orda-terrain3d', status: 'ready' });
+      } else
+        window.setTimeout(() => {
+          if (abortController.signal.aborted) return;
+          viewer.camera.flyTo({
+            destination: cesium.Cartesian3.fromDegrees(126.96444, 37.44472, 2200),
+            orientation: {
+              heading: 0,
+              pitch: cesium.Math.toRadians(-55),
+              roll: 0,
+            },
+            duration: 0,
+          });
+        }, 2_000);
     } catch {
       window.clearTimeout(timeout);
       report({
@@ -109,7 +117,14 @@ function startVWorldMap(terrain: TerrainGrid) {
   map.start();
 }
 
-window.addEventListener('pagehide', () => abortController.abort(), { once: true });
+window.addEventListener(
+  'pagehide',
+  () => {
+    abortController.abort();
+    disconnectView?.();
+  },
+  { once: true },
+);
 report({ type: 'orda-terrain3d', status: 'loading', message: '관악산 DEM 고도를 읽고 있습니다.' });
 loadGwanakDem(abortController.signal)
   .then((terrain) => {
