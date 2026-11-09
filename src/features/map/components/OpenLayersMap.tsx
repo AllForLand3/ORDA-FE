@@ -251,10 +251,27 @@ export function OpenLayersMap({
       const [longitude, latitude] = toLonLat(event.coordinate, 'EPSG:3857');
       onMapClickRef.current?.([longitude, latitude]);
     });
+    // 마지막 포인터 위치를 기억해, 포인터를 움직이지 않은 채 레이어 내용이 바뀌어도 커서를 다시 맞춘다.
+    let lastPointerPixel: number[] | null = null;
+    const updateCursor = () => {
+      target.style.cursor =
+        onFeatureClickRef.current &&
+        lastPointerPixel &&
+        map.hasFeatureAtPixel(lastPointerPixel, clickableOptions)
+          ? 'pointer'
+          : '';
+    };
     const pointerMoveKey: EventsKey = map.on('pointermove', (event) => {
-      if (!onFeatureClickRef.current || event.dragging) return;
-      target.style.cursor = map.hasFeatureAtPixel(event.pixel, clickableOptions) ? 'pointer' : '';
+      if (event.dragging) return;
+      lastPointerPixel = event.pixel;
+      updateCursor();
     });
+    const renderCompleteKey: EventsKey = map.on('rendercomplete', updateCursor);
+    const clearPointer = () => {
+      lastPointerPixel = null;
+      target.style.cursor = '';
+    };
+    target.addEventListener('pointerleave', clearPointer);
 
     const resizeObserver =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateSize);
@@ -362,6 +379,8 @@ export function OpenLayersMap({
       unByKey(moveEndKey);
       unByKey(mapClickKey);
       unByKey(pointerMoveKey);
+      unByKey(renderCompleteKey);
+      target.removeEventListener('pointerleave', clearPointer);
       target.style.cursor = '';
       onControllerChangeRef.current?.(null);
       delete target.dataset.mapReady;

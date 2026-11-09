@@ -80,11 +80,12 @@ function RouteSearchResults({ request }: { request: RouteSearchRequest }) {
     [state.candidates, state.candidateViews],
   );
   const nearby = useRouteNearby(state.request.mountainId, nearbyCandidates, currentUser?.userId);
-  // 조회 중·실패·자료 없음은 0이 아니라 null로 넘겨 카드에 '정보 없음'으로 표시한다.
+  // 조회 전·실패·자료 없음은 0이 아니라 null로 넘겨 카드에 '정보 없음'으로 표시한다.
+  // 같은 간선 목록의 결과는 바뀌지 않으므로 재조회 중에도 목록·지도와 같은 결과를 유지한다.
   const nearbyCountsById = new Map<string, RouteCandidateNearbyCounts>(
     nearbyCandidates.map(({ id }) => {
       const query = nearby.get(id);
-      const summary = query?.isSuccess && !query.isFetching ? query.data : undefined;
+      const summary = query?.isSuccess ? query.data : undefined;
       return [id, { stairs: summary?.stairs ?? null, facilities: summary?.facilities ?? null }];
     }),
   );
