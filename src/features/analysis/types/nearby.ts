@@ -61,6 +61,28 @@ export interface CourseNearbyParams {
   radiusM?: number;
 }
 
+/** 코스·후보 주변 조회에서 공통으로 쓰는 상세지점·시설 결과 묶음. */
+export type NearbySpotsGroup = Pick<NearbySpotsResponse, 'dataAvailable' | 'counts' | 'items'>;
+export type NearbyFacilitiesGroup = Pick<
+  NearbyFacilitiesResponse,
+  'dataAvailable' | 'counts' | 'items'
+>;
+
+/** BE 경로 탐색 후보 주변 조회 요청(ORDA-BE#49). edgeIds는 경로 탐색 응답 후보 값이다. */
+export interface RouteNearbyRequest {
+  mountainId: string;
+  edgeIds: string[];
+  radiusM?: number;
+}
+
+/** spots는 I-01, facilities는 I-02와 같은 기준의 결과다. */
+export interface RouteNearbyResponse {
+  mountainId: string;
+  radiusM: number;
+  spots: NearbySpotsGroup;
+  facilities: NearbyFacilitiesGroup;
+}
+
 /** BE I-04 시설 상세 응답 중 화면에서 쓰는 출처 정보. */
 export interface FacilitySource {
   datasetId: string;

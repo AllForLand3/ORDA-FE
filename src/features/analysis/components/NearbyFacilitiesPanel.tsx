@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { UseQueryResult } from '@tanstack/react-query';
 
 import { Badge, Card } from '@/components/ui';
 
@@ -9,12 +10,14 @@ import {
 } from '../mocks/facilities';
 
 import { CourseNearbyFacilities } from './CourseNearbyFacilities';
-import type { useCourseNearby } from '../hooks/useCourseNearby';
+import type { CourseNearbySummary, NearbyPlace } from '../hooks/useCourseNearby';
 
 interface NearbyFacilitiesPanelProps {
   candidateName: string | null;
   mockData?: boolean;
-  nearby?: ReturnType<typeof useCourseNearby>;
+  nearby?: UseQueryResult<CourseNearbySummary>;
+  selectedPlaceKey?: string | null;
+  onSelectPlace?: (place: NearbyPlace) => void;
 }
 
 const FACILITY_FILTERS = [
@@ -26,10 +29,13 @@ const FACILITY_FILTERS = [
 
 type FacilityFilter = (typeof FACILITY_FILTERS)[number]['label'];
 
+/** 주변 시설 탭. 예시 데이터, 실제 조회 결과(nearby), 미연결 안내 중 하나를 표시한다. */
 export function NearbyFacilitiesPanel({
   candidateName,
   mockData = false,
   nearby,
+  selectedPlaceKey,
+  onSelectPlace,
 }: NearbyFacilitiesPanelProps) {
   const [preview, setPreview] = useState('sample');
   const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>('전체');
@@ -106,7 +112,14 @@ export function NearbyFacilitiesPanel({
   }
 
   if (nearby) {
-    return <CourseNearbyFacilities candidateName={candidateName} query={nearby} />;
+    return (
+      <CourseNearbyFacilities
+        candidateName={candidateName}
+        onSelectPlace={onSelectPlace}
+        query={nearby}
+        selectedKey={selectedPlaceKey}
+      />
+    );
   }
 
   return (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 import backIcon from '@/assets/course/course-back.svg';
@@ -12,9 +12,10 @@ import {
   terrainAnalysisConfig,
   useTerrainAnalysis,
   useCourseNearby,
+  useNearbyPlacesLayer,
 } from '@/features/analysis';
 
-import type { TerrainAnalysisConditions } from '@/features/analysis';
+import type { NearbyPlace, TerrainAnalysisConditions } from '@/features/analysis';
 
 import { useAuth } from '@/features/auth';
 
@@ -36,6 +37,9 @@ import '@/features/course/components/my-courses.css';
 
 import './my-courses.css';
 import './course-detail.css';
+
+// 목록에서 시설을 고르면 주변을 알아볼 수 있도록 확대해 이동한다.
+const NEARBY_PLACE_ZOOM = 17;
 
 /** 인증·현재 코스·분석을 조합하며 탭 전환 중에도 하나의 분석 실행을 유지한다. */
 export function CourseDetailPage() {
@@ -63,6 +67,24 @@ function CourseDetailWorkspace() {
   );
   const deletion = useCourseDeleteState(state.backHref);
   const courseLayer = useCourseLayer(state.isMock ? undefined : course?.geometry);
+  // 목록과 지도에서 함께 선택하는 시설. 목록 이름을 누르면 지도를 옮기고, 마커를 누르면 목록을 강조한다.
+  const [selectedPlaceKey, setSelectedPlaceKey] = useState<string | null>(null);
+  const selectPlace = (place: NearbyPlace) => {
+    setSelectedPlaceKey(place.key);
+    if (place.coordinates) controller?.centerOn(place.coordinates, NEARBY_PLACE_ZOOM);
+  };
+  // 주변 시설 탭에서만 시설 위치를 지도에 표시한다.
+  const nearbyLayer = useNearbyPlacesLayer(
+    state.tab === 'facilities' && nearby.isSuccess && !nearby.isFetching
+      ? nearby.data.places
+      : undefined,
+    selectedPlaceKey,
+  );
+  // 지도는 레이어 배열이 바뀌면 다시 만들어지므로, 고정된 레이어 객체로 배열을 유지한다.
+  const mapLayers = useMemo(
+    () => (courseLayer ? [...courseLayer.layers, nearbyLayer] : undefined),
+    [courseLayer, nearbyLayer],
+  );
   const targetRef = mapContainerRef;
 
   const conditions: TerrainAnalysisConditions | null =
@@ -213,10 +235,11 @@ function CourseDetailWorkspace() {
               <>
                 <div className="orda-map-layout__map-surface" ref={targetRef}>
                   <OpenLayersMap
-                    additionalLayers={courseLayer.layers}
+                    additionalLayers={mapLayers}
                     initialCenter={null}
                     initialExtent={courseLayer.extent}
                     onControllerChange={setController}
+                    onFeatureClick={setSelectedPlaceKey}
                     targetRef={targetRef}
                   />
                 </div>
@@ -262,7 +285,12 @@ function CourseDetailWorkspace() {
                 state.mockCourse ? (
                   <NearbyFacilitiesPanel candidateName={state.mockCourse.name} mockData />
                 ) : state.tab === 'facilities' ? (
-                  <NearbyFacilitiesPanel candidateName={course.courseName} nearby={nearby} />
+                  <NearbyFacilitiesPanel
+                    candidateName={course.courseName}
+                    nearby={nearby}
+                    onSelectPlace={selectPlace}
+                    selectedPlaceKey={selectedPlaceKey}
+                  />
                 ) : null
               }
             />

@@ -1,10 +1,11 @@
+import { useEffect, useRef } from 'react';
+import type { UseQueryResult } from '@tanstack/react-query';
 import axios from 'axios';
 
 import { Button, Card } from '@/components/ui';
 import type { ApiErrorResponse } from '@/shared/types/api';
 
-import { useCourseNearby } from '../hooks/useCourseNearby';
-import type { CourseNearbySummary, NearbyPlaceKind } from '../hooks/useCourseNearby';
+import type { CourseNearbySummary, NearbyPlace, NearbyPlaceKind } from '../hooks/useCourseNearby';
 
 import { NearbyPlaceDetails } from './NearbyPlaceDetails';
 
@@ -16,7 +17,12 @@ const KIND_LABELS: Record<NearbyPlaceKind, string> = {
 
 interface CourseNearbyFacilitiesProps {
   candidateName: string | null;
-  query: ReturnType<typeof useCourseNearby>;
+  /** 코스(useCourseNearby) 또는 경로 후보(useRouteNearby) 주변 조회 결과. */
+  query: UseQueryResult<CourseNearbySummary>;
+  /** 지도와 함께 선택된 항목 key. 지도 마커를 누르면 바뀌고, 해당 카드를 강조·스크롤한다. */
+  selectedKey?: string | null;
+  /** 위치가 있는 항목 이름을 누르면 호출한다. 페이지에서 지도를 그 위치로 옮긴다. */
+  onSelectPlace?: (place: NearbyPlace) => void;
 }
 
 function formatDistance(distanceM: number): string {
@@ -91,9 +97,20 @@ function emptyMessage(summary: CourseNearbySummary): { title: string; descriptio
   };
 }
 
-/** 실제 코스의 주변 화장실·주차장·쉼터를 BE 조회 결과(I-01·I-02)로 표시한다. */
-export function CourseNearbyFacilities({ candidateName, query }: CourseNearbyFacilitiesProps) {
+/** 실제 코스·경로 후보의 주변 화장실·주차장·쉼터를 BE 조회 결과로 표시한다. */
+export function CourseNearbyFacilities({
+  candidateName,
+  query,
+  selectedKey = null,
+  onSelectPlace,
+}: CourseNearbyFacilitiesProps) {
   const title = candidateName ? `${candidateName} 주변 시설` : '주변 시설';
+  const itemRefs = useRef(new Map<string, HTMLLIElement>());
+
+  // 지도에서 고른 항목이 목록 밖에 있으면 보이도록 스크롤한다.
+  useEffect(() => {
+    if (selectedKey) itemRefs.current.get(selectedKey)?.scrollIntoView({ block: 'nearest' });
+  }, [selectedKey]);
 
   if (query.isPending) {
     return (
@@ -132,7 +149,8 @@ export function CourseNearbyFacilities({ candidateName, query }: CourseNearbyFac
         <div>
           <h2>{summary.facilities === null ? title : `${title} ${summary.facilities}곳`}</h2>
         </div>
-        <p className="insights-note">{`경로 반경 ${summary.radiusM}m · 거리순`}</p>
+        {/* 거리는 출발점부터가 아니라 경로선에서 떨어진 거리이므로 기준을 함께 적는다. */}
+        <p className="insights-note">{`경로 반경 ${summary.radiusM}m · 경로에서 가까운 순`}</p>
       </header>
 
       {summary.places.length > 0 &&
@@ -150,13 +168,37 @@ export function CourseNearbyFacilities({ candidateName, query }: CourseNearbyFac
       ) : (
         <ul aria-label="코스 주변 시설" className="nearby-facilities__list">
           {summary.places.map((place) => (
-            <li key={place.key}>
-              <Card className="nearby-facility-card" padding="md">
+            <li
+              key={place.key}
+              ref={(element) => {
+                if (element) itemRefs.current.set(place.key, element);
+                else itemRefs.current.delete(place.key);
+              }}
+            >
+              <Card
+                className={`nearby-facility-card${place.key === selectedKey ? ' is-selected' : ''}`}
+                padding="md"
+              >
                 <div className="nearby-facility-card__heading">
-                  <h3>{place.name}</h3>
+                  {/* 위치가 있는 항목만 이름을 눌러 지도에서 찾을 수 있다. */}
+                  <h3>
+                    {place.coordinates && onSelectPlace ? (
+                      <button
+                        aria-pressed={place.key === selectedKey}
+                        className="nearby-facility-card__locate"
+                        onClick={() => onSelectPlace(place)}
+                        title="지도에서 위치 보기"
+                        type="button"
+                      >
+                        {place.name}
+                      </button>
+                    ) : (
+                      place.name
+                    )}
+                  </h3>
                 </div>
                 <p>
-                  {KIND_LABELS[place.kind]} · {formatDistance(place.distanceM)}
+                  {KIND_LABELS[place.kind]} · 경로에서 {formatDistance(place.distanceM)}
                 </p>
                 <NearbyPlaceDetails place={place} />
               </Card>
