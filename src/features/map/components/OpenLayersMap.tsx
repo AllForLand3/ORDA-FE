@@ -251,6 +251,7 @@ export function OpenLayersMap({
       const [longitude, latitude] = toLonLat(event.coordinate, 'EPSG:3857');
       onMapClickRef.current?.([longitude, latitude]);
     });
+
     // 마지막 포인터 위치를 기억해, 포인터를 움직이지 않은 채 레이어 내용이 바뀌어도 커서를 다시 맞춘다.
     let lastPointerPixel: number[] | null = null;
     const updateCursor = () => {
