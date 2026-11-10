@@ -33,7 +33,7 @@ export function NearbyPlaceDetails({ place }: NearbyPlaceDetailsProps) {
     place.kind === 'SHELTER'
       ? { label: '원본 메모', value: place.memo ?? '미제공' }
       : { label: '주소', value: place.address ?? '미제공' },
-    { label: '선택 코스와의 거리', value: formatDistance(place.distanceM) },
+    { label: '경로에서 떨어진 거리', value: formatDistance(place.distanceM) },
     { label: '출처', value: provider },
   ];
 

@@ -5,6 +5,8 @@ import type {
   FacilityDetailResponse,
   NearbyFacilitiesResponse,
   NearbySpotsResponse,
+  RouteNearbyRequest,
+  RouteNearbyResponse,
 } from '../types/nearby';
 
 export async function getCourseSpots(
@@ -29,6 +31,18 @@ export async function getCourseFacilities(
     `/courses/${encodeURIComponent(courseId)}/facilities`,
     { params, signal },
   );
+
+  return response.data;
+}
+
+/** 경로 탐색 후보의 간선 기준으로 주변 상세지점·시설을 조회한다(POST /routes/nearby). */
+export async function getRouteNearby(
+  request: RouteNearbyRequest,
+  signal?: AbortSignal,
+): Promise<RouteNearbyResponse> {
+  const response = await apiClient.post<RouteNearbyResponse>('/routes/nearby', request, {
+    signal,
+  });
 
   return response.data;
 }

@@ -43,6 +43,8 @@ export interface OpenLayersMapProps {
   /** 경로에 맞출 때 지도 위를 덮는 패널의 실제 영역을 제외한다. */
   fitObstructionRef?: RefObject<HTMLElement | null>;
   onMapClick?: (coordinate: LongitudeLatitude) => void;
+  /** `clickable` 속성이 true인 레이어의 Feature를 누르면 그 ID를 전달한다. 이때 onMapClick은 호출하지 않는다. */
+  onFeatureClick?: (featureId: string) => void;
   onControllerChange?: (controller: MapController | null) => void;
   targetRef: RefObject<HTMLDivElement | null>;
 }
@@ -73,6 +75,7 @@ export function OpenLayersMap({
   initialExtent,
   fitObstructionRef,
   onMapClick,
+  onFeatureClick,
   onControllerChange,
   targetRef,
 }: OpenLayersMapProps) {
@@ -81,6 +84,7 @@ export function OpenLayersMap({
   const [terrainBridge, setTerrainBridge] = useState<TerrainMapBridge | null>(null);
   const onControllerChangeRef = useRef(onControllerChange);
   const onMapClickRef = useRef(onMapClick);
+  const onFeatureClickRef = useRef(onFeatureClick);
 
   useEffect(() => {
     onControllerChangeRef.current = onControllerChange;
@@ -89,6 +93,10 @@ export function OpenLayersMap({
   useEffect(() => {
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
+
+  useEffect(() => {
+    onFeatureClickRef.current = onFeatureClick;
+  }, [onFeatureClick]);
 
   useEffect(() => {
     const target = targetRef.current;
@@ -220,10 +228,51 @@ export function OpenLayersMap({
     };
 
     const moveEndKey: EventsKey = map.on('moveend', recordViewChange);
+    // 클릭 대상은 `clickable`로 표시한 레이어로 한정해 경로선·배경 등 다른 레이어 동작을 바꾸지 않는다.
+    const clickableOptions = {
+      layerFilter: (layer: BaseLayer) => layer.get('clickable') === true,
+      hitTolerance: 4,
+    };
     const mapClickKey: EventsKey = map.on('singleclick', (event) => {
+      if (onFeatureClickRef.current) {
+        const featureId = map.forEachFeatureAtPixel(
+          event.pixel,
+          (feature) => {
+            const id = feature.getId();
+            return id === undefined ? undefined : String(id);
+          },
+          clickableOptions,
+        );
+        if (featureId !== undefined) {
+          onFeatureClickRef.current(featureId);
+          return;
+        }
+      }
       const [longitude, latitude] = toLonLat(event.coordinate, 'EPSG:3857');
       onMapClickRef.current?.([longitude, latitude]);
     });
+
+    // 마지막 포인터 위치를 기억해, 포인터를 움직이지 않은 채 레이어 내용이 바뀌어도 커서를 다시 맞춘다.
+    let lastPointerPixel: number[] | null = null;
+    const updateCursor = () => {
+      target.style.cursor =
+        onFeatureClickRef.current &&
+        lastPointerPixel &&
+        map.hasFeatureAtPixel(lastPointerPixel, clickableOptions)
+          ? 'pointer'
+          : '';
+    };
+    const pointerMoveKey: EventsKey = map.on('pointermove', (event) => {
+      if (event.dragging) return;
+      lastPointerPixel = event.pixel;
+      updateCursor();
+    });
+    const renderCompleteKey: EventsKey = map.on('rendercomplete', updateCursor);
+    const clearPointer = () => {
+      lastPointerPixel = null;
+      target.style.cursor = '';
+    };
+    target.addEventListener('pointerleave', clearPointer);
 
     const resizeObserver =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateSize);
@@ -330,6 +379,10 @@ export function OpenLayersMap({
       target.removeEventListener('keydown', markUserAdjustedView, true);
       unByKey(moveEndKey);
       unByKey(mapClickKey);
+      unByKey(pointerMoveKey);
+      unByKey(renderCompleteKey);
+      target.removeEventListener('pointerleave', clearPointer);
+      target.style.cursor = '';
       onControllerChangeRef.current?.(null);
       delete target.dataset.mapReady;
       delete target.dataset.mapBaseLayer;
