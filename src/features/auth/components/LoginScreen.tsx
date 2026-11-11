@@ -9,9 +9,6 @@ import type { ApiErrorResponse } from '@/shared/types/api';
 
 import loginBackground from '../assets/login-background.svg';
 import logoMark from '../assets/login-logo-mark.png';
-import appleIcon from '../assets/login-social-apple.svg';
-import googleIcon from '../assets/login-social-google.svg';
-import kakaoIcon from '../assets/login-social-kakao.svg';
 import contourBottom from '../assets/login-contour-bottom.svg';
 import contourMiddle from '../assets/login-contour-middle.svg';
 import contourTop from '../assets/login-contour-top.svg';
@@ -276,41 +273,6 @@ export function LoginScreen() {
               {loginMutation.isPending ? '로그인 중...' : '로그인하기'}
             </Button>
           </form>
-
-          <div aria-hidden="true" className="auth-login__separator">
-            <span />
-            <p>또는 다른 방법으로 로그인하기</p>
-            <span />
-          </div>
-
-          <div aria-label="소셜 로그인" className="auth-login__social">
-            <button
-              aria-label="Google로 로그인"
-              className="auth-social-button"
-              onClick={() => showUnavailableAction('Google 로그인')}
-              type="button"
-            >
-              <img alt="" aria-hidden="true" src={googleIcon} />
-            </button>
-
-            <button
-              aria-label="카카오톡으로 로그인"
-              className="auth-social-button"
-              onClick={() => showUnavailableAction('카카오 로그인')}
-              type="button"
-            >
-              <img alt="" aria-hidden="true" src={kakaoIcon} />
-            </button>
-
-            <button
-              aria-label="Apple로 로그인"
-              className="auth-social-button"
-              onClick={() => showUnavailableAction('Apple 로그인')}
-              type="button"
-            >
-              <img alt="" aria-hidden="true" src={appleIcon} />
-            </button>
-          </div>
 
           <p className="auth-login__signup-link">
             계정이 없으신가요? <Link to="/signup">회원가입하기</Link>

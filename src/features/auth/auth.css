@@ -267,50 +267,6 @@
   margin-top: 29px;
 }
 
-.auth-login__separator {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  margin-top: 30px;
-  color: var(--color-text-secondary);
-}
-
-.auth-login__separator span {
-  height: 1px;
-  flex: 1;
-  background: var(--color-border-default);
-}
-
-.auth-login__separator p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  white-space: nowrap;
-}
-
-.auth-login__social {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 45px;
-  margin-top: 18px;
-}
-
-.auth-social-button {
-  display: block;
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-
-.auth-social-button:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 3px;
-}
-
 .auth-login__signup-link,
 .auth-signup__login-link {
   margin: 24px 0 0;
@@ -543,18 +499,6 @@
 
   .auth-signup__heading {
     padding-inline: 24px;
-  }
-
-  .auth-login__separator {
-    gap: 12px;
-  }
-
-  .auth-login__separator p {
-    font-size: 12px;
-  }
-
-  .auth-login__social {
-    gap: clamp(24px, 10vw, 45px);
   }
 
   .auth-signup__term-row .orda-checkbox {
