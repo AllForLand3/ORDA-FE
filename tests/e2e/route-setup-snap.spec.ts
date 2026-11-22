@@ -105,6 +105,7 @@ test('지도 선택 좌표를 스냅해 노드 ID로 경로를 탐색하고 결�
             priorityCondition: 'DIST_FIRST',
             lengthM: 1520,
             estTimeMin: 61,
+            stairCount: 0,
             edgeIds: ['11', '12'],
             geometry: {
               type: 'LineString',
@@ -166,7 +167,7 @@ test('지도 선택 좌표를 스냅해 노드 ID로 경로를 탐색하고 결�
   await page.getByRole('button', { name: /거리 우선/ }).click();
   await page.getByRole('button', { name: /쉼터/ }).click();
   await expect(
-    page.getByRole('note').filter({ hasText: '현재는 거리 우선으로만 탐색해요' }),
+    page.getByRole('note').filter({ hasText: '거리 우선과 계단 적게만 탐색에 반영돼요' }),
   ).toBeVisible();
 
   const searchButton = page.getByRole('button', { name: '맞춤 경로 탐색하기' });
@@ -180,8 +181,10 @@ test('지도 선택 좌표를 스냅해 노드 ID로 경로를 탐색하고 결�
   expect(resultParams.get('endNodeId')).toBe('932');
   expect(resultParams.get('level')).toBe('intermediate');
   await expect(page.getByRole('article', { name: '경로 후보 1: 거리 우선 경로' })).toBeVisible();
-  // 수준·탐색 기준·비교 정보는 API로 보내지 않는다.
-  expect(searchRequests).toEqual([{ mountainId: '2', startNodeId: '931', endNodeId: '932' }]);
+  // 탐색 기준은 서버 코드로 바꿔 보내고, 수준과 비교 정보는 API로 보내지 않는다.
+  expect(searchRequests).toEqual([
+    { mountainId: '2', startNodeId: '931', endNodeId: '932', priorityConditions: ['DIST_FIRST'] },
+  ]);
 
   // 뒤로 돌아오면 선택한 지점과 노드가 유지된다.
   await page.goBack();

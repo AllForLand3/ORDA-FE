@@ -556,7 +556,7 @@ export function RouteSetupFooter({ state }: RouteSetupFooterProps) {
             : !state.searchHref
               ? (blockedReason ?? '출발지와 도착지를 등산로 지점에 연결하면 탐색할 수 있어요.')
               : hasConditions
-                ? '현재는 거리 우선으로만 탐색해요. 수준·탐색 기준·비교 정보는 아직 반영되지 않아요.'
+                ? '거리 우선과 계단 적게만 탐색에 반영돼요. 완만한 경사, 수준, 비교 정보는 아직 반영되지 않아요.'
                 : '탐색 기준과 비교 정보를 각각 하나 이상 선택해주세요.'}
         </span>
       ) : null}

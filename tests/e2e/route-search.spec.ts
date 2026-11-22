@@ -13,6 +13,7 @@ const SUCCESS_RESPONSE = {
       priorityCondition: 'DIST_FIRST',
       lengthM: 1234.5,
       estTimeMin: 52.0,
+      stairCount: 3,
       edgeIds: ['3', '7'],
       geometry: {
         type: 'LineString',
@@ -28,6 +29,7 @@ const SUCCESS_RESPONSE = {
       priorityCondition: 'DIST_FIRST',
       lengthM: 860,
       estTimeMin: null,
+      stairCount: 0,
       edgeIds: ['4'],
       geometry: {
         type: 'LineString',
@@ -94,7 +96,8 @@ test('노드 ID가 있으면 경로 탐색 API 결과를 카드로 보여주고 
   const first = page.getByRole('article', { name: '경로 후보 1: 거리 우선 경로' });
   const firstMetrics = first.getByRole('definition');
   await expect(firstMetrics).toHaveText(['1.23km', '52분', '정보 없음']);
-  await expect(first.getByText(/계단 \d+곳|시설 \d+곳/)).toHaveCount(0);
+  // 계단 수는 탐색 응답 값이고, 시설 수는 주변 조회 전이라 채우지 않는다.
+  await expect(first.getByLabel('계단과 시설 수')).toHaveText('계단 3곳시설 정보 없음');
   await expect(first.getByRole('button', { name: '코스 편집' })).toHaveCount(0);
 
   const second = page.getByRole('article', { name: '경로 후보 2: 거리 우선 경로' });
@@ -184,4 +187,70 @@ test('노드 ID가 하나라도 없으면 API를 호출하지 않고 기존 예�
     await expect(page.getByRole('article', { name: '예시 코스 1: 능선 조망 코스' })).toBeVisible();
   }
   expect(apiRequests).toEqual([]);
+});
+
+const LESS_STAIR_CANDIDATE = {
+  rank: 2,
+  priorityCondition: 'LESS_STAIR',
+  lengthM: 1410,
+  estTimeMin: null,
+  stairCount: 0,
+  edgeIds: ['5', '6', '7'],
+  geometry: {
+    type: 'LineString',
+    coordinates: [
+      [126.9518, 37.4602],
+      [126.9601, 37.4568],
+      [126.9644, 37.4447],
+    ],
+  },
+};
+
+test('선택한 탐색 기준을 서버 코드로 보내고 기준별 후보 이름을 보여준다', async ({ page }) => {
+  const requests = await mockRouteSearch(page, 200, {
+    ...SUCCESS_RESPONSE,
+    candidates: [SUCCESS_RESPONSE.candidates[0], LESS_STAIR_CANDIDATE],
+  });
+  // 완만한 경사는 아직 보내지 않는다.
+  await page.goto(`${SEARCH_URL}&priorities=distance,gentle-slope,fewer-stairs`);
+
+  await expect(page.getByRole('article')).toHaveCount(2);
+  expect(requests).toEqual([
+    {
+      method: 'POST',
+      body: {
+        mountainId: '1',
+        startNodeId: '10',
+        endNodeId: '20',
+        priorityConditions: ['DIST_FIRST', 'LESS_STAIR'],
+      },
+    },
+  ]);
+  await expect(page.getByRole('article', { name: '경로 후보 1: 거리 우선 경로' })).toBeVisible();
+  await expect(page.getByRole('article', { name: '경로 후보 2: 계단 적은 경로' })).toBeVisible();
+  await expect(page.getByRole('note')).toHaveCount(0);
+});
+
+test('기준이 달라도 같은 경로라 후보가 합쳐지면 그 사실을 안내한다', async ({ page }) => {
+  const requests = await mockRouteSearch(page, 200, {
+    ...SUCCESS_RESPONSE,
+    candidates: [SUCCESS_RESPONSE.candidates[0]],
+  });
+  await page.goto(`${SEARCH_URL}&priorities=distance,fewer-stairs`);
+
+  await expect(page.getByRole('article')).toHaveCount(1);
+  expect(requests).toHaveLength(1);
+  await expect(page.getByRole('note')).toHaveText(
+    '계단 적게 경로가 다른 후보와 같아 하나로 보여드려요.',
+  );
+});
+
+test('반영할 탐색 기준이 없으면 기준 없이 요청한다', async ({ page }) => {
+  const requests = await mockRouteSearch(page, 200, SUCCESS_RESPONSE);
+  await page.goto(`${SEARCH_URL}&priorities=gentle-slope`);
+
+  await expect(page.getByRole('article')).toHaveCount(2);
+  expect(requests).toEqual([
+    { method: 'POST', body: { mountainId: '1', startNodeId: '10', endNodeId: '20' } },
+  ]);
 });

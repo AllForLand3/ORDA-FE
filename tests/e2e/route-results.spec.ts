@@ -192,6 +192,7 @@ test('설정 화면의 탐색 진입과 결과 화면 공통 헤더가 정상 �
             priorityCondition: 'DIST_FIRST',
             lengthM: 1234.5,
             estTimeMin: 52,
+            stairCount: 0,
             edgeIds: ['3'],
             geometry: {
               type: 'LineString',

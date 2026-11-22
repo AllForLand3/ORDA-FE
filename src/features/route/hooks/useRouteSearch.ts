@@ -15,6 +15,7 @@ export function useRouteSearch(request: RouteSearchRequest | null) {
       request?.mountainId ?? null,
       request?.startNodeId ?? null,
       request?.endNodeId ?? null,
+      request?.priorityConditions?.join(',') ?? null,
     ],
     queryFn: request ? () => searchRoutes(request) : skipToken,
     retry: false,

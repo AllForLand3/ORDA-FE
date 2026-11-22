@@ -75,18 +75,22 @@ function RouteSearchResults({ request }: { request: RouteSearchRequest }) {
     () =>
       state.candidates.flatMap((candidate) => {
         const view = state.candidateViews.find((item) => item.rank === candidate.rank);
-        return view ? [{ id: view.id, edgeIds: candidate.edgeIds }] : [];
+        return view
+          ? [{ id: view.id, edgeIds: candidate.edgeIds, stairCount: candidate.stairCount }]
+          : [];
       }),
     [state.candidates, state.candidateViews],
   );
   const nearby = useRouteNearby(state.request.mountainId, nearbyCandidates, currentUser?.userId);
+  // 카드의 계단 수는 경로가 지나는 계단(탐색 응답)이고, 시설 수는 경로 주변 조회 결과다.
+  // 주변 조회의 계단 수는 반경 안 지점을 모두 세므로, 계단 적은 경로 비교에는 쓰지 않는다.
   // 조회 전·실패·자료 없음은 0이 아니라 null로 넘겨 카드에 '정보 없음'으로 표시한다.
   // 같은 간선 목록의 결과는 바뀌지 않으므로 재조회 중에도 목록·지도와 같은 결과를 유지한다.
   const nearbyCountsById = new Map<string, RouteCandidateNearbyCounts>(
-    nearbyCandidates.map(({ id }) => {
+    nearbyCandidates.map(({ id, stairCount }) => {
       const query = nearby.get(id);
       const summary = query?.isSuccess ? query.data : undefined;
-      return [id, { stairs: summary?.stairs ?? null, facilities: summary?.facilities ?? null }];
+      return [id, { stairs: stairCount ?? null, facilities: summary?.facilities ?? null }];
     }),
   );
   const selected = state.selectedCandidate;

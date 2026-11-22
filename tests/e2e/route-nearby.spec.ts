@@ -20,6 +20,8 @@ const SEARCH_RESPONSE = {
       priorityCondition: 'DIST_FIRST',
       lengthM: 1234.5,
       estTimeMin: 52,
+      // 카드의 계단 수는 주변 조회(계단 2곳)가 아니라 이 값(경로가 지나는 계단)을 쓴다.
+      stairCount: 1,
       edgeIds: ['3', '7'],
       geometry: line,
     },
@@ -28,6 +30,7 @@ const SEARCH_RESPONSE = {
       priorityCondition: 'DIST_FIRST',
       lengthM: 860,
       estTimeMin: null,
+      stairCount: 0,
       edgeIds: ['4'],
       geometry: line,
     },
@@ -119,7 +122,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/routes/search', (route) => route.fulfill({ json: SEARCH_RESPONSE }));
 });
 
-test('후보마다 간선 목록으로 한 번 조회해 카드 수치와 주변 시설 탭에 함께 쓴다', async ({
+test('후보마다 간선 목록으로 한 번 조회해 카드 시설 수와 주변 시설 탭에 함께 쓴다', async ({
   page,
 }) => {
   const requests = await mockNearby(page, (edgeIds) =>
@@ -127,7 +130,7 @@ test('후보마다 간선 목록으로 한 번 조회해 카드 수치와 주변
   );
   await page.goto(SEARCH_URL);
 
-  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText('계단 2곳시설 3곳');
+  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText('계단 1곳시설 3곳');
   await expect(card(page, 2).getByLabel('계단과 시설 수')).toHaveText('계단 0곳시설 0곳');
   expect(requests).toHaveLength(2);
   expect(requests).toEqual(
@@ -167,9 +170,7 @@ test('자료가 없으면 0이 아니라 정보 없음과 자료 없음 안내�
   }));
   await page.goto(SEARCH_URL);
 
-  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText(
-    '계단 정보 없음시설 정보 없음',
-  );
+  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText('계단 1곳시설 정보 없음');
   const region = await openFacilities(page);
   await expect(region.getByText('시설 자료가 아직 없어요')).toBeVisible();
 });
@@ -179,9 +180,7 @@ test('조회 오류는 카드에 수치를 채우지 않고 탭에서 수동 재
   const requests = await mockNearby(page, () => (fail ? 400 : FIRST_NEARBY));
   await page.goto(SEARCH_URL);
 
-  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText(
-    '계단 정보 없음시설 정보 없음',
-  );
+  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText('계단 1곳시설 정보 없음');
   const region = await openFacilities(page);
   await expect(region.getByRole('alert')).toContainText('주변 시설을 불러오지 못했어요');
   // 4xx는 자동 재시도하지 않는다.
@@ -198,9 +197,7 @@ test('응답 조건이 요청과 다르면 정상 수치로 표시하지 않는�
   await mockNearby(page, () => ({ ...FIRST_NEARBY, radiusM: 500 }));
   await page.goto(SEARCH_URL);
 
-  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText(
-    '계단 정보 없음시설 정보 없음',
-  );
+  await expect(card(page, 1).getByLabel('계단과 시설 수')).toHaveText('계단 1곳시설 정보 없음');
   const region = await openFacilities(page);
   await expect(region.getByRole('alert')).toBeVisible();
 });

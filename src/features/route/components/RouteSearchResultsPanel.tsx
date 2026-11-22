@@ -95,6 +95,11 @@ export function RouteSearchResultsPanel({
             ? `${state.candidateViews.length}개 경로 후보 · 거리와 예상 시간은 서버 탐색 결과입니다.`
             : '출발·도착 노드 ID로 요청한 경로 탐색 결과입니다.'}
         </p>
+        {state.mergedConditionLabels.length ? (
+          <p role="note">
+            {`${state.mergedConditionLabels.join(', ')} 경로가 다른 후보와 같아 하나로 보여드려요.`}
+          </p>
+        ) : null}
       </header>
       <Tabs
         ariaLabel="경로 탐색 결과 정보"
