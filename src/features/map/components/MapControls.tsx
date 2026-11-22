@@ -11,6 +11,8 @@ import './openlayers-map.css';
 export interface MapControlsProps {
   controller: MapController | null;
   mountainName?: string;
+  preferredBaseMap?: BaseMapType;
+  onBaseMapChange?: (mode: BaseMapType) => void;
 }
 
 function StreetMapIcon() {
@@ -77,12 +79,26 @@ function getGeolocationErrorMessage(error: GeolocationPositionError): string {
   }
 }
 
-export function MapControls({ controller, mountainName }: MapControlsProps) {
+export function MapControls({
+  controller,
+  mountainName,
+  preferredBaseMap,
+  onBaseMapChange,
+}: MapControlsProps) {
   const [baseMap, setBaseMap] = useState<BaseMapType>('street');
   const [isLocating, setIsLocating] = useState(false);
   const [status, setStatusMessage] = useState('');
   const statusTimerRef = useRef<number | undefined>(undefined);
   const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!controller || !preferredBaseMap) return;
+    const frame = window.requestAnimationFrame(() => {
+      const applied = controller.setBaseMap(preferredBaseMap);
+      setBaseMap(applied ? preferredBaseMap : 'street');
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [controller, preferredBaseMap]);
 
   const setStatus = (message: string, durationMs?: number) => {
     window.clearTimeout(statusTimerRef.current);
@@ -174,6 +190,7 @@ export function MapControls({ controller, mountainName }: MapControlsProps) {
     }
 
     setBaseMap(nextBaseMap);
+    onBaseMapChange?.(nextBaseMap);
     setStatus(
       nextBaseMap === 'terrain'
         ? '3D 지도로 전환했습니다.'

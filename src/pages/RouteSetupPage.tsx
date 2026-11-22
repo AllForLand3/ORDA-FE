@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { createEmpty, extendCoordinate, isEmpty } from 'ol/extent.js';
+import { transformExtent } from 'ol/proj.js';
+import { API_PROJECTION, MAP_PROJECTION } from '@/lib/projection';
 
 import { MapPageLayout } from '@/components/layout/MapPageLayout';
 import backIcon from '@/assets/course/course-back.svg';
@@ -9,8 +12,10 @@ import {
   isValidMountainCoordinate,
   isValidMountainId,
   useMountainDetailQuery,
+  useServiceAreaQuery,
 } from '@/features/course';
-import { MapControls, OpenLayersMap } from '@/features/map';
+import { OpenLayersMap } from '@/features/map';
+import { RouteMapControls } from './RouteMapControls';
 import type { MapController } from '@/features/map';
 import {
   RouteSetupFooter,
@@ -35,10 +40,32 @@ export function RouteSetupPage() {
   const selectedMountainName = mountainDetailQuery.data?.mountainName ?? fallbackMountain?.name;
   const selectedMountainCoordinates =
     mountainDetailQuery.data?.geometry?.coordinates ?? fallbackMountain?.coordinates;
+  const needsServiceArea =
+    mountainDetailQuery.isSuccess &&
+    mountainDetailQuery.data.serviceAvailable === true &&
+    selectedMountainCoordinates == null;
+  const serviceArea = useServiceAreaQuery(needsServiceArea ? mountainId : null);
+  const areaExtent = useMemo(() => {
+    if (!needsServiceArea || !serviceArea.isSuccess || !Array.isArray(serviceArea.data?.features))
+      return;
+    const bounds = createEmpty();
+    for (const feature of serviceArea.data.features) {
+      if (feature.geometry?.type !== 'MultiPolygon') continue;
+      for (const polygon of feature.geometry.coordinates) {
+        for (const coordinate of polygon[0] ?? []) {
+          if (!isValidMountainCoordinate(coordinate)) return;
+          extendCoordinate(bounds, coordinate);
+        }
+      }
+    }
+    if (!isEmpty(bounds)) return transformExtent(bounds, API_PROJECTION, MAP_PROJECTION);
+  }, [needsServiceArea, serviceArea.data, serviceArea.isSuccess]);
   const isMountainLocationPending =
     usesApiMountain &&
     !hasInvalidMountainId &&
-    (mountainDetailQuery.isPending || mountainDetailQuery.isFetching);
+    (mountainDetailQuery.isPending ||
+      mountainDetailQuery.isFetching ||
+      (needsServiceArea && serviceArea.isPending));
   const hasMountainLocationError =
     usesApiMountain &&
     (hasInvalidMountainId ||
@@ -52,7 +79,7 @@ export function RouteSetupPage() {
       !mountainDetailQuery.isFetching &&
       !mountainDetailQuery.isError &&
       mountainDetailQuery.data.serviceAvailable === true &&
-      isValidMountainCoordinate(selectedMountainCoordinates),
+      (isValidMountainCoordinate(selectedMountainCoordinates) || areaExtent),
     );
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapController, setMapController] = useState<MapController | null>(null);
@@ -150,7 +177,8 @@ export function RouteSetupPage() {
           canConfigure ? (
             <OpenLayersMap
               additionalLayers={layers}
-              initialCenter={selectedMountainCoordinates}
+              initialCenter={areaExtent ? null : selectedMountainCoordinates}
+              initialExtent={areaExtent}
               onMapClick={(coordinate) => {
                 if (!canConfigure || state.step !== 'locations') return;
                 if (state.searchRole && state.isMapSelectionMode) {
@@ -173,14 +201,16 @@ export function RouteSetupPage() {
                     : '산 위치를 표시할 수 없어요.'}
               </strong>
               <span>
-                {hasMountainLocationError
+                {!isMountainLocationPending && hasMountainLocationError
                   ? '산 선택 화면으로 돌아가 다시 선택해 주세요.'
                   : '잠시만 기다려 주세요.'}
               </span>
             </div>
           )
         }
-        mapControls={<MapControls controller={mapController} mountainName={selectedMountainName} />}
+        mapControls={
+          <RouteMapControls controller={mapController} mountainName={selectedMountainName} />
+        }
         mapLabel="선택한 출발지·도착지와 연결된 등산로 지점을 표시하는 지도"
         mobilePanelSwipeToClose
         panel={

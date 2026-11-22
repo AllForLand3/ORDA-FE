@@ -1,5 +1,14 @@
 import { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { useCourseLayer } from '@/features/course';
+
+const fixtureCourse: NonNullable<Parameters<typeof useCourseLayer>[0]> = {
+  type: 'LineString',
+  coordinates: [
+    [127.03, 37.51],
+    [127.05, 37.53],
+  ],
+};
 
 import { Button } from '@/components/ui/Button';
 import { MapPageLayout } from '@/components/layout';
@@ -10,6 +19,7 @@ import './map-page-layout.css';
 
 export function MapPageLayoutFixture() {
   const mapTargetRef = useRef<HTMLDivElement>(null);
+  const course = useCourseLayer(fixtureCourse);
   const [controller, setController] = useState<MapController | null>(null);
   const [isMapMounted, setIsMapMounted] = useState(true);
 
@@ -32,7 +42,11 @@ export function MapPageLayoutFixture() {
       mapContainerRef={mapTargetRef}
       mapContent={
         isMapMounted ? (
-          <OpenLayersMap onControllerChange={setController} targetRef={mapTargetRef} />
+          <OpenLayersMap
+            additionalLayers={course?.layers}
+            onControllerChange={setController}
+            targetRef={mapTargetRef}
+          />
         ) : (
           <div data-testid="map-unmounted">Map unmounted</div>
         )
