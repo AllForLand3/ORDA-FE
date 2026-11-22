@@ -82,7 +82,7 @@ test('실제 ID·버전·반경으로 한 번 조회하고 집계·거리순·�
     '벤치',
     '실제 주차장',
   ]);
-  await expect(region).toContainText('경로 반경 200m · 거리순');
+  await expect(region).toContainText('경로 반경 200m · 경로에서 가까운 순');
   await expect(region.getByText(partialNotice, { exact: true })).toHaveCount(0);
   expect(sourceGets).toBe(0);
   await region.getByText('시설 상세 보기', { exact: true }).nth(1).click();

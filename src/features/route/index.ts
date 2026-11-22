@@ -26,7 +26,10 @@ export type {
   RouteSearchRequest,
   RouteSearchResponse,
 } from './types/route-search';
-export type { RouteSearchCandidateView } from './types/route-candidate-view';
+export type {
+  RouteCandidateNearbyCounts,
+  RouteSearchCandidateView,
+} from './types/route-candidate-view';
 export { CourseExportDialog } from './components/CourseExportDialog';
 export { RouteEditDialog } from './components/RouteEditDialog';
 export { RESULT_PREVIEW_STATES, useRouteResultsState } from './hooks/useRouteResultsState';

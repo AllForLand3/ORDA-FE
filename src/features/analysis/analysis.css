@@ -439,6 +439,32 @@
   font-weight: 700;
 }
 
+/* 선택한 시설은 지도 마커와 같은 색(#e4573d)으로 강조해 목록과 지도 위치를 맞춘다. */
+.nearby-facility-card.orda-card.is-selected {
+  border-color: #e4573d;
+  box-shadow: 0 0 0 1px #e4573d;
+}
+
+.nearby-facility-card__locate {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.nearby-facility-card__locate:hover {
+  color: var(--color-primary-700);
+  text-decoration: underline;
+}
+
+.nearby-facility-card__locate:focus-visible {
+  outline: 2px solid var(--color-primary-700);
+  outline-offset: 2px;
+}
+
 .nearby-facility-card p {
   margin: 0.375rem 0 0;
   color: var(--color-text-secondary);

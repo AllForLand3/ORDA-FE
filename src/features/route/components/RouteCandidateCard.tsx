@@ -9,7 +9,10 @@ import { Badge, Button, Card } from '@/components/ui';
 
 import { getMockRouteMetrics } from '../mocks/route-results';
 import type { MockRouteCandidate } from '../mocks/route-results';
-import type { RouteSearchCandidateView } from '../types/route-candidate-view';
+import type {
+  RouteCandidateNearbyCounts,
+  RouteSearchCandidateView,
+} from '../types/route-candidate-view';
 
 interface RouteCandidateCardProps {
   candidate: MockRouteCandidate | RouteSearchCandidateView;
@@ -17,6 +20,8 @@ interface RouteCandidateCardProps {
   selected: boolean;
   onSelect: () => void;
   onEdit?: () => void;
+  // 탐색 결과 후보의 계단·시설 수. 전달하지 않으면 해당 줄을 표시하지 않는다.
+  nearbyCounts?: RouteCandidateNearbyCounts;
 }
 
 const MISSING_VALUE = '정보 없음';
@@ -35,6 +40,11 @@ function formatDuration(durationMinutes: number | null) {
   return hours ? `${hours}시간 ${minutes}분` : `${minutes}분`;
 }
 
+/** 계단·시설 수를 표시한다. 자료가 없거나 조회 전(null)이면 0이 아니라 '정보 없음'으로 둔다. */
+function formatCount(count: number | null) {
+  return count === null ? MISSING_VALUE : `${count}곳`;
+}
+
 function getRouteSearchMetrics(candidate: RouteSearchCandidateView) {
   return [
     { label: '거리', value: formatDistance(candidate.distanceM) },
@@ -43,12 +53,14 @@ function getRouteSearchMetrics(candidate: RouteSearchCandidateView) {
   ];
 }
 
+/** 예시·탐색 결과 후보 카드. 탐색 결과는 페이지에서 받은 계단·시설 수가 있을 때만 그 줄을 표시한다. */
 export function RouteCandidateCard({
   candidate,
   index,
   selected,
   onSelect,
   onEdit,
+  nearbyCounts,
 }: RouteCandidateCardProps) {
   const isMock = candidate.source === 'mock';
   const labelPrefix = isMock ? '예시 코스' : '경로 후보';
@@ -126,6 +138,19 @@ export function RouteCandidateCard({
               저장하기
             </Button>
           </div>
+        </div>
+      ) : nearbyCounts ? (
+        <div className="route-candidate__bottom">
+          <ul aria-label="계단과 시설 수" className="route-candidate__facts">
+            <li>
+              <img alt="" aria-hidden="true" src={stairsIcon} />
+              계단 {formatCount(nearbyCounts.stairs)}
+            </li>
+            <li>
+              <img alt="" aria-hidden="true" src={facilityIcon} />
+              시설 {formatCount(nearbyCounts.facilities)}
+            </li>
+          </ul>
         </div>
       ) : null}
     </Card>

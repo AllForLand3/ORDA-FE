@@ -3,11 +3,17 @@ import axios from 'axios';
 import { useAccessToken } from '@/shared/hooks/useAccessToken';
 
 import { getCourseFacilities, getCourseSpots } from '../api/nearby';
+import type { GeoJsonPosition } from '@/shared/types/geojson';
+
 import type {
   CourseNearbyParams,
-  NearbyFacilitiesResponse,
-  NearbySpotsResponse,
+  NearbyFacilitiesGroup,
+  NearbySpotsGroup,
+  PointGeometry,
 } from '../types/nearby';
+
+/** 주변 조회 기본 반경(m). BE 기본값과 같다. */
+export const DEFAULT_NEARBY_RADIUS_M = 200;
 
 export type NearbyPlaceKind = 'TOILET' | 'PARKING' | 'SHELTER';
 
@@ -22,6 +28,8 @@ export interface NearbyPlace {
   /** 산림청 상세지점 원본 메모. 시설은 null이다. */
   memo: string | null;
   distanceM: number;
+  /** EPSG:4326 [경도, 위도]. 위치가 없거나 잘못되면 null이며 지도에 표시하지 않는다. */
+  coordinates: GeoJsonPosition | null;
 }
 
 /** 개수는 해당 자료가 없으면(dataAvailable=false) 0이 아니라 null이다. */
@@ -58,9 +66,26 @@ export function isServerCourseId(courseId: string | null | undefined): courseId 
   );
 }
 
-function toSummary(
-  spots: NearbySpotsResponse,
-  facilities: NearbyFacilitiesResponse,
+/** 지도 투영(EPSG:3857)이 표현할 수 있는 위도 범위. useCourseLayer와 같은 기준이다. */
+const MAX_MAP_LATITUDE = 85.0511287798066;
+
+/** 응답 Point 좌표가 지도에 그릴 수 있는 [경도, 위도]일 때만 반환한다. 결측을 임의 위치로 채우지 않는다. */
+function lonLat(geometry: PointGeometry | null | undefined): GeoJsonPosition | null {
+  if (geometry?.type !== 'Point' || !Array.isArray(geometry.coordinates)) return null;
+  const [longitude, latitude] = geometry.coordinates;
+  return Number.isFinite(longitude) &&
+    Number.isFinite(latitude) &&
+    Math.abs(longitude) <= 180 &&
+    Math.abs(latitude) <= MAX_MAP_LATITUDE
+    ? [longitude, latitude]
+    : null;
+}
+
+/** 상세지점·시설 조회 결과를 화면용 요약으로 정리한다. 코스(I-01·I-02)와 경로 후보 조회가 함께 쓴다. */
+export function toNearbySummary(
+  radiusM: number,
+  spots: NearbySpotsGroup,
+  facilities: NearbyFacilitiesGroup,
 ): CourseNearbySummary {
   // 자료가 있는데 키가 없으면 0곳, 자료 자체가 없으면 결측(null)으로 둔다.
   const toilet = facilities.dataAvailable ? (facilities.counts.TOILET ?? 0) : null;
@@ -76,23 +101,26 @@ function toSummary(
       address: item.address,
       memo: null,
       distanceM: item.distanceM,
+      coordinates: lonLat(item.geometry),
     })),
     // 산림청 지점은 이름이 없어 원본 분류명(예: 벤치)을 이름으로 쓰고 메모는 상세에 둔다.
+    // 원본 분류 '기타'는 이름으로 의미가 없으므로 시설 유형명(쉼터)으로 표시한다.
     ...(spots.dataAvailable ? spots.items : [])
       .filter((item) => item.tags.some((tag) => tag.tag === 'REST'))
       .map((item) => ({
         key: `spot-${item.spotId}`,
         kind: 'SHELTER' as const,
         facilityId: null,
-        name: item.sourceClass ?? '쉼터',
+        name: item.sourceClass && item.sourceClass !== '기타' ? item.sourceClass : '쉼터',
         address: null,
         memo: item.detail,
         distanceM: item.distanceM,
+        coordinates: lonLat(item.geometry),
       })),
   ].sort((a, b) => a.distanceM - b.distanceM || a.key.localeCompare(b.key));
 
   return {
-    radiusM: facilities.radiusM,
+    radiusM,
     stairs: spots.dataAvailable ? (spots.counts.STAIR ?? 0) : null,
     toilet,
     parking,
@@ -112,7 +140,7 @@ export function useCourseNearby(
   userId?: string,
 ) {
   const token = useAccessToken();
-  const requestParams = { revNo: params.revNo, radiusM: params.radiusM ?? 200 };
+  const requestParams = { revNo: params.revNo, radiusM: params.radiusM ?? DEFAULT_NEARBY_RADIUS_M };
   const enabled = Boolean(
     userId &&
     token &&
@@ -144,16 +172,21 @@ export function useCourseNearby(
       ) {
         throw new Error('주변 정보의 응답 조건이 요청과 일치하지 않습니다.');
       }
-      return toSummary(spots, facilities);
+      return toNearbySummary(facilities.radiusM, spots, facilities);
     },
     enabled,
     staleTime: 60 * 1000,
     gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
-    // 400·404·409 같은 요청 오류는 다시 보내도 결과가 같으므로 재시도하지 않는다.
-    retry: (failureCount, error) =>
-      !(axios.isAxiosError(error) && error.response && error.response.status < 500) &&
-      failureCount < 1,
+    retry: retryNearby,
   });
+}
+
+/** 400·404·409 같은 요청 오류는 다시 보내도 결과가 같으므로 재시도하지 않는다. */
+export function retryNearby(failureCount: number, error: Error): boolean {
+  return (
+    !(axios.isAxiosError(error) && error.response && error.response.status < 500) &&
+    failureCount < 1
+  );
 }

@@ -1,14 +1,21 @@
+import type { ReactNode } from 'react';
+
 import { Button, Tabs } from '@/components/ui';
 
 import { getRouteSearchErrorMessage } from '../api/route-search-errors';
 import type { useRouteSearchResultsState } from '../hooks/useRouteSearchResultsState';
+import type { RouteCandidateNearbyCounts } from '../types/route-candidate-view';
 import { RouteCandidateCard } from './RouteCandidateCard';
 
 interface RouteSearchResultsPanelProps {
   state: ReturnType<typeof useRouteSearchResultsState>;
+  // 주변 시설 탭 내용. 페이지에서 조합해 넘기며, 없으면 미연결 안내를 표시한다.
+  facilitiesContent?: ReactNode;
+  // 후보 ID별 계단·시설 수. 전달된 후보만 카드에 표시한다.
+  nearbyCountsById?: ReadonlyMap<string, RouteCandidateNearbyCounts>;
 }
 
-// 지형 분석·주변 시설은 경로 탐색 결과와 아직 연결되지 않았다. 예시 수치를 보여주지 않는다.
+// 지형 분석은 경로 탐색 결과와 아직 연결되지 않았다. 예시 수치를 보여주지 않는다.
 function NotConnectedNotice({ title }: { title: string }) {
   return (
     <div className="route-results-state" role="status">
@@ -52,7 +59,12 @@ function RouteSearchStatus({ state }: Pick<RouteSearchResultsPanelProps, 'state'
   );
 }
 
-export function RouteSearchResultsPanel({ state }: RouteSearchResultsPanelProps) {
+/** 탐색 결과 패널. 주변 시설 탭은 탐색이 끝난 뒤에만 페이지에서 받은 내용을 표시한다. */
+export function RouteSearchResultsPanel({
+  state,
+  facilitiesContent,
+  nearbyCountsById,
+}: RouteSearchResultsPanelProps) {
   const comparison = (
     <div aria-busy={state.status === 'loading'} className="route-results-comparison">
       {state.status === 'ready' ? (
@@ -62,6 +74,7 @@ export function RouteSearchResultsPanel({ state }: RouteSearchResultsPanelProps)
               candidate={candidate}
               index={index}
               key={candidate.id}
+              nearbyCounts={nearbyCountsById?.get(candidate.id)}
               onSelect={() => state.selectCandidate(candidate.id)}
               selected={candidate.id === state.selectedCandidate?.id}
             />
@@ -95,7 +108,12 @@ export function RouteSearchResultsPanel({ state }: RouteSearchResultsPanelProps)
           {
             value: 'facilities',
             label: '주변 시설',
-            content: state.tab === 'facilities' ? <NotConnectedNotice title="주변 시설" /> : null,
+            content:
+              state.tab !== 'facilities' ? null : state.status !== 'ready' ? (
+                <RouteSearchStatus state={state} />
+              ) : (
+                (facilitiesContent ?? <NotConnectedNotice title="주변 시설" />)
+              ),
           },
         ]}
         onValueChange={state.setTab}
