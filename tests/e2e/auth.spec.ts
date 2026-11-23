@@ -39,6 +39,8 @@ test('로그인 성공 시 토큰을 저장하고 산 목록 화면으로 이동
 
   await expect(page).toHaveURL(/\/login\?redirect=%2Fmy-page$/);
   await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: '로그인 상태 유지' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '비밀번호 찾기' })).toHaveCount(0);
 
   const loginId = page.getByLabel('아이디');
   const password = page.locator('#login-password');

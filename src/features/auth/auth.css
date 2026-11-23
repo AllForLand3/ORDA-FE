@@ -211,41 +211,10 @@
 }
 
 .auth-password-toggle:focus-visible,
-.auth-text-button:focus-visible,
 .auth-signup__term-toggle:focus-visible {
   border-radius: 4px;
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
-}
-
-.auth-login__options {
-  display: flex;
-  min-height: 22px;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 28px;
-}
-
-.auth-login__options .orda-checkbox {
-  min-height: 22px;
-  gap: 6px;
-}
-
-.auth-login__options .orda-checkbox__label,
-.auth-login__forgot {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
-.auth-login__options .orda-checkbox__box {
-  border-radius: 4px;
-}
-
-.auth-text-button {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
 }
 
 .auth-submit.orda-button {
@@ -476,10 +445,6 @@
 
   .auth-login__form {
     margin-top: 28px;
-  }
-
-  .auth-login__options {
-    margin-top: 24px;
   }
 
   .auth-login__submit {

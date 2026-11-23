@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { Button, Checkbox, TextField } from '@/components/ui';
+import { Button, TextField } from '@/components/ui';
 import { storeAccessToken } from '@/lib/accessToken';
 import type { ApiErrorResponse } from '@/shared/types/api';
 
@@ -48,7 +48,6 @@ export function LoginScreen() {
 
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [notice, setNotice] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -103,7 +102,7 @@ export function LoginScreen() {
             });
 
             // 새로운 로그인 토큰 저장
-            storeAccessToken(accessToken, rememberMe);
+            storeAccessToken(accessToken, true);
           } catch {
             setNotice('로그인 정보를 처리할 수 없습니다. 다시 시도해주세요.');
             return;
@@ -146,10 +145,6 @@ export function LoginScreen() {
         },
       },
     );
-  }
-
-  function showUnavailableAction(action: string) {
-    setNotice(`${action} 기능은 아직 연결되지 않았습니다.`);
   }
 
   return (
@@ -245,23 +240,6 @@ export function LoginScreen() {
               type={passwordVisible ? 'text' : 'password'}
               value={password}
             />
-
-            <div className="auth-login__options">
-              <Checkbox
-                checked={rememberMe}
-                disabled={loginMutation.isPending}
-                label="로그인 상태 유지"
-                onChange={(event) => setRememberMe(event.target.checked)}
-              />
-
-              <button
-                className="auth-text-button auth-login__forgot"
-                onClick={() => showUnavailableAction('비밀번호 찾기')}
-                type="button"
-              >
-                비밀번호 찾기
-              </button>
-            </div>
 
             <Button
               className="auth-submit auth-login__submit"
