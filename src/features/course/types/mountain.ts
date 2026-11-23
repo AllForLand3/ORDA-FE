@@ -14,7 +14,7 @@ export interface MountainListItem {
   addressLabel: string | null;
   provinceName: string | null;
   districtName: string | null;
-  elevationMeters: number | null;
+  elevationMeters?: number | null;
   geometry: PointGeometry | null;
 }
 
@@ -27,7 +27,7 @@ export interface MountainDetail {
   addressLabel: string | null;
   provinceName: string | null;
   districtName: string | null;
-  elevationMeters: number | null;
+  elevationMeters?: number | null;
   geometry: PointGeometry | null;
 }
 

@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures/authenticatedTest';
+import { mockSnap } from '../fixtures/routeSnap';
 
 const mockedVWorld = `
   let cameraChanged = () => {};
@@ -6,6 +7,7 @@ const mockedVWorld = `
   let cameraRange = 2000;
 
   window.Cesium = {
+    Color: { fromCssColorString: color => color },
     Math: {
       toDegrees: value => value * 180 / Math.PI,
       toRadians: value => value * Math.PI / 180,
@@ -40,6 +42,13 @@ const mockedVWorld = `
 
   window.ws3d = {
     viewer: {
+      entities: {
+        add: ({ polyline }) => {
+          document.body.dataset.courseLine = JSON.stringify(polyline);
+          return polyline;
+        },
+        remove: () => true,
+      },
       terrainProvider: {
         tilingScheme: {
           tileXYToRectangle: () => ({
@@ -122,6 +131,60 @@ async function mockVWorld(page: import('@playwright/test').Page) {
   );
 }
 
+for (const [mode, label] of [
+  ['satellite', '위성지도 보기'],
+  ['terrain', '3D 지도 보기'],
+]) {
+  test(`경로 탐색 후 ${label} 선택을 유지한다`, async ({ page }) => {
+    await mockVWorld(page);
+    await mockSnap(page);
+    await page.route('**/api/routes/search', (route) =>
+      route.fulfill({
+        json: {
+          mountainId: '2',
+          startNodeId: '101',
+          endNodeId: '102',
+          candidates: [
+            {
+              rank: 1,
+              priorityCondition: 'DIST_FIRST',
+              lengthM: 1000,
+              estTimeMin: 20,
+              edgeIds: [],
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [126.95, 37.45],
+                  [126.96, 37.44],
+                ],
+              },
+            },
+          ],
+        },
+      }),
+    );
+    await page.goto(
+      '/routes/setup?step=conditions&origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae&originNode=101&destinationNode=102&priorities=gentle-slope&facilities=shelter',
+    );
+    await page.getByRole('button', { name: label, exact: true }).click();
+    await page.getByRole('button', { name: '맞춤 경로 탐색하기' }).click();
+    await expect(page).toHaveURL(/routes\/results\?/);
+    await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+      'data-map-base-layer',
+      mode,
+    );
+    await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    if (mode === 'terrain') {
+      await expect(
+        page.frameLocator('iframe[title="VWorld 3D 지도"]').locator('body'),
+      ).toHaveAttribute('data-course-line', /positions/);
+    }
+  });
+}
+
 test('VWorld 3D 지도에 관악산 DEM 고도를 적용한다', async ({ page }) => {
   await mockVWorld(page);
   await page.goto('/terrain-3d');
@@ -181,6 +244,20 @@ test('같은 페이지에서 3D로 전환하고 이동한 위치와 축척을 2D
   );
 
   // SDK 카메라 이동을 재현하여 실제 위치 연동 코드를 검증한다.
+  await expect
+    .poll(async () => {
+      const line = await frame.locator('body').getAttribute('data-course-line');
+      return line && JSON.parse(line);
+    })
+    .toMatchObject({
+      positions: [
+        [expect.closeTo(127.03, 6), expect.closeTo(37.51, 6)],
+        [expect.closeTo(127.05, 6), expect.closeTo(37.53, 6)],
+      ],
+      material: '#075c47',
+      width: 4,
+      clampToGround: true,
+    });
   await frame.locator('body').evaluate(() => {
     const viewer = window.ws3d?.viewer;
     const cesium = window.Cesium;
@@ -201,13 +278,19 @@ test('같은 페이지에서 3D로 전환하고 이동한 위치와 축척을 2D
   await expect(surface).toHaveAttribute('data-map-center', '127.050000,37.530000');
   await expect(surface).toHaveAttribute('data-map-zoom', '14.5');
 
+  await frame.locator('body').evaluate((body) => {
+    body.dataset.originalViewer = 'true';
+  });
   await page.getByRole('button', { name: '위성지도 보기', exact: true }).click();
 
   await expect(page.locator('.ol-viewport')).toBeVisible();
-  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(page.locator('iframe')).toBeHidden();
   await expect(surface).toHaveAttribute('data-map-base-layer', 'satellite');
   await expect(surface).toHaveAttribute('data-map-center', '127.050000,37.530000');
   await expect(surface).toHaveAttribute('data-map-zoom', '14.5');
+  await page.getByRole('button', { name: '3D 지도 보기', exact: true }).click();
+  await expect(page.locator('iframe')).toBeVisible();
+  await expect(frame.locator('body')).toHaveAttribute('data-original-viewer', 'true');
 });
 
 test('모바일에서 3D 로딩 중 복귀와 오류 후 재시도가 가능하다', async ({ page }) => {
@@ -230,7 +313,8 @@ test('모바일에서 3D 로딩 중 복귀와 오류 후 재시도가 가능하�
   await page.getByRole('button', { name: '3D 지도 보기', exact: true }).click();
   await page.getByRole('button', { name: '일반지도 보기', exact: true }).click();
 
-  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(page.locator('iframe')).toBeHidden();
+  await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.locator('.ol-viewport')).toBeVisible();
 
   await page.getByRole('button', { name: '3D 지도 보기', exact: true }).click();

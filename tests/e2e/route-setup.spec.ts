@@ -1,31 +1,6 @@
 import { expect, test } from '../fixtures/authenticatedTest';
-import type { Page } from '@playwright/test';
 
-// 스냅 API를 모킹한다. 예시 장소는 경도별로 서로 다른 노드, 그 외 좌표는 별도 노드로 연결한다.
-async function mockSnap(page: Page) {
-  const nodeByLongitude: Record<string, string> = {
-    '126.9518': '101',
-    '126.96444': '102',
-    '126.9523': '103',
-  };
-  await page.route(
-    (url) => url.pathname === '/api/routes/snap',
-    async (route) => {
-      const url = new URL(route.request().url());
-      const longitude = Number(url.searchParams.get('longitude'));
-      const latitude = Number(url.searchParams.get('latitude'));
-      await route.fulfill({
-        status: 200,
-        json: {
-          mountainId: '2',
-          nodeId: nodeByLongitude[String(longitude)] ?? '900',
-          distanceM: 12.4,
-          coordinates: [longitude + 0.0001, latitude + 0.0001],
-        },
-      });
-    },
-  );
-}
+import { mockSnap } from '../fixtures/routeSnap';
 
 const selectedPlaces =
   'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae';
@@ -452,6 +427,9 @@ for (const coordinates of [null, [200, 37]]) {
   test(`산 좌표가 ${coordinates ? '잘못되면' : '없으면'} 임의 위치에 지도를 생성하지 않는다`, async ({
     page,
   }) => {
+    await page.route('**/api/mountains/42/service-area', (route) =>
+      route.fulfill({ json: { type: 'FeatureCollection', features: [] } }),
+    );
     await page.route('**/api/mountains/42', (route) =>
       route.fulfill({
         json: {

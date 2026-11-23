@@ -2,6 +2,10 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/authenticatedTest';
 
+import { mockSnap } from '../fixtures/routeSnap';
+
+test.beforeEach(async ({ page }) => mockSnap(page));
+
 const places =
   'origin=seoul-national-university-research-center&destination=gwanaksan-yeonjudae&originNode=101&destinationNode=102';
 const conditions = `${places}&priorities=gentle-slope&facilities=shelter`;
@@ -116,9 +120,10 @@ test('Long 범위의 큰 ID와 선행 0이 있는 양의 정수 ID는 문자열 
   for (const id of validIds) {
     await page.goto(`/routes/setup?mountainId=${id}&step=conditions&${conditions}`);
     await expect(page.getByRole('button', { name: '맞춤 경로 탐색하기' })).toBeEnabled();
+    // 출발지가 지정된 URL은 산 중심 대신 선택한 출발지에 초점을 맞춘다.
     await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
       'data-map-center',
-      '126.978000,37.658630',
+      '126.951800,37.458700',
     );
   }
   expect(ids).toEqual(validIds);
@@ -175,12 +180,52 @@ for (const status of [404, 500]) {
   });
 }
 
+test('대표 좌표가 없어도 서비스 구역으로 지도를 열 수 있다', async ({ page }) => {
+  await page.route('**/api/mountains/42', (route) =>
+    route.fulfill({ json: { ...mountain, geometry: null } }),
+  );
+  await page.route('**/api/mountains/42/service-area', (route) =>
+    route.fulfill({
+      json: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'MultiPolygon',
+              coordinates: [
+                [
+                  [
+                    [126.9, 37.4],
+                    [127, 37.4],
+                    [127, 37.5],
+                    [126.9, 37.4],
+                  ],
+                ],
+              ],
+            },
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto('/routes/setup?mountainId=42');
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-center',
+    /^126\.950000,37\.45/,
+  );
+  await expect(page.getByRole('group', { name: '코스 설정 입력', exact: true })).toBeEnabled();
+});
+
 for (const geometry of [null, { type: 'Point', coordinates: [200, 37] }]) {
   test(`좌표가 ${geometry ? '잘못된' : '없는'} API 산은 조건 입력과 결과 이동을 막는다`, async ({
     page,
   }) => {
     await page.route('**/api/mountains/42', (route) =>
       route.fulfill({ json: { ...mountain, geometry } }),
+    );
+    await page.route('**/api/mountains/42/service-area', (route) =>
+      route.fulfill({ json: { type: 'FeatureCollection', features: [] } }),
     );
     await page.goto(`/routes/setup?mountainId=42&step=conditions&${conditions}`);
     await expect(page.getByRole('alert')).toContainText('산 위치를 표시할 수 없어요.');

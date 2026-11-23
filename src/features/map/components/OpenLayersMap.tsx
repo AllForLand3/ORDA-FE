@@ -80,6 +80,7 @@ export function OpenLayersMap({
   targetRef,
 }: OpenLayersMapProps) {
   const [baseMap, setBaseMap] = useState<BaseMapType>('street');
+  const [hasOpenedTerrain, setHasOpenedTerrain] = useState(false);
   const baseMapRef = useRef<BaseMapType>('street');
   const [terrainBridge, setTerrainBridge] = useState<TerrainMapBridge | null>(null);
   const onControllerChangeRef = useRef(onControllerChange);
@@ -349,6 +350,7 @@ export function OpenLayersMap({
 
         if (type === 'terrain') {
           if (!readView()) return false;
+          setHasOpenedTerrain(true);
           markUserAdjustedView();
         }
 
@@ -396,7 +398,11 @@ export function OpenLayersMap({
     };
   }, [additionalLayers, initialCenter, initialExtent, initialZoom, targetRef, fitObstructionRef]);
 
-  return baseMap === 'terrain' && terrainBridge ? (
-    <InlineTerrainMap bridge={terrainBridge} />
+  return hasOpenedTerrain && terrainBridge ? (
+    <InlineTerrainMap
+      active={baseMap === 'terrain'}
+      bridge={terrainBridge}
+      layers={additionalLayers}
+    />
   ) : null;
 }

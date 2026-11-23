@@ -14,6 +14,20 @@ export interface TerrainProvider {
 }
 
 export interface VWorldViewer {
+  useDefaultRenderLoop: boolean;
+  resize?: () => void;
+  entities: {
+    add: (options: {
+      polyline: {
+        positions: unknown[];
+        material: unknown;
+        width: number;
+        clampToGround: boolean;
+        zIndex: number;
+      };
+    }) => unknown;
+    remove: (entity: unknown) => boolean;
+  };
   terrainProvider: TerrainProvider;
   scene: {
     canvas: HTMLCanvasElement;
@@ -68,6 +82,7 @@ export interface CesiumTerrainApi {
     toDegrees: (radians: number) => number;
     toRadians: (degrees: number) => number;
   };
+  Color: { fromCssColorString: (color: string) => unknown };
   Cartesian3: {
     fromDegrees: (longitude: number, latitude: number, height?: number) => unknown;
     distance: (left: unknown, right: unknown) => number;

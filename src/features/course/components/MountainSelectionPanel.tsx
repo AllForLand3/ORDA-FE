@@ -27,7 +27,9 @@ function getMountainLocation(mountain: MountainListItem) {
     mountain.addressLabel?.trim() ||
     [mountain.provinceName, mountain.districtName].filter(Boolean).join(' ');
   const elevation =
-    mountain.elevationMeters === null ? '' : `${mountain.elevationMeters.toLocaleString('ko-KR')}m`;
+    typeof mountain.elevationMeters === 'number'
+      ? `${mountain.elevationMeters.toLocaleString('ko-KR')}m`
+      : '';
 
   return [address, elevation].filter(Boolean).join(' · ');
 }

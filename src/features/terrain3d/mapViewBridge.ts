@@ -4,6 +4,8 @@ import { isMapViewState } from '@/shared/mapView';
 import type { MapViewState } from '@/shared/mapView';
 import type { CesiumTerrainApi, VWorldViewer } from './types/vworld';
 
+import { isTerrainLines } from '@/shared/terrainLines';
+
 const MERCATOR_RESOLUTION = 156543.03392804097;
 
 /** Match scale at the screen center; perspective cannot match the entire 2D extent. */
@@ -42,17 +44,44 @@ export function connectMapView(
     if (isMapViewState(view))
       window.parent.postMessage({ type: 'orda-terrain3d-view', view }, window.location.origin);
   };
+  let entities: unknown[] = [];
+  const clearLines = () => {
+    entities.forEach((entity) => viewer.entities.remove(entity));
+    entities = [];
+  };
   const receive = (event: MessageEvent<unknown>) => {
     if (event.source !== window.parent || event.origin !== window.location.origin) return;
     const data = event.data;
+    if (!data || typeof data !== 'object' || !('type' in data)) return;
     if (
-      !data ||
-      typeof data !== 'object' ||
-      !('type' in data) ||
-      data.type !== 'orda-terrain3d-set-view' ||
-      !('view' in data) ||
-      !isMapViewState(data.view)
-    )
+      data.type === 'orda-terrain3d-active' &&
+      'active' in data &&
+      typeof data.active === 'boolean'
+    ) {
+      viewer.useDefaultRenderLoop = data.active;
+      if (data.active) viewer.resize?.();
+      return;
+    }
+    if (data.type === 'orda-terrain3d-lines' && 'lines' in data && isTerrainLines(data.lines)) {
+      clearLines();
+      for (const line of data.lines) {
+        entities.push(
+          viewer.entities.add({
+            polyline: {
+              positions: line.coordinates.map(([lon, lat]) =>
+                cesium.Cartesian3.fromDegrees(lon, lat),
+              ),
+              material: cesium.Color.fromCssColorString(line.color),
+              width: line.width,
+              zIndex: line.zIndex,
+              clampToGround: true,
+            },
+          }),
+        );
+      }
+      return;
+    }
+    if (data.type !== 'orda-terrain3d-set-view' || !('view' in data) || !isMapViewState(data.view))
       return;
     const {
       center: [longitude, latitude],
@@ -84,6 +113,7 @@ export function connectMapView(
   const removeMoveEnd = camera.moveEnd.addEventListener(reportView);
   window.addEventListener('message', receive);
   return () => {
+    clearLines();
     removeChanged();
     removeMoveEnd();
     camera.percentageChanged = previousThreshold;

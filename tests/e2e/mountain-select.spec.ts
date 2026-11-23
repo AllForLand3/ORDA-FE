@@ -18,7 +18,7 @@ const MOUNTAINS = [
     addressLabel: '서울특별시 강북구',
     provinceName: '서울특별시',
     districtName: '강북구',
-    elevationMeters: 836,
+    elevationMeters: null,
     geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
   },
   {
@@ -27,7 +27,6 @@ const MOUNTAINS = [
     addressLabel: '경기도 과천시',
     provinceName: '경기도',
     districtName: '과천시',
-    elevationMeters: 618,
     geometry: { type: 'Point', coordinates: [127.0543676446, 37.4416867721] },
   },
 ];
@@ -102,6 +101,8 @@ test('산 선택 화면은 API 목록과 지도 패널을 표시한다', async (
     '서울특별시 관악구 · 629m',
   );
   await expect(page.getByText('서비스 대상 산')).toHaveCount(0);
+  await expect(page.getByText('경기도 과천시', { exact: true })).toBeVisible();
+  await expect(page.getByText('서울특별시 강북구', { exact: true })).toBeVisible();
   await expect(page.getByText('상세 정보 확인 가능')).toHaveCount(0);
   await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
     'data-map-ready',

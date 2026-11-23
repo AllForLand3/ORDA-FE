@@ -15,6 +15,7 @@ import type { NearbyPlace } from '@/features/analysis';
 import { useAuth } from '@/features/auth';
 import { MountainHeader } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
+import { RouteMapControls } from './RouteMapControls';
 import type { MapController } from '@/features/map';
 import type { RouteCandidateNearbyCounts, RouteSearchRequest } from '@/features/route';
 import {
@@ -133,7 +134,7 @@ function RouteSearchResults({ request }: { request: RouteSearchRequest }) {
             targetRef={mapContainerRef}
           />
         }
-        mapControls={<MapControls controller={controller} mountainName="관악산" />}
+        mapControls={<RouteMapControls controller={controller} mountainName="관악산" />}
         mapLabel="경로 탐색 결과의 후보 선형을 표시하는 지도"
         panel={
           <RouteSearchResultsPanel
