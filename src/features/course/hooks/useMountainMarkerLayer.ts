@@ -71,7 +71,7 @@ export function useMountainMarkerLayer(
       return style;
     };
 
-    return new VectorLayer({
+    const markerLayer = new VectorLayer({
       source: new VectorSource(),
       style: (feature) => {
         const mountainId = feature.get('mountainId');
@@ -91,6 +91,9 @@ export function useMountainMarkerLayer(
       },
       zIndex: 10,
     });
+    markerLayer.set('clickable', true);
+
+    return markerLayer;
   }, []);
 
   useEffect(() => {

@@ -53,6 +53,41 @@ const MOUNTAIN_DETAILS = {
   },
 };
 
+function getServiceArea(mountainId: keyof typeof MOUNTAIN_DETAILS) {
+  const [longitude, latitude] = MOUNTAIN_DETAILS[mountainId].geometry.coordinates;
+  const offset = 0.006;
+
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        id: Number(mountainId),
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [longitude - offset, latitude - offset],
+                [longitude + offset, latitude - offset],
+                [longitude + offset, latitude + offset],
+                [longitude - offset, latitude + offset],
+                [longitude - offset, latitude - offset],
+              ],
+            ],
+          ],
+        },
+        properties: {
+          areaId: Number(mountainId),
+          areaName: `${MOUNTAIN_DETAILS[mountainId].mountainName} 서비스 영역`,
+          mountainId: Number(mountainId),
+          datasetId: 1,
+        },
+      },
+    ],
+  };
+}
+
 function getMountainPage(url: URL) {
   const keyword = url.searchParams.get('keyword')?.trim() ?? '';
   const page = Number(url.searchParams.get('page') ?? 0);
@@ -74,9 +109,18 @@ async function installMountainRoute(page: Page) {
   await page.route('**/api/mountains?*', async (route) => {
     await route.fulfill({ json: getMountainPage(new URL(route.request().url())) });
   });
-  await page.route('**/api/mountains/*', async (route) => {
-    const mountainId = new URL(route.request().url()).pathname.split('/').at(-1) ?? '';
+  await page.route('**/api/mountains/**', async (route) => {
+    const pathParts = new URL(route.request().url()).pathname.split('/');
+    const isServiceArea = pathParts.at(-1) === 'service-area';
+    const mountainId = pathParts.at(isServiceArea ? -2 : -1) ?? '';
     const detail = MOUNTAIN_DETAILS[mountainId as keyof typeof MOUNTAIN_DETAILS];
+
+    if (isServiceArea && detail) {
+      await route.fulfill({
+        json: getServiceArea(mountainId as keyof typeof MOUNTAIN_DETAILS),
+      });
+      return;
+    }
 
     await route.fulfill(
       detail
@@ -484,4 +528,44 @@ test('산 카드는 키보드 선택과 Escape·버튼 선택 취소를 지원�
   await gwanaksan.click();
   await page.getByRole('button', { name: '선택 취소' }).click();
   await expect(gwanaksan).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('지도 산 마커 선택은 패널 선택 상태와 지도 포커스를 함께 갱신한다', async ({ page }) => {
+  await installMountainRoute(page);
+  await page.goto('/mountains');
+
+  const mapSurface = page.locator('.orda-map-layout__map-surface');
+  const bukhansan = page.locator('.mountain-card').filter({ hasText: '북한산' });
+  await expect(mapSurface).toHaveAttribute('data-map-ready', 'true');
+
+  const box = await mapSurface.boundingBox();
+  if (!box) throw new Error('산 선택 지도가 없습니다.');
+  const center = (await mapSurface.getAttribute('data-map-center'))?.split(',').map(Number) as
+    [number, number] | undefined;
+  const zoom = Number(await mapSurface.getAttribute('data-map-zoom'));
+  if (!center || center.some((coordinate) => !Number.isFinite(coordinate))) {
+    throw new Error('지도 중심 좌표를 확인할 수 없습니다.');
+  }
+
+  const worldSize = 256 * 2 ** zoom;
+  const toWorldPixel = ([longitude, latitude]: readonly [number, number]) => {
+    const latitudeRadians = (latitude * Math.PI) / 180;
+    return [
+      ((longitude + 180) / 360) * worldSize,
+      (0.5 - Math.log(Math.tan(Math.PI / 4 + latitudeRadians / 2)) / (2 * Math.PI)) * worldSize,
+    ];
+  };
+  const [centerX, centerY] = toWorldPixel(center);
+  const [markerX, markerY] = toWorldPixel(MOUNTAINS[1].geometry.coordinates);
+  const markerPixel = [box.width / 2 + markerX - centerX, box.height / 2 + markerY - centerY];
+  const serviceAreaResponse = page.waitForResponse(
+    (response) => response.url().endsWith('/api/mountains/2/service-area') && response.ok(),
+  );
+  await page.mouse.click(box.x + markerPixel[0], box.y + markerPixel[1]);
+
+  await serviceAreaResponse;
+  await expect(bukhansan).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('선택한 산: 북한산')).toBeVisible();
+  await expect.poll(() => mapSurface.getAttribute('data-map-center')).toBe('126.978000,37.658630');
+  await expect(mapSurface).toHaveAttribute('data-map-zoom', '14');
 });

@@ -11,7 +11,9 @@ import {
   MountainSelectionPanel,
   useMountainDetailQuery,
   useMountainMarkerLayer,
+  useMountainServiceAreaLayer,
   useMountainsQuery,
+  useServiceAreaQuery,
 } from '@/features/course';
 import type { MountainListItem } from '@/features/course';
 import { getApiErrorCode } from '@/lib/apiError';
@@ -20,6 +22,7 @@ import './MountainSelectPage.css';
 
 const EMPTY_MOUNTAINS: MountainListItem[] = [];
 const MOUNTAINS_PAGE_SIZE = 10;
+const SELECTED_MOUNTAIN_ZOOM = 14;
 
 export function MountainSelectPage() {
   const navigate = useNavigate();
@@ -36,9 +39,14 @@ export function MountainSelectPage() {
   });
   const mountains = mountainsQuery.data?.items ?? EMPTY_MOUNTAINS;
   const mountainDetailQuery = useMountainDetailQuery(selectedMountain?.mountainId ?? null);
+  const serviceAreaQuery = useServiceAreaQuery(selectedMountain?.mountainId ?? null);
   const mountainDetail = mountainDetailQuery.data ?? null;
+  const serviceAreaLayer = useMountainServiceAreaLayer(serviceAreaQuery.data);
   const markerLayer = useMountainMarkerLayer(mountains, mountainDetail ?? selectedMountain);
-  const additionalLayers = useMemo(() => [markerLayer], [markerLayer]);
+  const additionalLayers = useMemo(
+    () => [serviceAreaLayer, markerLayer],
+    [markerLayer, serviceAreaLayer],
+  );
   const mountainDetailErrorCode = getApiErrorCode(mountainDetailQuery.error);
   const mountainDetailError = mountainDetailQuery.isError
     ? mountainDetailErrorCode === 'MOUNTAIN_NOT_FOUND'
@@ -68,7 +76,7 @@ export function MountainSelectPage() {
 
   useEffect(() => {
     if (mountainDetail?.geometry) {
-      mapController?.centerOn(mountainDetail.geometry.coordinates, 14);
+      mapController?.centerOn(mountainDetail.geometry.coordinates, SELECTED_MOUNTAIN_ZOOM);
     }
   }, [mapController, mountainDetail]);
 
@@ -86,7 +94,17 @@ export function MountainSelectPage() {
     setSelectedMountain(mountain);
 
     if (mountain?.geometry) {
-      mapController?.centerOn(mountain.geometry.coordinates, 14);
+      mapController?.centerOn(mountain.geometry.coordinates, SELECTED_MOUNTAIN_ZOOM);
+    }
+  };
+
+  const handleMountainMarkerClick = (mountainId: string) => {
+    const mountain =
+      mountains.find((item) => item.mountainId === mountainId) ??
+      (selectedMountain?.mountainId === mountainId ? selectedMountain : null);
+
+    if (mountain) {
+      handleMountainSelect(mountain);
     }
   };
 
@@ -101,6 +119,7 @@ export function MountainSelectPage() {
           additionalLayers={additionalLayers}
           initialZoom={10}
           onControllerChange={setMapController}
+          onFeatureClick={handleMountainMarkerClick}
           targetRef={mapContainerRef}
         />
       }
