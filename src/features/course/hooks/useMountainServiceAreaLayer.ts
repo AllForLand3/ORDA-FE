@@ -34,7 +34,7 @@ export function useMountainServiceAreaLayer(serviceArea: ServiceAreaFeatureColle
 
   useEffect(() => {
     source.clear(true);
-    if (!serviceArea?.features.length) return;
+    if (!Array.isArray(serviceArea?.features) || serviceArea.features.length === 0) return;
 
     const features = new GeoJSON().readFeatures(serviceArea, {
       dataProjection: API_PROJECTION,

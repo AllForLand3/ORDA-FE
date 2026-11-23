@@ -9,6 +9,8 @@ import {
   isValidMountainCoordinate,
   isValidMountainId,
   useMountainDetailQuery,
+  useMountainServiceAreaLayer,
+  useServiceAreaQuery,
 } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
@@ -30,6 +32,9 @@ export function RouteSetupPage() {
   const usesApiMountain = mountainId !== null && !fallbackMountain;
   const hasInvalidMountainId = usesApiMountain && !isValidMountainId(mountainId);
   const mountainDetailQuery = useMountainDetailQuery(
+    usesApiMountain && isValidMountainId(mountainId) ? mountainId : null,
+  );
+  const serviceAreaQuery = useServiceAreaQuery(
     usesApiMountain && isValidMountainId(mountainId) ? mountainId : null,
   );
   const selectedMountainName = mountainDetailQuery.data?.mountainName ?? fallbackMountain?.name;
@@ -79,7 +84,8 @@ export function RouteSetupPage() {
     state.pendingPlace,
     snapped,
   );
-  const layers = useMemo(() => [markerLayer], [markerLayer]);
+  const serviceAreaLayer = useMountainServiceAreaLayer(serviceAreaQuery.data);
+  const layers = useMemo(() => [serviceAreaLayer, markerLayer], [markerLayer, serviceAreaLayer]);
   const focusedPlace = state.pendingPlace ?? state.origin ?? state.destination;
 
   function goBack() {
