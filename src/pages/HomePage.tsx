@@ -9,8 +9,6 @@ import homeLogoTile from '@/assets/home/logo-tile.svg';
 import homeMountain from '@/assets/home/mountain-background.png';
 import './HomePage.css';
 
-const serviceMenuItems = ['서비스 소개', '주요 기능', '코스 추천', '이용 안내'];
-
 export function HomePage() {
   return (
     <main className="home-page">
@@ -29,17 +27,7 @@ export function HomePage() {
         </div>
 
         <header aria-label="ORDA 홈 헤더" className="home-page__header">
-          <div className="home-page__header-brand">
-            <img alt="ORDA 로고" className="home-page__desktop-logo" src={desktopLogo} />
-            <ul
-              aria-label="서비스 메뉴. 화면 이동은 아직 준비 중입니다."
-              className="home-page__menu"
-            >
-              {serviceMenuItems.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
+          <img alt="ORDA 로고" className="home-page__desktop-logo" src={desktopLogo} />
 
           <nav aria-label="계정" className="home-page__header-actions">
             <Link className="home-page__header-action home-page__header-action--login" to="/login">
