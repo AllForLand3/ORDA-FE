@@ -1,0 +1,80 @@
+.chat-assistant__launcher {
+  position: fixed;
+  right: 16px;
+  bottom: 88px;
+  z-index: 40;
+  box-shadow: var(--shadow-orda-center);
+}
+
+/* 지도 화면은 하단 패널 버튼과 겹치지 않게 오른쪽 지도 컨트롤 아래 빈 공간에 둔다. */
+body:has(.orda-map-layout) .chat-assistant__launcher {
+  top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 14rem);
+  bottom: auto;
+}
+
+.chat-assistant__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(50vh, 420px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.chat-assistant__message {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-assistant__message--assistant {
+  align-self: flex-start;
+  background: var(--color-background-subtle);
+  color: var(--color-text-primary);
+}
+
+.chat-assistant__message--user {
+  align-self: flex-end;
+  background: var(--color-primary-default);
+  color: #fff;
+}
+
+.chat-assistant__status {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.chat-assistant__status--error {
+  color: var(--color-status-error);
+}
+
+.chat-assistant__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-assistant__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chat-assistant__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
