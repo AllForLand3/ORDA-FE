@@ -15,10 +15,10 @@
 
 .route-setup-map-note {
   position: absolute;
+  inset-block-start: 1rem;
   inset-inline-start: 1rem;
-  inset-block-end: 1rem;
-  z-index: 1;
-  max-width: calc(100% - 2rem);
+  z-index: 2;
+  max-width: calc(100% - 8rem);
   margin: 0;
   border: 1px solid var(--color-border-default);
   border-radius: 9999px;
@@ -27,6 +27,11 @@
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
   box-shadow: var(--shadow-orda-center);
+  pointer-events: none;
+}
+
+.route-setup-map-note--error {
+  color: var(--color-error-700);
 }
 
 .route-setup-panel {

@@ -18,6 +18,43 @@ const mountain = {
   geometry: { type: 'Point', coordinates: [126.978, 37.65863] },
 };
 
+const serviceArea = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      id: 42,
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [126.972, 37.652],
+              [126.984, 37.652],
+              [126.984, 37.665],
+              [126.972, 37.665],
+              [126.972, 37.652],
+            ],
+          ],
+        ],
+      },
+      properties: {
+        areaId: 42,
+        areaName: '북한산 서비스 영역',
+        mountainId: 42,
+        datasetId: 1,
+      },
+    },
+  ],
+};
+
+test.beforeEach(async ({ page }) => {
+  await page.route(
+    (url) => url.pathname.startsWith('/api/mountains/') && url.pathname.endsWith('/service-area'),
+    (route) => route.fulfill({ json: serviceArea }),
+  );
+});
+
 async function expectSetupBlocked(page: Page) {
   for (const name of ['코스 설정 입력', '코스 설정 단계 이동']) {
     const controls = page.getByRole('group', { name, exact: true }).locator('button, input');
@@ -107,8 +144,14 @@ test('Long 범위의 큰 ID와 선행 0이 있는 양의 정수 ID는 문자열 
   page,
 }) => {
   const ids: string[] = [];
-  await page.route('**/api/mountains/*', async (route) => {
-    const id = new URL(route.request().url()).pathname.split('/').at(-1) ?? '';
+  await page.route('**/api/mountains/**', async (route) => {
+    const pathParts = new URL(route.request().url()).pathname.split('/');
+    const isServiceArea = pathParts.at(-1) === 'service-area';
+    const id = pathParts.at(isServiceArea ? -2 : -1) ?? '';
+    if (isServiceArea) {
+      await route.fulfill({ json: serviceArea });
+      return;
+    }
     ids.push(id);
     await route.fulfill({ json: { ...mountain, mountainId: id } });
   });
@@ -231,6 +274,62 @@ test('성공 데이터가 캐시에 남아 있어도 재조회 오류가 나면 
   await expect(page.getByRole('alert')).toContainText('산 위치를 표시할 수 없어요.');
   await expectSetupBlocked(page);
   await expect(page.locator('.orda-map-layout__map-surface')).not.toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+});
+
+test('API 산의 서비스 영역을 코스 설정 지도에 함께 요청한다', async ({ page }) => {
+  await page.route('**/api/mountains/42', (route) => route.fulfill({ json: mountain }));
+  const serviceAreaRequest = page.waitForRequest('**/api/mountains/42/service-area');
+  await page.route('**/api/mountains/42/service-area', (route) =>
+    route.fulfill({ json: serviceArea }),
+  );
+
+  await page.goto('/routes/setup?mountainId=42');
+
+  await serviceAreaRequest;
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+});
+
+test('코스 설정 지도에서 서비스 영역 로딩과 빈 결과를 구분해 안내한다', async ({ page }) => {
+  let releaseServiceArea: (() => void) | undefined;
+  const serviceAreaLoading = new Promise<void>((resolve) => {
+    releaseServiceArea = resolve;
+  });
+  await page.route('**/api/mountains/42', (route) => route.fulfill({ json: mountain }));
+  await page.route('**/api/mountains/42/service-area', async (route) => {
+    await serviceAreaLoading;
+    await route.fulfill({ json: { type: 'FeatureCollection', features: [] } });
+  });
+
+  await page.goto('/routes/setup?mountainId=42');
+  await expect(page.getByText('서비스 영역을 불러오는 중이에요.')).toBeVisible();
+
+  releaseServiceArea?.();
+  await expect(page.getByText('표시할 서비스 영역이 없어요.')).toBeVisible();
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+});
+
+test('코스 설정 지도에서 서비스 영역 조회 실패를 안내하고 지도를 유지한다', async ({ page }) => {
+  await page.route('**/api/mountains/42', (route) => route.fulfill({ json: mountain }));
+  await page.route('**/api/mountains/42/service-area', (route) =>
+    route.fulfill({
+      status: 500,
+      json: { status: 500, code: 'INTERNAL_SERVER_ERROR', message: '조회 실패' },
+    }),
+  );
+
+  await page.goto('/routes/setup?mountainId=42');
+
+  await expect(page.getByRole('alert')).toContainText('서비스 영역을 불러오지 못했어요.');
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
     'data-map-ready',
     'true',
   );

@@ -9,6 +9,8 @@ import {
   isValidMountainCoordinate,
   isValidMountainId,
   useMountainDetailQuery,
+  useMountainServiceAreaLayer,
+  useServiceAreaQuery,
 } from '@/features/course';
 import { MapControls, OpenLayersMap } from '@/features/map';
 import type { MapController } from '@/features/map';
@@ -30,6 +32,9 @@ export function RouteSetupPage() {
   const usesApiMountain = mountainId !== null && !fallbackMountain;
   const hasInvalidMountainId = usesApiMountain && !isValidMountainId(mountainId);
   const mountainDetailQuery = useMountainDetailQuery(
+    usesApiMountain && isValidMountainId(mountainId) ? mountainId : null,
+  );
+  const serviceAreaQuery = useServiceAreaQuery(
     usesApiMountain && isValidMountainId(mountainId) ? mountainId : null,
   );
   const selectedMountainName = mountainDetailQuery.data?.mountainName ?? fallbackMountain?.name;
@@ -79,7 +84,19 @@ export function RouteSetupPage() {
     state.pendingPlace,
     snapped,
   );
-  const layers = useMemo(() => [markerLayer], [markerLayer]);
+  const serviceAreaLayer = useMountainServiceAreaLayer(serviceAreaQuery.data);
+  const layers = useMemo(() => [serviceAreaLayer, markerLayer], [markerLayer, serviceAreaLayer]);
+  const serviceAreaStatus =
+    !usesApiMountain || hasInvalidMountainId
+      ? null
+      : serviceAreaQuery.isPending
+        ? { kind: 'loading', message: '서비스 영역을 불러오는 중이에요.' }
+        : serviceAreaQuery.isError
+          ? { kind: 'error', message: '서비스 영역을 불러오지 못했어요.' }
+          : Array.isArray(serviceAreaQuery.data?.features) &&
+              serviceAreaQuery.data.features.length === 0
+            ? { kind: 'empty', message: '표시할 서비스 영역이 없어요.' }
+            : null;
   const focusedPlace = state.pendingPlace ?? state.origin ?? state.destination;
 
   function goBack() {
@@ -148,18 +165,29 @@ export function RouteSetupPage() {
         mapContainerRef={mapContainerRef}
         mapContent={
           canConfigure ? (
-            <OpenLayersMap
-              additionalLayers={layers}
-              initialCenter={selectedMountainCoordinates}
-              onMapClick={(coordinate) => {
-                if (!canConfigure || state.step !== 'locations') return;
-                if (state.searchRole && state.isMapSelectionMode) {
-                  state.setPendingCoordinate(state.searchRole, coordinate);
-                }
-              }}
-              onControllerChange={setMapController}
-              targetRef={mapContainerRef}
-            />
+            <>
+              <OpenLayersMap
+                additionalLayers={layers}
+                initialCenter={selectedMountainCoordinates}
+                onMapClick={(coordinate) => {
+                  if (!canConfigure || state.step !== 'locations') return;
+                  if (state.searchRole && state.isMapSelectionMode) {
+                    state.setPendingCoordinate(state.searchRole, coordinate);
+                  }
+                }}
+                onControllerChange={setMapController}
+                targetRef={mapContainerRef}
+              />
+              {serviceAreaStatus ? (
+                <p
+                  aria-live="polite"
+                  className={`route-setup-map-note route-setup-map-note--${serviceAreaStatus.kind}`}
+                  role={serviceAreaStatus.kind === 'error' ? 'alert' : 'status'}
+                >
+                  {serviceAreaStatus.message}
+                </p>
+              ) : null}
+            </>
           ) : (
             <div
               className="orda-map-layout__placeholder"

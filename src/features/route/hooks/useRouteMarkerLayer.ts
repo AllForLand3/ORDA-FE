@@ -19,6 +19,8 @@ import type { RouteCoordinate, RoutePlace, RoutePointRole } from '../mocks/route
 
 type MarkerRole = RoutePointRole | 'pending';
 
+const ROUTE_MARKER_LAYER_Z_INDEX = 10;
+
 // 서버가 돌려준 스냅 노드 위치(EPSG:4326). 사용자가 지정한 위치와 별도 Feature로 그린다.
 export interface RouteSnappedPositions {
   origin: GeoJsonPosition | null;
@@ -97,7 +99,10 @@ export function useRouteMarkerLayer(
 
   const { layer, source } = useMemo(() => {
     const source = new VectorSource();
-    const layer = new VectorLayer({ source });
+    const layer = new VectorLayer({
+      source,
+      zIndex: ROUTE_MARKER_LAYER_Z_INDEX,
+    });
     layer.set('name', 'route-setup-selected-points');
     return { layer, source };
   }, []);

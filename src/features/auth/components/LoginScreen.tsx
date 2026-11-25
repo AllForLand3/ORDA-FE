@@ -3,15 +3,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { Button, Checkbox, TextField } from '@/components/ui';
+import { Button, TextField } from '@/components/ui';
 import { storeAccessToken } from '@/lib/accessToken';
 import type { ApiErrorResponse } from '@/shared/types/api';
 
 import loginBackground from '../assets/login-background.svg';
 import logoMark from '../assets/login-logo-mark.png';
-import appleIcon from '../assets/login-social-apple.svg';
-import googleIcon from '../assets/login-social-google.svg';
-import kakaoIcon from '../assets/login-social-kakao.svg';
 import contourBottom from '../assets/login-contour-bottom.svg';
 import contourMiddle from '../assets/login-contour-middle.svg';
 import contourTop from '../assets/login-contour-top.svg';
@@ -51,7 +48,6 @@ export function LoginScreen() {
 
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [notice, setNotice] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -106,7 +102,7 @@ export function LoginScreen() {
             });
 
             // 새로운 로그인 토큰 저장
-            storeAccessToken(accessToken, rememberMe);
+            storeAccessToken(accessToken, true);
           } catch {
             setNotice('로그인 정보를 처리할 수 없습니다. 다시 시도해주세요.');
             return;
@@ -149,10 +145,6 @@ export function LoginScreen() {
         },
       },
     );
-  }
-
-  function showUnavailableAction(action: string) {
-    setNotice(`${action} 기능은 아직 연결되지 않았습니다.`);
   }
 
   return (
@@ -249,23 +241,6 @@ export function LoginScreen() {
               value={password}
             />
 
-            <div className="auth-login__options">
-              <Checkbox
-                checked={rememberMe}
-                disabled={loginMutation.isPending}
-                label="로그인 상태 유지"
-                onChange={(event) => setRememberMe(event.target.checked)}
-              />
-
-              <button
-                className="auth-text-button auth-login__forgot"
-                onClick={() => showUnavailableAction('비밀번호 찾기')}
-                type="button"
-              >
-                비밀번호 찾기
-              </button>
-            </div>
-
             <Button
               className="auth-submit auth-login__submit"
               disabled={loginMutation.isPending}
@@ -276,41 +251,6 @@ export function LoginScreen() {
               {loginMutation.isPending ? '로그인 중...' : '로그인하기'}
             </Button>
           </form>
-
-          <div aria-hidden="true" className="auth-login__separator">
-            <span />
-            <p>또는 다른 방법으로 로그인하기</p>
-            <span />
-          </div>
-
-          <div aria-label="소셜 로그인" className="auth-login__social">
-            <button
-              aria-label="Google로 로그인"
-              className="auth-social-button"
-              onClick={() => showUnavailableAction('Google 로그인')}
-              type="button"
-            >
-              <img alt="" aria-hidden="true" src={googleIcon} />
-            </button>
-
-            <button
-              aria-label="카카오톡으로 로그인"
-              className="auth-social-button"
-              onClick={() => showUnavailableAction('카카오 로그인')}
-              type="button"
-            >
-              <img alt="" aria-hidden="true" src={kakaoIcon} />
-            </button>
-
-            <button
-              aria-label="Apple로 로그인"
-              className="auth-social-button"
-              onClick={() => showUnavailableAction('Apple 로그인')}
-              type="button"
-            >
-              <img alt="" aria-hidden="true" src={appleIcon} />
-            </button>
-          </div>
 
           <p className="auth-login__signup-link">
             계정이 없으신가요? <Link to="/signup">회원가입하기</Link>

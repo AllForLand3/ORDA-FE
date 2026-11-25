@@ -45,18 +45,14 @@ test('모바일 홈은 360·390·440px에서 가로 넘침 없이 CTA를 맞춘�
   }
 });
 
-test('PC 홈은 Figma 콘텐츠·헤더·계정 메뉴를 표시하고 미완성 메뉴는 링크로 가장하지 않는다', async ({
-  page,
-}) => {
+test('PC 홈은 콘텐츠·로고와 실제 동작하는 계정 메뉴만 표시한다', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 982 });
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: '나에게 맞는 산길을, 더 쉽게' })).toBeVisible();
-  await expect(page.getByText('서비스 소개', { exact: true })).toBeVisible();
-  await expect(page.getByText('주요 기능', { exact: true })).toBeVisible();
-  await expect(page.getByText('코스 추천', { exact: true })).toBeVisible();
-  await expect(page.getByText('이용 안내', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: '서비스 소개' })).toHaveCount(0);
+  for (const menu of ['서비스 소개', '주요 기능', '코스 추천', '이용 안내']) {
+    await expect(page.getByText(menu, { exact: true })).toHaveCount(0);
+  }
   await page.evaluate(() => document.fonts.ready);
 
   const logoBox = await page.getByRole('img', { name: 'ORDA 로고' }).boundingBox();
@@ -76,10 +72,10 @@ test('PC 홈은 Figma 콘텐츠·헤더·계정 메뉴를 표시하고 미완성
 
 test('태블릿과 PC 홈은 지정 viewport에서 가로 넘침 없이 배치된다', async ({ page }) => {
   const viewports = [
-    { width: 768, height: 1024, menuVisible: false },
-    { width: 1024, height: 768, menuVisible: true },
-    { width: 1440, height: 900, menuVisible: true },
-    { width: 1512, height: 982, menuVisible: true },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1512, height: 982 },
   ];
 
   for (const viewport of viewports) {
@@ -88,10 +84,7 @@ test('태블릿과 PC 홈은 지정 viewport에서 가로 넘침 없이 배치�
 
     await expect(page.getByRole('heading', { name: '나에게 맞는 산길을, 더 쉽게' })).toBeVisible();
     await expect(page.locator('.home-page__header')).toBeVisible();
-    await expect(page.locator('.home-page__menu')).toHaveCSS(
-      'display',
-      viewport.menuVisible ? 'flex' : 'none',
-    );
+    await expect(page.getByRole('navigation', { name: '계정' })).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const action = document.querySelector('.home-page__actions');

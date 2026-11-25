@@ -211,41 +211,10 @@
 }
 
 .auth-password-toggle:focus-visible,
-.auth-text-button:focus-visible,
 .auth-signup__term-toggle:focus-visible {
   border-radius: 4px;
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
-}
-
-.auth-login__options {
-  display: flex;
-  min-height: 22px;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 28px;
-}
-
-.auth-login__options .orda-checkbox {
-  min-height: 22px;
-  gap: 6px;
-}
-
-.auth-login__options .orda-checkbox__label,
-.auth-login__forgot {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
-.auth-login__options .orda-checkbox__box {
-  border-radius: 4px;
-}
-
-.auth-text-button {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
 }
 
 .auth-submit.orda-button {
@@ -265,50 +234,6 @@
 
 .auth-login__submit {
   margin-top: 29px;
-}
-
-.auth-login__separator {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  margin-top: 30px;
-  color: var(--color-text-secondary);
-}
-
-.auth-login__separator span {
-  height: 1px;
-  flex: 1;
-  background: var(--color-border-default);
-}
-
-.auth-login__separator p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  white-space: nowrap;
-}
-
-.auth-login__social {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 45px;
-  margin-top: 18px;
-}
-
-.auth-social-button {
-  display: block;
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-
-.auth-social-button:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 3px;
 }
 
 .auth-login__signup-link,
@@ -522,10 +447,6 @@
     margin-top: 28px;
   }
 
-  .auth-login__options {
-    margin-top: 24px;
-  }
-
   .auth-login__submit {
     margin-top: 24px;
   }
@@ -543,18 +464,6 @@
 
   .auth-signup__heading {
     padding-inline: 24px;
-  }
-
-  .auth-login__separator {
-    gap: 12px;
-  }
-
-  .auth-login__separator p {
-    font-size: 12px;
-  }
-
-  .auth-login__social {
-    gap: clamp(24px, 10vw, 45px);
   }
 
   .auth-signup__term-row .orda-checkbox {
