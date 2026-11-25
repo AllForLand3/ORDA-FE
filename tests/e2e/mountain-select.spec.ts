@@ -569,3 +569,45 @@ test('지도 산 마커 선택은 패널 선택 상태와 지도 포커스를 �
   await expect.poll(() => mapSurface.getAttribute('data-map-center')).toBe('126.978000,37.658630');
   await expect(mapSurface).toHaveAttribute('data-map-zoom', '14');
 });
+
+test('잘못된 서비스 영역 좌표가 와도 산 선택 지도를 유지한다', async ({ page }) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await installMountainRoute(page);
+  await page.route('**/api/mountains/1/service-area', (route) =>
+    route.fulfill({
+      json: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 1,
+            geometry: { type: 'MultiPolygon', coordinates: null },
+            properties: {
+              areaId: 1,
+              areaName: '잘못된 서비스 영역',
+              mountainId: 1,
+              datasetId: 1,
+            },
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto('/mountains');
+
+  const serviceAreaResponse = page.waitForResponse(
+    (response) => response.url().endsWith('/api/mountains/1/service-area') && response.ok(),
+  );
+  const gwanaksan = page.locator('.mountain-card').filter({ hasText: '관악산' });
+  await gwanaksan.click();
+
+  await serviceAreaResponse;
+  await expect(gwanaksan).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+  await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
+  expect(pageErrors).toEqual([]);
+});

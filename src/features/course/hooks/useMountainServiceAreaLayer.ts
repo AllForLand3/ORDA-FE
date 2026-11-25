@@ -36,11 +36,15 @@ export function useMountainServiceAreaLayer(serviceArea: ServiceAreaFeatureColle
     source.clear(true);
     if (!Array.isArray(serviceArea?.features) || serviceArea.features.length === 0) return;
 
-    const features = new GeoJSON().readFeatures(serviceArea, {
-      dataProjection: API_PROJECTION,
-      featureProjection: MAP_PROJECTION,
-    });
-    source.addFeatures(features);
+    try {
+      const features = new GeoJSON().readFeatures(serviceArea, {
+        dataProjection: API_PROJECTION,
+        featureProjection: MAP_PROJECTION,
+      });
+      source.addFeatures(features);
+    } catch {
+      source.clear(true);
+    }
 
     return () => source.clear(true);
   }, [serviceArea, source]);
