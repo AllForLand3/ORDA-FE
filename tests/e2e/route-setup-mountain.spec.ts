@@ -295,6 +295,46 @@ test('API 산의 서비스 영역을 코스 설정 지도에 함께 요청한다
   );
 });
 
+test('코스 설정 지도에서 서비스 영역 로딩과 빈 결과를 구분해 안내한다', async ({ page }) => {
+  let releaseServiceArea: (() => void) | undefined;
+  const serviceAreaLoading = new Promise<void>((resolve) => {
+    releaseServiceArea = resolve;
+  });
+  await page.route('**/api/mountains/42', (route) => route.fulfill({ json: mountain }));
+  await page.route('**/api/mountains/42/service-area', async (route) => {
+    await serviceAreaLoading;
+    await route.fulfill({ json: { type: 'FeatureCollection', features: [] } });
+  });
+
+  await page.goto('/routes/setup?mountainId=42');
+  await expect(page.getByText('서비스 영역을 불러오는 중이에요.')).toBeVisible();
+
+  releaseServiceArea?.();
+  await expect(page.getByText('표시할 서비스 영역이 없어요.')).toBeVisible();
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+});
+
+test('코스 설정 지도에서 서비스 영역 조회 실패를 안내하고 지도를 유지한다', async ({ page }) => {
+  await page.route('**/api/mountains/42', (route) => route.fulfill({ json: mountain }));
+  await page.route('**/api/mountains/42/service-area', (route) =>
+    route.fulfill({
+      status: 500,
+      json: { status: 500, code: 'INTERNAL_SERVER_ERROR', message: '조회 실패' },
+    }),
+  );
+
+  await page.goto('/routes/setup?mountainId=42');
+
+  await expect(page.getByRole('alert')).toContainText('서비스 영역을 불러오지 못했어요.');
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+});
+
 test('Mock 산은 상세 API 없이 기존 조건 설정과 결과 이동을 유지한다', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => {

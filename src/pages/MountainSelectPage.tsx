@@ -47,6 +47,16 @@ export function MountainSelectPage() {
     () => [serviceAreaLayer, markerLayer],
     [markerLayer, serviceAreaLayer],
   );
+  const serviceAreaStatus = !selectedMountain
+    ? null
+    : serviceAreaQuery.isPending
+      ? { kind: 'loading', message: '서비스 영역을 불러오는 중이에요.' }
+      : serviceAreaQuery.isError
+        ? { kind: 'error', message: '서비스 영역을 불러오지 못했어요.' }
+        : Array.isArray(serviceAreaQuery.data?.features) &&
+            serviceAreaQuery.data.features.length === 0
+          ? { kind: 'empty', message: '표시할 서비스 영역이 없어요.' }
+          : null;
   const mountainDetailErrorCode = getApiErrorCode(mountainDetailQuery.error);
   const mountainDetailError = mountainDetailQuery.isError
     ? mountainDetailErrorCode === 'MOUNTAIN_NOT_FOUND'
@@ -115,13 +125,24 @@ export function MountainSelectPage() {
       header={<MountainHeader />}
       mapContainerRef={mapContainerRef}
       mapContent={
-        <OpenLayersMap
-          additionalLayers={additionalLayers}
-          initialZoom={10}
-          onControllerChange={setMapController}
-          onFeatureClick={handleMountainMarkerClick}
-          targetRef={mapContainerRef}
-        />
+        <>
+          <OpenLayersMap
+            additionalLayers={additionalLayers}
+            initialZoom={10}
+            onControllerChange={setMapController}
+            onFeatureClick={handleMountainMarkerClick}
+            targetRef={mapContainerRef}
+          />
+          {serviceAreaStatus ? (
+            <p
+              aria-live="polite"
+              className={`mountain-select__map-note mountain-select__map-note--${serviceAreaStatus.kind}`}
+              role={serviceAreaStatus.kind === 'error' ? 'alert' : 'status'}
+            >
+              {serviceAreaStatus.message}
+            </p>
+          ) : null}
+        </>
       }
       mapControls={
         <MapControls

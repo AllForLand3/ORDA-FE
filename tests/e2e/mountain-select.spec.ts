@@ -611,3 +611,47 @@ test('잘못된 서비스 영역 좌표가 와도 산 선택 지도를 유지한
   await expect(page.getByRole('button', { name: '코스 탐색 설정' })).toBeEnabled();
   expect(pageErrors).toEqual([]);
 });
+
+test('서비스 영역 로딩과 빈 결과를 지도 근처에 구분해 안내한다', async ({ page }) => {
+  let releaseServiceArea: (() => void) | undefined;
+  const serviceAreaLoading = new Promise<void>((resolve) => {
+    releaseServiceArea = resolve;
+  });
+  await installMountainRoute(page);
+  await page.route('**/api/mountains/1/service-area', async (route) => {
+    await serviceAreaLoading;
+    await route.fulfill({ json: { type: 'FeatureCollection', features: [] } });
+  });
+  await page.goto('/mountains');
+
+  await page.locator('.mountain-card').filter({ hasText: '관악산' }).click();
+  await expect(page.getByText('서비스 영역을 불러오는 중이에요.')).toBeVisible();
+
+  releaseServiceArea?.();
+  await expect(page.getByText('표시할 서비스 영역이 없어요.')).toBeVisible();
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+});
+
+test('서비스 영역 조회 실패를 안내하면서 산 선택 지도는 유지한다', async ({ page }) => {
+  await installMountainRoute(page);
+  await page.route('**/api/mountains/1/service-area', (route) =>
+    route.fulfill({
+      status: 500,
+      json: { status: 500, code: 'INTERNAL_SERVER_ERROR', message: '조회 실패' },
+    }),
+  );
+  await page.goto('/mountains');
+
+  const gwanaksan = page.locator('.mountain-card').filter({ hasText: '관악산' });
+  await gwanaksan.click();
+
+  await expect(page.getByRole('alert')).toContainText('서비스 영역을 불러오지 못했어요.');
+  await expect(gwanaksan).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.orda-map-layout__map-surface')).toHaveAttribute(
+    'data-map-ready',
+    'true',
+  );
+});
