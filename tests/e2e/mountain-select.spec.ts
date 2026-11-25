@@ -537,6 +537,7 @@ test('지도 산 마커 선택은 패널 선택 상태와 지도 포커스를 �
   const mapSurface = page.locator('.orda-map-layout__map-surface');
   const bukhansan = page.locator('.mountain-card').filter({ hasText: '북한산' });
   await expect(mapSurface).toHaveAttribute('data-map-ready', 'true');
+  await expect(bukhansan).toBeVisible();
 
   const box = await mapSurface.boundingBox();
   if (!box) throw new Error('산 선택 지도가 없습니다.');
